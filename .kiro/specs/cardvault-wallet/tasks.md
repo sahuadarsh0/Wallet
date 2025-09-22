@@ -31,8 +31,8 @@
   - Implement ExportDataUseCase and ImportDataUseCase for data portability
   - _Requirements: 1.1, 1.2, 2.1, 2.2, 3.1, 6.1, 7.1_
 
-- [ ] 3. Data Layer Implementation
-- [ ] 3.1 Set up Room database with entities and DAOs
+- [x] 3. Data Layer Implementation
+- [x] 3.1 Set up Room database with entities and DAOs
   - Create CardEntity with proper Room annotations and type converters for Map fields
   - Implement CategoryEntity with relationship mappings
   - Create CardDao with queries for CRUD operations, search, and category filtering
@@ -40,7 +40,7 @@
   - Set up WalletDatabase class with proper configuration and migrations
   - _Requirements: 4.1, 4.2, 6.1, 10.1, 10.2_
 
-- [ ] 3.2 Implement local file storage for images
+- [x] 3.2 Implement local file storage for images
   - Create ImageFileManager class for handling image file operations in app's sandboxed storage
   - Implement image compression and optimization for efficient storage
   - Create file naming convention and directory structure management
@@ -48,14 +48,14 @@
   - Implement image validation and error handling
   - _Requirements: 2.1, 2.2, 3.1, 4.1, 10.1, 10.3_
 
-- [ ] 3.3 Set up Proto DataStore for user preferences
+- [x] 3.3 Set up Proto DataStore for user preferences
   - Define user preferences proto schema for app settings and categories
   - Create UserPreferencesManager for reading and writing preferences
   - Implement default category initialization and management
   - Add preference validation and migration handling
   - _Requirements: 6.1, 6.2, 10.1_
 
-- [ ] 3.4 Implement repository implementations
+- [x] 3.4 Implement repository implementations
   - Create CardRepositoryImpl with Room database integration and error handling
   - Implement CategoryRepositoryImpl with DataStore integration
   - Create ImageRepositoryImpl with file system operations and caching
