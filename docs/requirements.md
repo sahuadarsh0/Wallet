@@ -1,159 +1,110 @@
 # Wallet-CardVault: Product Requirements Document (PRD)
 
-## Overview \& Goals
+***
 
-CardVault is a secure, offline-only Android application designed to provide users with a premium digital repository for all their physical cards. The primary goal is to create an intuitive, visually stunning, and completely secure wallet app that operates entirely offline, ensuring maximum privacy and data security.
+## 1. Overview \& Goals
 
-**Project Purpose:** To provide a secure, intuitive, and visually stunning offline repository for all a user's cards, from payment cards to custom vouchers, with a focus on premium UI/UX and smooth animations built entirely with Jetpack Compose.
+**Product Summary:**  
+Wallet-CardVault is an **offline-only Android app** that serves as a digital repository for physical cards—credit, debit, vouchers, gift cards, and other custom card types. The app prioritizes **user convenience, a premium animated interface, and complete data locality** (no network/storage outside the device).
 
-**Key Objectives:**
+**Project Purpose:**  
+Provide a visually rich, animation-driven digital wallet solution allowing **local-only storage** of card/voucher details (including front & back images) with a focus on aesthetics, speed, and simplicity.
 
-- Deliver a completely offline experience with no network dependencies
-- Provide military-grade security with AES-256 encryption
-- Create a premium user experience with smooth 60fps animations
-- Enable flexible organization through custom categories and card types
-- Ensure data portability through encrypted backup/restore functionality
+**Primary Goals:**
+- 100% local data (no cloud or remote backup, sync, or access)
+- Best-in-class UI/UX for digital cards using **Jetpack Compose animations**
+- Lightweight, fast launch—eligible for lower-end Android devices without compromise
 
+***
 
-## User Personas
+## 2. Key Features \& Objectives
 
-### Primary Persona 1: The "Frequent Traveler"
+| Feature Category           | Objective / Description                                                                                                                                          |
+|----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Offline Mode**           | Absolutely no network dependencies, API requests, or permissions.                                                                                                |
+| **No Security Layer**      | No encryption, biometric, or backup features. Data is deliberately unprotected for simplicity and transparency.                                                  |
+| **Premium Visuals**        | Smooth, animated interface—card flip, entry, and scroll effects at 60fps.                                                                                        |
+| **Card Scanning/Autofill** | Camera capture for BOTH sides of every card, with overlays for standard sizes (16:9, 4:3, 3:4,etc.) and offline OCR-based autofill (number, name, expiry, etc.). |
+| **Custom Card Types**      | Unlimited user-customizable card types/categories (with user-chosen icon, color, & name).                                                                        |
+| **Card Flip Animation**    | 3D flip animation when viewing the back or front.                                                                                                                |
+| **Local Image Storage**    | All card images stored internally in the app’s sandboxed storage.                                                                                                |
+| **Export/Import**          | Complete data & images migration via a single, non-encrypted file (`.wallet`/`.json`).                                                                           |
 
-**Profile:** Sarah, 34, Management Consultant
+***
 
-- **Needs:** Quick access to passport, multiple credit cards, airline status cards, hotel loyalty cards, and airport lounge passes
-- **Pain Points:** Fumbling through physical wallets at security checkpoints, losing important cards while traveling, carrying multiple wallets for different regions
-- **Goals:** Streamlined access to travel-related cards, secure storage of sensitive documents, quick identification of relevant cards for specific situations
-- **Usage Patterns:** Accesses app multiple times during travel days, needs offline functionality in areas with poor connectivity
+## 3. User Personas
 
+### Persona 1: Frequent Traveler ("Sarah", 34, Management Consultant)
+- **Needs:** Fast access to all travel cards (passport, credit, airline status, hotel loyalty, lounge passes)
+- **Pain Points:** Delays at checkpoints, risk of card misplacement, switching wallets for region-specific cards
+- **Primary Goals:** Centralize travel cards, quick identification per scenario, robust offline operation
+- **Usage:** Multiple daily accesses, especially during travel in low-connectivity environments
 
-### Primary Persona 2: The "Deal Hunter"
+### Persona 2: Deal Hunter ("Mike", 28, Marketing Specialist)
+- **Needs:** Organize numerous gift/loyalty cards, discount vouchers, memberships, with expiry tracking
+- **Pain Points:** Losing value on expired vouchers, balance/usage tracking, cluttered wallet
+- **Primary Goals:** Easy categorization, expiry alerts/visibility, ability to tag as used/expired
+- **Usage:** Frequent addition/removal of cards, regular review for shopping/planning, total offline demand
 
-**Profile:** Mike, 28, Marketing Specialist
+***
 
-- **Needs:** Management of numerous gift cards, discount vouchers, membership cards, and promotional codes with varying expiry dates
-- **Pain Points:** Missing expiry dates on valuable vouchers, losing track of remaining balances, cluttered physical wallet with rarely-used cards
-- **Goals:** Visual tracking of card status and expiry dates, easy categorization of different types of deals, ability to mark cards as used/expired
-- **Usage Patterns:** Regular app usage for shopping decisions, frequent adding/removing of temporary promotional cards
+## 4. User Stories & Acceptance Criteria
 
-
-## User Stories \& Acceptance Criteria
-
-### Card Management
-
-**User Story:** "As a user, I can add a credit card by scanning it with my camera so I don't have to type the details manually."
-
-**Acceptance Criteria:**
-
-- Camera interface opens with clear viewfinder and card outline overlay
-- ML Kit successfully recognizes and extracts card number, expiry date, and cardholder name
-- Success state shows recognized data with edit capability before saving
-- Error states provide clear feedback for poor lighting, unsupported cards, or recognition failures
-- Manual input fallback is always available with pre-populated recognized data
-- All sensitive data processing occurs on-device only
-
-
-### Card Animation
-
-**User Story:** "As a user, I can tap on any card in my list to flip it and view the security code (CVV) and signature strip on the back."
-
-**Acceptance Criteria:**
-
-- Animation must maintain 60fps on mid-range devices (API 29+)
-- 3D flip effect uses realistic physics with proper perspective and depth
-- Animation duration is between 300-500ms for optimal user experience
-- Reverse animation triggers on second tap or automatic timeout after 10 seconds
-- Both card faces display authentic styling with proper shadows and highlights
-- Animation state is preserved during screen rotations
-
-
-### Custom Sections
-
-**User Story:** "As a user, I can create custom categories (e.g., 'Passport', 'Gym Membership', 'Coffee Vouchers') to organize my cards."
+### 4.1 Card Management, Image Capture & Autofill
+- User can **add** a card/voucher by capturing front & back images (card-shaped overlay, aspect ratio selection)
+- App auto-detects/fills a card’s text fields (number, expiry, name) via **offline OCR** (editable before save)
+- All fields/images always stored locally
+- Users can assign name, icon & color per category and add custom card fields
+- User can Update/Delete an existing card/voucher
 
 **Acceptance Criteria:**
+- Camera overlay matches common card shapes (16:9, 4:3, 3:4, custom)
+- Retake/update either side before saving
+- Supports full editing of all autofilled fields, always allows manual fallback
 
-- User can create unlimited custom categories with names up to 50 characters
-- Each category can be assigned a distinct color theme from predefined palette
-- All cards within a section inherit the category's color theme in list views
-- Categories can be reordered, renamed, and deleted (with confirmation dialog)
-- Empty categories display helpful onboarding content
-- Default categories include "Payment Cards," "Identity," and "Memberships"
+***
 
-
-### Custom Card Types
-
-**User Story:** "For a custom card (e.g., a voucher), I can set fields like Expiry Date, Balance, and a 'Mark as Used' toggle."
+### 4.2 Card Animation (UX)
+- Card tap triggers a **3D flip animation** (front-back)
+- Smooth scrolling/list-entry animations throughout
 
 **Acceptance Criteria:**
+- 60fps animation on supported hardware
+- Card images always instantly swappable front<>back
+- Animation style consistent in all interactive areas
 
-- Card creation flow includes field customization options
-- Available custom fields: Expiry Date, Balance, Notes, Status Toggle, Custom Labels
-- Expired cards display visual indicators (faded appearance, red border)
-- "Used" cards show clear visual stamp or overlay on card face
-- Balance fields support currency formatting and decimal values
-- Expiry date picker integrates with system calendar widget
+***
 
-
-### Data Portability
-
-**User Story:** "As a user, I can export all my app data to a single, encrypted backup file for safekeeping."
-**User Story:** "As a user, I can import a previously created backup file to restore my data on a new device."
+### 4.3 Custom Categories & Card Types
+- Unlimited user-created card categories (icon, color, name)
+- Each card can accept unlimited custom user fields
+- Main list: Shows every saved card with thumbnail, title, category tag
 
 **Acceptance Criteria:**
+- Add/edit/delete card types/categories directly in the UI at any time
 
-- Export creates encrypted .cvault file with user-defined password
-- File includes all cards, categories, settings, and images
-- Import process validates file integrity and version compatibility
-- Password requirements: minimum 8 characters, mixed case and numbers
-- Backup file header contains validation metadata and version info
-- Import offers merge or replace options for existing data
-- Clear progress indicators during export/import operations
+***
 
+### 4.4 Data Portability
+- Export/import the entire database including images/settings in one **unencrypted local file** (`.wallet` or `.json`)
+- File is self-contained for plug-and-play migration
 
-### Offline-First
+***
 
-**User Story:** "As a user, I can use every feature of the app without an active internet connection."
+### 4.5 Offline-Only Guarantee
+- Manifest blocks all network permissions
+- All processing, storage, and features function with zero connectivity
 
-**Acceptance Criteria:**
+***
 
-- Zero network permissions in Android manifest
-- All features function identically online and offline
-- No external API dependencies for any functionality
-- Local ML Kit models for text recognition work offline
-- Error handling never assumes network connectivity
-- App launches and operates normally in airplane mode
+## 5. Non-Functional Requirements
 
+| Requirement         | Details                                                                                       |
+|---------------------|-----------------------------------------------------------------------------------------------|
+| **Security**        | No protection/encryption; data left in plain format for transparency.                         |
+| **Performance**     | 60fps animation; app launch < 3 seconds on common hardware (e.g., mid-range Android devices). |
+| **Privacy**         | No analytics/tracking SDKs; only requests camera & internal storage permissions.              |
+| **Offline Mandate** | Explicitly prevent all network operations through manifest & architecture.                    |
 
-## Non-Functional Requirements
-
-### Security
-
-- **Data at Rest:** AES-256-GCM encryption for all stored data using Android Keystore
-- **Backup Security:** Strong encryption using AES-256 with PBKDF2 key derivation
-- **Biometric Integration:** Support for fingerprint, face unlock, and pattern authentication
-- **Safe Area Feature:** Additional authentication layer for sensitive cards
-- **Memory Protection:** Secure memory handling with automatic data clearing
-- **No Data Leakage:** Explicit user consent required for any data export
-
-
-### Performance
-
-- **Animation Performance:** Maintain 60fps for all animations on API 29+ devices
-- **Launch Time:** App cold start under 3 seconds on mid-range devices
-- **Memory Usage:** Maximum 150MB RAM usage under normal operation
-- **Storage Optimization:** Efficient image compression without quality loss
-- **Battery Impact:** Minimal battery drain through optimized background processing
-- **Responsiveness:** UI interactions respond within 100ms
-
-
-### Privacy
-
-- **Offline-Only Design:** No data transmission to external servers
-- **No Analytics:** Zero tracking, telemetry, or usage analytics
-- **Local Processing:** All ML and image processing occurs on-device
-- **No Permissions:** Minimal permissions (camera, storage) with clear explanations
-- **Data Minimization:** Collect only essential data for app functionality
-- **User Control:** Complete user ownership and control of all data
 
 ***

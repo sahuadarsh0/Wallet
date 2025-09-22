@@ -1,19 +1,16 @@
 # Wallet-CardVault: Secure Offline Card Repository
 
-CardVault is a secure, offline-only Android application designed to provide users with a premium digital repository for all their physical cards. The primary goal is to create an intuitive, visually stunning, and completely secure wallet app that operates entirely offline, ensuring maximum privacy and data security.
+CardVault is a secure, offline-only Android application designed to provide users with a premium digital repository for all their physical cards. The primary goal is to create an intuitive, visually stunning, and completely secure wallet app that operates entirely offline.
 
 This project is built from the ground up using modern Android development practices, including a 100% Kotlin codebase, Jetpack Compose for the UI, and a robust layered architecture.
 
 ## ✨ Key Features
 
 -   **🔒 Offline-First by Design:** Operates entirely without an internet connection. No network permissions, no analytics, and no data ever leaves your device.
--   **🛡️ Military-Grade Security:** All stored data is encrypted at rest using **AES-256-GCM** with keys managed by the Android Keystore.
 -   **📲 Modern UI/UX:** A beautiful and intuitive interface built entirely with **Jetpack Compose** and **Material Design 3**, featuring smooth 60fps animations, including a realistic 3D card flip effect.
 -   **📸 Smart Card Scanning:** Add cards quickly using your camera. On-device **ML Kit** recognizes and extracts card details, with a manual fallback option.
 -   **🎨 Flexible Organization:** Group your cards into default or custom-created categories (e.g., 'Work', 'Travel', 'Memberships'), each with a distinct color theme.
 -   **⚙️ Custom Card Types:** For cards like vouchers or gift cards, add custom fields like expiry dates, balances, and a "Mark as Used" toggle.
--   **🔄 Encrypted Backup & Restore:** Export your entire vault to a single, password-protected `.cvault` file. Restore your data on a new device with confidence, using strong encryption managed by the **Google Tink** library.
--   ** biometric-auth **Biometric Integration:** Secure your app with fingerprint, face unlock, or pattern authentication. A "Safe Area" provides an additional layer of security for your most sensitive cards.
 
 ## 🛠️ Tech Stack & Architecture
 
@@ -39,9 +36,7 @@ This project follows the official Android architecture recommendations, employin
     -   [CameraX](https://developer.android.com/training/camerax) for a modern, lifecycle-aware camera implementation.
     -   [Google ML Kit](https://developers.google.com/ml-kit) (Text Recognition) for on-device card data extraction.
 -   **Security:**
-    -   [Android Keystore](https://developer.android.com/training/articles/keystore) for cryptographic key management.
     -   [Google Tink](https://github.com/google/tink) for robust backup file encryption.
-    -   [Android Biometric Library](https://developer.android.com/training/sign-in/biometric-auth) for user authentication.
 
 ## 🚀 Getting Started
 
