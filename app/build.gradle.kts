@@ -69,6 +69,9 @@ dependencies {
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
+    
+    // Image Loading
+    implementation(libs.coil.compose)
 
     // Compose Preview UI and Design
     implementation(libs.androidx.compose.ui.tooling)

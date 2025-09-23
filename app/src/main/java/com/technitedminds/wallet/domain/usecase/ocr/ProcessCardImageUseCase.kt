@@ -34,8 +34,8 @@ class ProcessCardImageUseCase @Inject constructor() {
                         is CardType.Debit ->
                                 processTextualCard(request.imageData, request.imageSide)
                         is CardType.ATM -> processTextualCard(request.imageData, request.imageSide)
-                        is CardType.ImageOnly ->
-                                emptyMap() // Should not reach here due to earlier check
+                        else ->
+                                emptyMap() // Non-OCR card types don't need text processing
                     }
 
             Result.success(extractedData)

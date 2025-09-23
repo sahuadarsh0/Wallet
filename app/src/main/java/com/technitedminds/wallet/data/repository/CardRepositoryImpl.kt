@@ -42,7 +42,18 @@ class CardRepositoryImpl @Inject constructor(private val cardDao: CardDao) : Car
                     is CardType.Credit -> "Credit"
                     is CardType.Debit -> "Debit"
                     is CardType.ATM -> "ATM"
-                    is CardType.ImageOnly -> "ImageOnly:${cardType.typeName}"
+                    is CardType.GiftCard -> "GiftCard"
+                    is CardType.LoyaltyCard -> "LoyaltyCard"
+                    is CardType.MembershipCard -> "MembershipCard"
+                    is CardType.InsuranceCard -> "InsuranceCard"
+                    is CardType.IdentificationCard -> "IdentificationCard"
+                    is CardType.TransportCard -> "TransportCard"
+                    is CardType.BusinessCard -> "BusinessCard"
+                    is CardType.LibraryCard -> "LibraryCard"
+                    is CardType.HotelCard -> "HotelCard"
+                    is CardType.StudentCard -> "StudentCard"
+                    is CardType.AccessCard -> "AccessCard"
+                    is CardType.Custom -> "Custom:${cardType.typeName}:${cardType.colorHex}"
                 }
 
         return cardDao.getCardsByTypePattern(typePattern).map { entities ->
@@ -113,7 +124,18 @@ class CardRepositoryImpl @Inject constructor(private val cardDao: CardDao) : Car
                         is CardType.Credit -> "Credit"
                         is CardType.Debit -> "Debit"
                         is CardType.ATM -> "ATM"
-                        is CardType.ImageOnly -> "ImageOnly:${type.typeName}"
+                        is CardType.GiftCard -> "GiftCard"
+                        is CardType.LoyaltyCard -> "LoyaltyCard"
+                        is CardType.MembershipCard -> "MembershipCard"
+                        is CardType.InsuranceCard -> "InsuranceCard"
+                        is CardType.IdentificationCard -> "IdentificationCard"
+                        is CardType.TransportCard -> "TransportCard"
+                        is CardType.BusinessCard -> "BusinessCard"
+                        is CardType.LibraryCard -> "LibraryCard"
+                        is CardType.HotelCard -> "HotelCard"
+                        is CardType.StudentCard -> "StudentCard"
+                        is CardType.AccessCard -> "AccessCard"
+                        is CardType.Custom -> "Custom:${type.typeName}:${type.colorHex}"
                     }
                 }
 
