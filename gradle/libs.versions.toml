@@ -22,6 +22,9 @@ datastore = "1.1.1"
 coil = "2.7.0"
 biometric = "1.2.0"
 tink = "1.15.0"
+cameraCore = "1.5.0"
+playServicesMlkitTextRecognitionCommon = "19.1.0"
+playServicesMlkitTextRecognition = "19.0.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -62,6 +65,12 @@ coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coi
 # Security
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 google-tink = { group = "com.google.crypto.tink", name = "tink-android", version.ref = "tink" }
+# Material Icons
+androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core" } # No version, relies on BOM
+androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" } # No version, relies on BOM
+camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "cameraCore" }
+play-services-mlkit-text-recognition-common = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition-common", version.ref = "playServicesMlkitTextRecognitionCommon" }
+play-services-mlkit-text-recognition = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition", version.ref = "playServicesMlkitTextRecognition" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

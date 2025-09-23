@@ -1,12 +1,16 @@
 # Project Structure & Organization
 
 ## Package Structure
-The project follows a feature-based package organization under `com.technitedminds.wallet`:
+The project follows a layered architecture with feature-based organization under `com.technitedminds.wallet`:
 
 ```
 app/src/main/java/com/technitedminds/wallet/
 ├── MainActivity.kt              # Main entry point with @AndroidEntryPoint
 ├── WalletApplication.kt         # Application class with @HiltAndroidApp
+├── data/                        # Data layer implementation
+├── domain/                      # Business logic and models
+├── presentation/                # UI layer with Compose screens
+├── di/                          # Dependency injection modules
 ├── ui/
 │   └── theme/                   # Material Design 3 theming
 │       ├── Color.kt
@@ -22,22 +26,45 @@ app/src/main/java/com/technitedminds/wallet/
 ```
 data/
 ├── local/
-│   ├── database/               # Room database
-│   │   ├── entities/          # Room entities
-│   │   ├── dao/               # Data Access Objects
-│   │   └── WalletDatabase.kt
-│   ├── datastore/             # Proto DataStore
+│   ├── database/               # Room database implementation
+│   │   ├── entities/          # Room entities (CardEntity, CategoryEntity)
+│   │   ├── dao/               # Data Access Objects (CardDao, CategoryDao)
+│   │   ├── converters/        # Type converters (CardTypeConverter, MapConverter)
+│   │   └── WalletDatabase.kt  # Main database class
+│   ├── files/                 # File system operations
+│   │   └── ImageFileManager.kt # Image storage and optimization
 │   └── preferences/           # User preferences
+│       └── SimplePreferencesManager.kt
 ├── repository/                # Repository implementations
-└── mapper/                    # Data mapping utilities
+│   ├── CardRepositoryImpl.kt
+│   ├── CategoryRepositoryImpl.kt
+│   ├── ImageRepositoryImpl.kt
+│   └── ExportImportRepositoryImpl.kt
+├── mapper/                    # Data mapping utilities
+│   ├── CardMapper.kt
+│   └── CategoryMapper.kt
+└── ocr/                       # OCR processing
+    └── MLKitTextRecognizer.kt
 ```
 
 ### Domain Layer (`domain/`)
 ```
 domain/
 ├── model/                     # Domain models
+│   ├── Card.kt               # Core card model
+│   ├── CardType.kt           # Card type sealed class
+│   ├── Category.kt           # Category model
+│   └── CardImage.kt          # Image metadata model
 ├── repository/                # Repository interfaces
+│   ├── CardRepository.kt
+│   ├── CategoryRepository.kt
+│   ├── ImageRepository.kt
+│   └── ExportImportRepository.kt
 ├── usecase/                   # Business logic use cases
+│   ├── card/                 # Card-related use cases
+│   ├── category/             # Category management
+│   ├── ocr/                  # OCR processing
+│   └── export/               # Data export/import
 └── util/                      # Domain utilities
 ```
 
@@ -45,24 +72,31 @@ domain/
 ```
 presentation/
 ├── screens/                   # Feature screens
-│   ├── home/
-│   ├── card/
-│   ├── scanner/
-│   └── settings/
+│   ├── home/                 # Main card list screen
+│   ├── add_card/             # Card creation workflow
+│   ├── card_detail/          # Card viewing and editing
+│   ├── categories/           # Category management
+│   └── settings/             # App settings
 ├── components/                # Reusable UI components
-├── navigation/                # Navigation setup
-└── theme/                     # Extended theming
+│   ├── common/               # Generic components
+│   ├── camera/               # Camera-related components
+│   └── animation/            # Animation components
+└── navigation/                # Navigation setup
+    ├── WalletNavigation.kt
+    └── NavigationDestinations.kt
 ```
 
 ## File Naming Conventions
 - **Activities**: `*Activity.kt` (e.g., `MainActivity.kt`)
-- **Fragments**: `*Fragment.kt` (if used)
-- **ViewModels**: `*ViewModel.kt`
-- **Repositories**: `*Repository.kt` + `*RepositoryImpl.kt`
-- **Use Cases**: `*UseCase.kt` or `Get*UseCase.kt`
-- **Entities**: `*Entity.kt`
-- **DAOs**: `*Dao.kt`
-- **Composables**: PascalCase (e.g., `CardFlipAnimation.kt`)
+- **ViewModels**: `*ViewModel.kt` (e.g., `HomeViewModel.kt`)
+- **Repositories**: `*Repository.kt` (interface) + `*RepositoryImpl.kt` (implementation)
+- **Use Cases**: `*UseCase.kt` (e.g., `AddCardUseCase.kt`, `GetCardsUseCase.kt`)
+- **Entities**: `*Entity.kt` (e.g., `CardEntity.kt`)
+- **DAOs**: `*Dao.kt` (e.g., `CardDao.kt`)
+- **Composables**: PascalCase (e.g., `CardFlipAnimation.kt`, `CameraPreview.kt`)
+- **Screens**: `*Screen.kt` (e.g., `HomeScreen.kt`)
+- **Mappers**: `*Mapper.kt` (e.g., `CardMapper.kt`)
+- **Managers**: `*Manager.kt` (e.g., `ImageFileManager.kt`)
 
 ## Resource Organization
 ```
@@ -94,15 +128,29 @@ app/src/
 - `local.properties` - Local SDK paths (not in VCS)
 
 ## Hilt Module Organization
-- `DatabaseModule` - Room database provision
-- `RepositoryModule` - Repository bindings
-- `NetworkModule` - If network features added
+- `DatabaseModule` - Room database and DAO provision
+- `RepositoryModule` - Repository interface to implementation bindings
+- `UseCaseModule` - Use case dependencies (if needed)
+- `CameraModule` - CameraX and ML Kit dependencies
+- No `NetworkModule` - app is completely offline
 
 ## Code Style Guidelines
-- Use Kotlin coding conventions
-- Prefer `val` over `var`
+- Use Kotlin coding conventions and idiomatic patterns
+- Prefer `val` over `var` for immutability
 - Use trailing commas in multi-line constructs
 - Group imports: Android, third-party, project
 - Maximum line length: 120 characters
 - Use meaningful variable and function names
-- Add KDoc for public APIs
+- Add KDoc for public APIs and complex functions
+- Use sealed classes for type-safe state management
+- Prefer data classes for models
+- Use extension functions for utility operations
+- Follow Compose best practices (remember, derivedStateOf, etc.)
+
+## Testing Guidelines
+- Unit tests for ViewModels, Use Cases, and Repositories
+- Integration tests for database operations
+- Compose UI tests for screen interactions
+- Test file naming: `*Test.kt` for unit tests, `*IntegrationTest.kt` for integration tests
+- Use MockK for mocking in tests
+- Test coverage focus on business logic and critical paths
