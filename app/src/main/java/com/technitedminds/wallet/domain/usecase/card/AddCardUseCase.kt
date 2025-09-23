@@ -157,6 +157,23 @@ constructor(
             else -> false
         }
     }
+
+    /**
+     * Convenience overload to add a card when images are already handled upstream.
+     * Skips image validation/saving and inserts the provided card as-is.
+     */
+    suspend operator fun invoke(card: Card): Result<String> {
+        return try {
+            val categoryExists = categoryRepository.categoryExists(card.categoryId)
+            if (!categoryExists) {
+                return Result.failure(IllegalArgumentException("Category does not exist: ${card.categoryId}"))
+            }
+            val id = cardRepository.insertCard(card)
+            Result.success(id)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
 
 /** Request data for adding a new card */

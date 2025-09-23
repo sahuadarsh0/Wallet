@@ -112,7 +112,7 @@
   - _Requirements: 5.1, 5.2, 5.6, 9.1, 9.3_
 
 - [ ] 6. Screen Implementation - Home and Card Management
-- [ ] 6.1 Implement HomeScreen with card display
+- [x] 6.1 Implement HomeScreen with card display
   - Create HomeScreen composable with card grid/list layout
   - Implement HomeViewModel with state management for card loading and filtering
   - Add search functionality with real-time filtering
@@ -121,7 +121,7 @@
   - Add floating action button for adding new cards
   - _Requirements: 1.1, 4.1, 6.3, 9.1, 9.3_
 
-- [ ] 6.2 Create CardDetailScreen with flip functionality
+- [x] 6.2 Create CardDetailScreen with flip functionality
   - Implement CardDetailScreen with full-screen card display
   - Create CardDetailViewModel for card data management and editing
   - Add edit mode with field modification capabilities

@@ -30,16 +30,16 @@ com.technitedminds.wallet/
 │   │   │   └── WalletDatabase.kt # Room database configuration ✅
 │   │   ├── files/                # File system operations ✅
 │   │   │   └── ImageFileManager.kt # Image storage and optimization
-│   │   └── preferences/          # User preferences ✅
-│   │       └── SimplePreferencesManager.kt # SharedPreferences-based
+│   │   └── preferences/          # User preferences (directory present)
 │   ├── repository/               # Repository implementations ✅
 │   │   ├── CardRepositoryImpl.kt # Card operations with Room
 │   │   ├── CategoryRepositoryImpl.kt # Category management
 │   │   ├── ImageRepositoryImpl.kt # Image file operations
 │   │   └── ExportImportRepositoryImpl.kt # Data portability
 │   └── mapper/                   # Data mapping utilities ✅
-│       ├── CardMapper.kt         # Card entity ↔ domain mapping
-│       └── CategoryMapper.kt     # Category entity ↔ domain mapping
+│       └── CardMapper.kt         # Card entity ↔ domain mapping
+│   └── ocr/                      # OCR integration ✅
+│       └── MLKitTextRecognizer.kt # ML Kit text recognition implementation
 ├── domain/                       # Domain Layer ✅ IMPLEMENTED
 │   ├── model/                    # Domain models ✅
 │   │   ├── Card.kt               # Card data class with all fields
@@ -60,13 +60,12 @@ com.technitedminds.wallet/
 │   │   ├── ocr/                  # OCR processing use cases ✅
 │   │   │   └── ProcessCardImageUseCase.kt # OCR for textual cards
 │   │   ├── category/             # Category management use cases ✅
-│   │   │   ├── GetCategoriesUseCase.kt # Category retrieval
-│   │   │   └── ManageCategoryUseCase.kt # Category CRUD operations
+│   │   │   └── GetCategoryNameUseCase.kt # Resolve category names
 │   │   └── export/               # Export/import use cases ✅
 │   │       ├── ExportDataUseCase.kt # Data export functionality
 │   │       └── ImportDataUseCase.kt # Data import functionality
 │   └── util/                     # Domain utilities
-├── presentation/                 # Presentation Layer
+├── presentation/                 # Presentation Layer ✅ PARTIAL
 │   ├── screens/                  # Feature screens
 │   │   ├── home/                 # Home screen components
 │   │   ├── add_card/             # Add card flow
@@ -74,31 +73,59 @@ com.technitedminds.wallet/
 │   │   ├── categories/           # Category management
 │   │   └── settings/             # App settings
 │   ├── components/               # Reusable UI components
-│   │   ├── common/               # Common UI components (empty)
-│   │   ├── animation/            # Animation components (empty)
-│   │   └── camera/               # Camera-related components (partial)
-│   │       ├── CardOverlay.kt    # Multi-aspect ratio card positioning overlay ✅
-│   │       └── CameraError.kt    # Camera error handling and UI ✅
-│   └── navigation/               # Navigation setup
-├── di/                           # Dependency Injection modules
+│   │   ├── common/               # Common UI components ✅
+│   │   │   ├── CardListItem.kt
+│   │   │   ├── CardTypeSelector.kt
+│   │   │   ├── CategoryChip.kt
+│   │   │   ├── ColorPicker.kt
+│   │   │   ├── ConfirmationDialog.kt
+│   │   │   ├── ErrorMessage.kt
+│   │   │   ├── LoadingIndicator.kt
+│   │   │   └── ValidatedTextField.kt
+│   │   ├── animation/            # Animation components ✅
+│   │   │   ├── AnimatedList.kt
+│   │   │   ├── AnimationUtils.kt
+│   │   │   ├── CardBack.kt
+│   │   │   └── CardFront.kt
+│   │   └── camera/               # Camera-related components ✅
+│   │       ├── CameraError.kt
+│   │       ├── CameraPermission.kt
+│   │       ├── CameraPreview.kt
+│   │       ├── CaptureButton.kt
+│   │       ├── CardOverlay.kt    # Multi-aspect ratio card positioning overlay
+│   │       └── ImagePreview.kt
+│   └── navigation/               # Navigation setup (directory present)
+├── di/                           # Dependency Injection modules ✅
+│   ├── DatabaseModule.kt
+│   └── RepositoryModule.kt
 └── utils/                        # Utility classes and extensions
 ```
 
-## Key Dependencies Added
+## Key Dependencies (as used in module)
 
-### Core Dependencies
-- **CameraX**: Camera functionality for card scanning
-- **ML Kit Text Recognition**: Offline OCR processing
-- **Proto DataStore**: Type-safe preferences storage
-- **Coil**: Image loading and caching
-- **Biometric**: Biometric authentication
-- **Tink**: Cryptographic operations
+### Core UI
+- **Jetpack Compose**: UI toolkit (BOM `2024.09.00`, Material3, Icons)
+- **SplashScreen**: AndroidX splash screen API
 
-### Architecture Dependencies
-- **Hilt**: Dependency injection
-- **Room**: Local database
-- **Navigation Compose**: Type-safe navigation
-- **Jetpack Compose**: Modern UI toolkit
+### Architecture
+- **Hilt**: Dependency injection (runtime + navigation-compose)
+- **Room**: Local database (runtime, ktx, compiler via KSP)
+- **Navigation Compose**: In-app navigation
+
+### Media/OCR
+- **CameraX Core**: `androidx.camera:camera-core` (foundation)
+- **Google Play Services ML Kit Text Recognition**: `play-services-mlkit-text-recognition(-common)`
+
+### Images
+- **Coil**: Image loading (`coil-compose`)
+
+### Testing
+- **JUnit 4**, **AndroidX Test**, **Compose UI Test**
+
+### Declared in version catalog but not yet added to app module
+- CameraX artifacts: `camera-camera2`, `camera-lifecycle`, `camera-view`, `camera-extensions`
+- ML Kit: `com.google.mlkit:text-recognition`
+- Security/Data: Proto DataStore, Biometric, Tink
 
 ## Security Configuration
 
@@ -118,19 +145,19 @@ Only the camera permission is allowed for card scanning functionality.
 - **Compose Compiler**: 2.0.0
 
 ## Build Status: ✅ SUCCESSFUL
-The project builds successfully with all implemented layers:
-- Domain layer with complete business logic
-- Data layer with Room database and file storage
-- Basic UI foundation with Material Design 3
-- Hilt dependency injection setup
-- Partial camera and OCR components
+The project builds successfully with:
+- Domain layer complete
+- Data layer with Room and file storage
+- Material 3 theming and Compose setup
+- Hilt dependency injection modules
+- Camera and OCR components present (integration foundation in place)
 
 ## Recent Development Progress
-**Task 4: Camera and OCR Integration** - Partially Completed
-- ✅ **Task 4.1**: CameraX integration foundation
-- ✅ **Task 4.2**: ML Kit text recognition structure  
-- ✅ **Task 4.3**: Core camera UI components (CardOverlay with multi-aspect ratio support, CameraError handling)
-- 🚧 **Remaining**: Complete dependency integration and remaining camera components
+**Task 4: Camera and OCR Integration** - Advanced
+- ✅ CameraX foundation added (camera-core), UI components implemented
+- ✅ ML Kit Text Recognition wired via Play Services APIs
+- ✅ Camera UI set: Overlay, Permission, Preview, Capture, Error, Image Preview
+- 🚧 Remaining: Add additional CameraX artifacts (camera2/lifecycle/view) if needed and finalize end-to-end capture-to-OCR flow
 
 ## Implementation Status
 
@@ -165,18 +192,11 @@ The project builds successfully with all implemented layers:
     - Material Design 3 error UI components
 
 ### 🚧 In Progress / Next Steps
-- **Camera & OCR Integration**: Complete CameraX and ML Kit integration
-  - ✅ Task 4.1: CameraX integration foundation completed
-  - ✅ Task 4.2: ML Kit text recognition structure implemented
-  - ✅ Task 4.3: Core camera UI components (CardOverlay, CameraError) completed
-  - 🚧 Add missing dependencies for CameraX, ML Kit, and Accompanist permissions
-  - 🚧 Implement remaining components: CameraPreview, CameraPermission, CaptureButton
-  - 🚧 Complete MLKitTextRecognizer for offline OCR processing
-  - 🚧 Add camera controls and image preview functionality
-- **Presentation Layer**: Implement ViewModels, Compose screens, and UI components
-- **Dependency Injection**: Set up Hilt modules for all layers
-- **UI Components**: Create card flip animations and reusable components
-- **Navigation**: Set up Compose navigation between screens
+- **Camera & OCR Integration**: Finalize capture → process → save pipeline
+  - 🚧 Consider adding `camera-camera2`, `camera-lifecycle`, `camera-view` for full feature set
+  - 🚧 Verify permission flows and analyzer threading
+- **Presentation Layer**: Wire navigation and state between screens
+- **Navigation**: Add navigation graph and screen routes
 
 ### 📁 Current Project Structure
 ```
@@ -196,13 +216,13 @@ com.technitedminds.wallet/
 │   ├── repository/ ✅ (All repository interfaces)
 │   ├── usecase/ ✅ (card, category, export, ocr use cases)
 │   └── util/ ✅
-├── presentation/ 🚧 PARTIAL
+├── presentation/ ✅ PARTIAL
 │   ├── components/
-│   │   ├── camera/ 🚧 (CardOverlay, CameraError - 2/6 components)
-│   │   ├── common/ 📁 (Empty)
-│   │   └── animation/ 📁 (Empty)
-│   ├── screens/ 📁 (Empty directories created)
-│   └── navigation/ 📁 (Empty)
-├── di/ 📁 (Empty - Hilt modules pending)
+│   │   ├── camera/ ✅ (CameraError, CameraPermission, CameraPreview, CaptureButton, CardOverlay, ImagePreview)
+│   │   ├── common/ ✅ (CardListItem, CardTypeSelector, CategoryChip, ColorPicker, ConfirmationDialog, ErrorMessage, LoadingIndicator, ValidatedTextField)
+│   │   └── animation/ ✅ (AnimatedList, AnimationUtils, CardBack, CardFront)
+│   ├── screens/ ✅ (HomeScreen/HomeViewModel, AddCardScreen/AddCardViewModel, CardDetailScreen/CardDetailViewModel)
+│   └── navigation/ 📁 (Directory present)
+├── di/ ✅ (DatabaseModule, RepositoryModule)
 └── utils/ ✅ (Extensions.kt)
 ```

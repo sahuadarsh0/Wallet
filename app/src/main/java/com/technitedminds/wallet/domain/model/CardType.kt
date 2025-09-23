@@ -102,6 +102,16 @@ sealed class CardType {
                 is Custom -> colorHex
             }
 
+    /** Returns true if this card type requires a back image */
+    fun requiresBackImage(): Boolean =
+            when (this) {
+                is Credit, is Debit, is ATM -> true
+                else -> false
+            }
+
+    /** Returns true if this card type requires a front image */
+    fun requiresFrontImage(): Boolean = true // All card types require at least a front image
+
     companion object {
         /** Get all predefined card types */
         fun getAllPredefinedTypes(): List<CardType> = listOf(
