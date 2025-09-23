@@ -51,13 +51,36 @@ data class Card(
     fun hasCompleteImages(): Boolean = frontImagePath.isNotBlank() && backImagePath.isNotBlank()
 
     /** Returns the card number if available from extracted data */
-    fun getCardNumber(): String? = extractedData["cardNumber"]
+    fun getCardNumber(): String? = extractedData[CARD_NUMBER_KEY]
 
     /** Returns the expiry date if available from extracted data */
-    fun getExpiryDate(): String? = extractedData["expiryDate"]
+    fun getExpiryDate(): String? = extractedData[EXPIRY_DATE_KEY]
 
     /** Returns the cardholder name if available from extracted data */
-    fun getCardholderName(): String? = extractedData["cardholderName"]
+    fun getCardholderName(): String? = extractedData[CARDHOLDER_NAME_KEY]
+
+    /** Returns the CVV if available from extracted data */
+    fun getCVV(): String? = extractedData[CVV_KEY]
+
+    /** Returns the bank name if available from extracted data */
+    fun getBankName(): String? = extractedData[BANK_NAME_KEY]
+
+    /** Returns notes from custom fields */
+    fun getNotes(): String? = customFields[NOTES_KEY]
+
+    /** Returns the card's display color (custom color or type default) */
+    fun getDisplayColor(): String = customFields["customColor"] ?: type.getDefaultColor()
+
+    /** Returns true if this card has a custom color set */
+    fun hasCustomColor(): Boolean = customFields.containsKey("customColor")
+
+    /** Returns a copy of this card with a custom color */
+    fun withCustomColor(colorHex: String): Card = 
+        copy(customFields = customFields + ("customColor" to colorHex), updatedAt = System.currentTimeMillis())
+
+    /** Returns a copy of this card with the custom color removed */
+    fun withoutCustomColor(): Card = 
+        copy(customFields = customFields - "customColor", updatedAt = System.currentTimeMillis())
 
     /** Returns true if the card supports OCR processing based on its type */
     fun supportsOCR(): Boolean = type.supportsOCR()

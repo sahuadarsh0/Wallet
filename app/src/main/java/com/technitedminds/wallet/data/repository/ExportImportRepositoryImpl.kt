@@ -186,7 +186,7 @@ constructor(
 
                     when {
                         !exists -> {
-                            categoryRepository.insertCategory(category)
+                            categoryRepository.addCategory(category)
                             categoriesImported++
                         }
                         conflictResolution == ConflictResolution.REPLACE -> {
@@ -206,7 +206,7 @@ constructor(
                                                     "${category.id}_imported_${System.currentTimeMillis()}",
                                             name = "${category.name} (Imported)"
                                     )
-                            categoryRepository.insertCategory(newCategory)
+                            categoryRepository.addCategory(newCategory)
                             categoriesImported++
                         }
                     }
@@ -447,8 +447,19 @@ constructor(
                         is com.technitedminds.wallet.domain.model.CardType.Credit -> "Credit"
                         is com.technitedminds.wallet.domain.model.CardType.Debit -> "Debit"
                         is com.technitedminds.wallet.domain.model.CardType.ATM -> "ATM"
-                        is com.technitedminds.wallet.domain.model.CardType.ImageOnly ->
-                                "ImageOnly:${card.type.typeName}"
+                        is com.technitedminds.wallet.domain.model.CardType.GiftCard -> "GiftCard"
+                        is com.technitedminds.wallet.domain.model.CardType.LoyaltyCard -> "LoyaltyCard"
+                        is com.technitedminds.wallet.domain.model.CardType.MembershipCard -> "MembershipCard"
+                        is com.technitedminds.wallet.domain.model.CardType.InsuranceCard -> "InsuranceCard"
+                        is com.technitedminds.wallet.domain.model.CardType.IdentificationCard -> "IdentificationCard"
+                        is com.technitedminds.wallet.domain.model.CardType.TransportCard -> "TransportCard"
+                        is com.technitedminds.wallet.domain.model.CardType.BusinessCard -> "BusinessCard"
+                        is com.technitedminds.wallet.domain.model.CardType.LibraryCard -> "LibraryCard"
+                        is com.technitedminds.wallet.domain.model.CardType.HotelCard -> "HotelCard"
+                        is com.technitedminds.wallet.domain.model.CardType.StudentCard -> "StudentCard"
+                        is com.technitedminds.wallet.domain.model.CardType.AccessCard -> "AccessCard"
+                        is com.technitedminds.wallet.domain.model.CardType.Custom ->
+                                "Custom:${card.type.typeName}:${card.type.colorHex}"
                     }
             )
             put("categoryId", card.categoryId)
@@ -468,11 +479,31 @@ constructor(
                     typeString == "Credit" -> com.technitedminds.wallet.domain.model.CardType.Credit
                     typeString == "Debit" -> com.technitedminds.wallet.domain.model.CardType.Debit
                     typeString == "ATM" -> com.technitedminds.wallet.domain.model.CardType.ATM
+                    typeString == "GiftCard" -> com.technitedminds.wallet.domain.model.CardType.GiftCard
+                    typeString == "LoyaltyCard" -> com.technitedminds.wallet.domain.model.CardType.LoyaltyCard
+                    typeString == "MembershipCard" -> com.technitedminds.wallet.domain.model.CardType.MembershipCard
+                    typeString == "InsuranceCard" -> com.technitedminds.wallet.domain.model.CardType.InsuranceCard
+                    typeString == "IdentificationCard" -> com.technitedminds.wallet.domain.model.CardType.IdentificationCard
+                    typeString == "TransportCard" -> com.technitedminds.wallet.domain.model.CardType.TransportCard
+                    typeString == "BusinessCard" -> com.technitedminds.wallet.domain.model.CardType.BusinessCard
+                    typeString == "LibraryCard" -> com.technitedminds.wallet.domain.model.CardType.LibraryCard
+                    typeString == "HotelCard" -> com.technitedminds.wallet.domain.model.CardType.HotelCard
+                    typeString == "StudentCard" -> com.technitedminds.wallet.domain.model.CardType.StudentCard
+                    typeString == "AccessCard" -> com.technitedminds.wallet.domain.model.CardType.AccessCard
+                    typeString.startsWith("Custom:") -> {
+                        val parts = typeString.substringAfter("Custom:").split(":")
+                        if (parts.size >= 2) {
+                            com.technitedminds.wallet.domain.model.CardType.Custom(parts[0], parts[1])
+                        } else {
+                            com.technitedminds.wallet.domain.model.CardType.Custom(parts.getOrElse(0) { "Custom" }, "#757575")
+                        }
+                    }
+                    // Legacy support for old ImageOnly format
                     typeString.startsWith("ImageOnly:") -> {
                         val typeName = typeString.substringAfter("ImageOnly:")
-                        com.technitedminds.wallet.domain.model.CardType.ImageOnly(typeName)
+                        com.technitedminds.wallet.domain.model.CardType.Custom(typeName, "#757575")
                     }
-                    else -> com.technitedminds.wallet.domain.model.CardType.ImageOnly("Unknown")
+                    else -> com.technitedminds.wallet.domain.model.CardType.Custom("Unknown", "#757575")
                 }
 
         return Card(
@@ -501,9 +532,10 @@ constructor(
         return JSONObject().apply {
             put("id", category.id)
             put("name", category.name)
-            put("iconResId", category.iconResId)
+            put("description", category.description ?: "")
             put("colorHex", category.colorHex)
-            put("isDefault", category.isDefault)
+            put("iconName", category.iconName ?: "")
+            put("sortOrder", category.sortOrder)
             put("createdAt", category.createdAt)
             put("updatedAt", category.updatedAt)
         }
@@ -513,9 +545,10 @@ constructor(
         return Category(
                 id = json.getString("id"),
                 name = json.getString("name"),
-                iconResId = json.getInt("iconResId"),
-                colorHex = json.getString("colorHex"),
-                isDefault = json.getBoolean("isDefault"),
+                description = json.optString("description").takeIf { it.isNotEmpty() },
+                colorHex = json.optString("colorHex", "#1976D2"),
+                iconName = json.optString("iconName").takeIf { it.isNotEmpty() },
+                sortOrder = json.optInt("sortOrder", 0),
                 createdAt = json.getLong("createdAt"),
                 updatedAt = json.getLong("updatedAt")
         )
