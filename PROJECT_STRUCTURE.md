@@ -74,9 +74,11 @@ com.technitedminds.wallet/
 │   │   ├── categories/           # Category management
 │   │   └── settings/             # App settings
 │   ├── components/               # Reusable UI components
-│   │   ├── common/               # Common UI components
-│   │   ├── animation/            # Animation components
-│   │   └── camera/               # Camera-related components
+│   │   ├── common/               # Common UI components (empty)
+│   │   ├── animation/            # Animation components (empty)
+│   │   └── camera/               # Camera-related components (partial)
+│   │       ├── CardOverlay.kt    # Multi-aspect ratio card positioning overlay ✅
+│   │       └── CameraError.kt    # Camera error handling and UI ✅
 │   └── navigation/               # Navigation setup
 ├── di/                           # Dependency Injection modules
 └── utils/                        # Utility classes and extensions
@@ -121,6 +123,14 @@ The project builds successfully with all implemented layers:
 - Data layer with Room database and file storage
 - Basic UI foundation with Material Design 3
 - Hilt dependency injection setup
+- Partial camera and OCR components
+
+## Recent Development Progress
+**Task 4: Camera and OCR Integration** - Partially Completed
+- ✅ **Task 4.1**: CameraX integration foundation
+- ✅ **Task 4.2**: ML Kit text recognition structure  
+- ✅ **Task 4.3**: Core camera UI components (CardOverlay with multi-aspect ratio support, CameraError handling)
+- 🚧 **Remaining**: Complete dependency integration and remaining camera components
 
 ## Implementation Status
 
@@ -129,7 +139,7 @@ The project builds successfully with all implemented layers:
   - MainActivity with Compose setup and Hilt integration
   - WalletApplication with Hilt configuration
   - Material Design 3 theming (Color, Theme, Type)
-  - Build configuration with all required dependencies
+  - Build configuration with core dependencies
 - **Domain Layer**: Complete implementation with all models, repositories, and use cases
   - Core domain models (Card, CardType, Category, CardImage)
   - Repository interfaces for all data operations
@@ -142,10 +152,57 @@ The project builds successfully with all implemented layers:
   - Data mapping utilities between domain and data models
   - User preferences management with SharedPreferences
   - Export/import functionality with JSON serialization
+- **Camera & OCR Components**: Partial implementation
+  - **CardOverlay.kt**: Multi-aspect ratio overlay for card positioning
+    - Supports 16:9, 4:3, 3:4, and Credit Card aspect ratios
+    - Visual guides with corner indicators and crosshair alignment
+    - Customizable overlay transparency and capture state feedback
+    - Optimized card dimension calculations for different orientations
+  - **CameraError.kt**: Comprehensive error handling for camera operations
+    - Sealed class hierarchy for different error types
+    - User-friendly error messages with recovery suggestions
+    - Error mapping utilities and recoverability checks
+    - Material Design 3 error UI components
 
-### 🚧 Next Steps
+### 🚧 In Progress / Next Steps
+- **Camera & OCR Integration**: Complete CameraX and ML Kit integration
+  - ✅ Task 4.1: CameraX integration foundation completed
+  - ✅ Task 4.2: ML Kit text recognition structure implemented
+  - ✅ Task 4.3: Core camera UI components (CardOverlay, CameraError) completed
+  - 🚧 Add missing dependencies for CameraX, ML Kit, and Accompanist permissions
+  - 🚧 Implement remaining components: CameraPreview, CameraPermission, CaptureButton
+  - 🚧 Complete MLKitTextRecognizer for offline OCR processing
+  - 🚧 Add camera controls and image preview functionality
 - **Presentation Layer**: Implement ViewModels, Compose screens, and UI components
 - **Dependency Injection**: Set up Hilt modules for all layers
-- **Camera & OCR Integration**: Implement CameraX and ML Kit integration
 - **UI Components**: Create card flip animations and reusable components
 - **Navigation**: Set up Compose navigation between screens
+
+### 📁 Current Project Structure
+```
+com.technitedminds.wallet/
+├── MainActivity.kt ✅
+├── WalletApplication.kt ✅
+├── ui/theme/ ✅ (Color.kt, Theme.kt, Type.kt)
+├── data/ ✅ COMPLETE
+│   ├── local/database/ ✅ (entities, dao, converters, WalletDatabase)
+│   ├── local/files/ ✅ (ImageFileManager)
+│   ├── local/preferences/ ✅ (SimplePreferencesManager)
+│   ├── repository/ ✅ (All repository implementations)
+│   ├── mapper/ ✅ (CardMapper, CategoryMapper)
+│   └── ocr/ 🚧 (Empty - MLKit integration pending)
+├── domain/ ✅ COMPLETE
+│   ├── model/ ✅ (Card, CardType, Category, CardImage)
+│   ├── repository/ ✅ (All repository interfaces)
+│   ├── usecase/ ✅ (card, category, export, ocr use cases)
+│   └── util/ ✅
+├── presentation/ 🚧 PARTIAL
+│   ├── components/
+│   │   ├── camera/ 🚧 (CardOverlay, CameraError - 2/6 components)
+│   │   ├── common/ 📁 (Empty)
+│   │   └── animation/ 📁 (Empty)
+│   ├── screens/ 📁 (Empty directories created)
+│   └── navigation/ 📁 (Empty)
+├── di/ 📁 (Empty - Hilt modules pending)
+└── utils/ ✅ (Extensions.kt)
+```

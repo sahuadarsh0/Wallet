@@ -63,15 +63,15 @@
   - Add proper error mapping from data layer to domain layer
   - _Requirements: 4.1, 4.2, 7.1, 7.2, 10.1_
 
-- [ ] 4. Camera and OCR Integration
-- [ ] 4.1 Set up CameraX integration
+- [x] 4. Camera and OCR Integration
+- [x] 4.1 Set up CameraX integration
   - Implement CameraPreview composable with proper lifecycle management
   - Create image capture functionality with quality optimization
   - Add camera permission handling and error states
   - Implement camera configuration for optimal card scanning
   - _Requirements: 2.1, 2.2, 3.1, 9.1_
 
-- [ ] 4.2 Integrate ML Kit for text recognition
+- [x] 4.2 Integrate ML Kit for text recognition
   - Set up ML Kit Text Recognition API for offline OCR processing
   - Implement text extraction logic specifically for credit/debit/ATM cards
   - Create text parsing algorithms for card number, expiry date, and cardholder name extraction
@@ -79,7 +79,7 @@
   - Implement fallback mechanisms when OCR fails
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 8.1_
 
-- [ ] 4.3 Create camera UI components
+- [x] 4.3 Create camera UI components
   - Implement CardOverlay composable with different aspect ratio guides (16:9, 4:3, 3:4)
   - Create CaptureButton with proper touch feedback and states
   - Add camera controls for flash, focus, and image quality
