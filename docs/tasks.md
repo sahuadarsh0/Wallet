@@ -86,7 +86,7 @@
   - Implement preview and retake functionality for both front and back images
   - _Requirements: 2.1, 2.2, 2.6, 2.7_
 
-- [x] 5. Core UI Components and Animations
+- [ ] 5. Core UI Components and Animations
 - [x] 5.1 Implement card flip animation system
   - Create FlippableCard composable with 3D rotation animation using graphicsLayer
   - Implement smooth 300ms flip transition with proper easing curves
@@ -111,7 +111,7 @@
   - Optimize animation performance for large card collections
   - _Requirements: 5.1, 5.2, 5.6, 9.1, 9.3_
 
-- [x] 6. Screen Implementation - Home and Card Management
+- [ ] 6. Screen Implementation - Home and Card Management
 - [x] 6.1 Implement HomeScreen with card display
   - Create HomeScreen composable with card grid/list layout
   - Implement HomeViewModel with state management for card loading and filtering
@@ -130,7 +130,7 @@
   - Add sharing options for card information (without images for security)
   - _Requirements: 4.1, 4.2, 5.1, 5.2, 5.3, 5.4_
 
-- [x] 6.3 Implement AddCardScreen with type selection
+- [ ] 6.3 Implement AddCardScreen with type selection
   - Create AddCardScreen with card type selection interface
   - Implement AddCardViewModel with form state management and validation
   - Add CardTypeSelector component with visual type indicators

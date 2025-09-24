@@ -56,7 +56,9 @@ fun CardTypeSelector(
             columns = GridCells.Fixed(2),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
         ) {
             items(CardType.getAllPredefinedTypes()) { cardType ->
                 CardTypeOption(

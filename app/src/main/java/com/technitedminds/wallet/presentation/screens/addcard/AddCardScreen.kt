@@ -2,7 +2,7 @@ package com.technitedminds.wallet.presentation.screens.addcard
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -338,7 +338,6 @@ private fun TypeSelectionStep(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp)
-            .verticalScroll(rememberScrollState())
     ) {
         Text(
             text = "What type of card would you like to add?",
@@ -428,74 +427,87 @@ private fun FormDetailsStep(
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val extractedData by viewModel.extractedData.collectAsStateWithLifecycle()
 
-    Column(
+    LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "Card Details",
-            style = MaterialTheme.typography.headlineSmall
-        )
+        item {
+            Text(
+                text = "Card Details",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        }
 
-        // Card name
-        OutlinedTextField(
-            value = cardName,
-            onValueChange = viewModel::updateCardName,
-            label = { Text("Card Name") },
-            placeholder = { Text("My Credit Card") },
-            modifier = Modifier.fillMaxWidth()
-        )
+        item {
+            // Card name
+            OutlinedTextField(
+                value = cardName,
+                onValueChange = viewModel::updateCardName,
+                label = { Text("Card Name") },
+                placeholder = { Text("My Credit Card") },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
 
-        // Category selection
-        CategoryDropdown(
-            categories = categories,
-            selectedCategoryId = selectedCategory,
-            onCategorySelected = { id -> id?.let(viewModel::selectCategory) },
-            modifier = Modifier.fillMaxWidth()
-        )
+        item {
+            // Category selection
+            CategoryDropdown(
+                categories = categories,
+                selectedCategoryId = selectedCategory,
+                onCategorySelected = { id -> id?.let(viewModel::selectCategory) },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
 
         // Extracted data (if available)
         if (extractedData.isNotEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = "Extracted Information",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    
-                    extractedData.forEach { (key, value) ->
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
                         Text(
-                            text = "$key: $value",
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(vertical = 2.dp)
+                            text = "Extracted Information",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(bottom = 8.dp)
                         )
+
+                        extractedData.forEach { (key, value) ->
+                            Text(
+                                text = "$key: $value",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(vertical = 2.dp)
+                            )
+                        }
                     }
                 }
             }
         }
 
-        // Custom fields
-        Text(
-            text = "Additional Information",
-            style = MaterialTheme.typography.titleMedium
-        )
+        item {
+            // Custom fields header
+            Text(
+                text = "Additional Information",
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
 
-        customFields.forEach { (key, value) ->
+        // Custom fields
+        items(
+            items = customFields.toList(),
+            key = { it.first }
+        ) { entry ->
             OutlinedTextField(
-                value = value,
-                onValueChange = { viewModel.updateCustomField(key, it) },
-                label = { Text(key) },
+                value = entry.second,
+                onValueChange = { viewModel.updateCustomField(entry.first, it) },
+                label = { Text(entry.first) },
                 trailingIcon = {
                     IconButton(
-                        onClick = { viewModel.removeCustomField(key) }
+                        onClick = { viewModel.removeCustomField(entry.first) }
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
@@ -507,20 +519,22 @@ private fun FormDetailsStep(
             )
         }
 
-        // Add custom field button
-        OutlinedButton(
-            onClick = { 
-                viewModel.addCustomField("notes", "")
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Add Field")
+        item {
+            // Add custom field button
+            OutlinedButton(
+                onClick = {
+                    viewModel.addCustomField("notes", "")
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Add Field")
+            }
         }
     }
 }
