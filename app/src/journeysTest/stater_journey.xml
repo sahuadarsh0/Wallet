@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<journey name="Stater Journey">
+    <description>A Journey that tests ...</description>
+    <actions>
+        <action>tap on add wallet verify if its opening new aciivity</action>
+        <action></action>
+    </actions>
+</journey>

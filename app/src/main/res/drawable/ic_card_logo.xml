@@ -1,0 +1,43 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <group
+        android:name="card"
+        android:pivotX="54"
+        android:pivotY="54">
+        <!-- Card background with gradient -->
+        <path
+            android:pathData="M24,36h60v36h-60z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:startX="24"
+                    android:startY="36"
+                    android:endX="84"
+                    android:endY="72"
+                    android:type="linear">
+                    <item android:color="#FF40C4FF" android:offset="0.0" />
+                    <item android:color="#FF2890D8" android:offset="1.0" />
+                </gradient>
+            </aapt:attr>
+        </path>
+
+        <!-- Futuristic chip element -->
+        <path
+            android:fillColor="#FFD700"
+            android:pathData="M30,42h16v12h-16z" />
+
+        <!-- Holographic lines -->
+        <path
+            android:strokeColor="#80FFFFFF"
+            android:strokeWidth="1"
+            android:pathData="M30,60h48" />
+        <path
+            android:strokeColor="#80FFFFFF"
+            android:strokeWidth="1"
+            android:pathData="M30,64h36" />
+    </group>
+</vector>

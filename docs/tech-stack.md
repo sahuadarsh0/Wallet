@@ -1,4 +1,4 @@
-# Wallet-CardVault: Technical Stack \& Architecture Guide
+# Wallet-CardVault: Technical Stack & Architecture Guide (Cloud-Ready)
 
 ## Minimum SDK Requirements
 
@@ -7,145 +7,63 @@
 - **Compile SDK:** API Level 35
 - **NDK Version:** 26.1.10909125 (for native crypto operations)
 
-
 ## UI Layer
 
 ### Framework
-
 - **Primary UI Framework:** Jetpack Compose (latest stable BOM)
 - **Navigation:** Compose Navigation with type-safe arguments using kotlinx.serialization
 - **Theme System:** Material Design 3 with custom CardVault design tokens
 - **State Management:** Compose State and ViewModel integration
 
-
 ### Animation System
+- **Compose Animation APIs:** (animateContentSize, AnimatedVisibility, updateTransition)
+- **Custom FlipCard composable:** with rotationX and cameraDistance
+- **Spring animations:** for natural card movements
+- **Shared element transitions** between screens
 
-```kotlin
-// Core Animation APIs
-- Compose Animation APIs (animateContentSize, AnimatedVisibility, updateTransition)
-- Custom FlipCard composable with rotationX and cameraDistance
-- Spring animations for natural card movements
-- Shared element transitions between screens
-
-// FlipCard Implementation Approach
-@Composable
-fun FlipCard(
-    cardFace: CardFace,
-    modifier: Modifier = Modifier,
-    flipDuration: Int = 400,
-    onFlip: (CardFace) -> Unit
-) {
-    val rotation by animateFloatAsState(
-        targetValue = if (cardFace == CardFace.FRONT) 0f else 180f,
-        animationSpec = spring(dampingRatio = 0.8f, stiffness = 300f)
-    )
-}
-```
-
-
-### Camera \& Image Handling
-
+### Camera & Image Handling
 - **Camera Integration:** CameraX for real-time card scanning
 - **Image Selection:** PhotoPicker API (Android 13+) with fallback to ActivityResultContracts
 - **Image Processing:** Efficient bitmap handling with Coil for loading/caching
 - **ML Integration:** ML Kit Text Recognition with CameraX Analyzer
 
-
 ## Data Layer
 
 ### Persistence Architecture
-
-```kotlin
-// Database Layer
-@Database(
-    entities = [Card::class, Category::class, CardImage::class],
-    version = 1,
-    exportSchema = false
-)
-@TypeConverters(Converters::class)
-abstract class CardVaultDatabase : RoomDatabase()
-
-// Data Flow
-Repository -> Room Database -> Flow<List<T>> -> ViewModel -> UI State
-```
-
-
-### Storage Components
-
 - **Local Database:** Room with KSP annotation processing
 - **Preferences:** DataStore (Proto) for user settings and app configuration
 - **Image Storage:** Internal app directory with encrypted file names
-- **Backup Storage:** SAF (Storage Access Framework) for user-controlled backup location
-
+- **Backup Storage:**
+  - **Local:** SAF (Storage Access Framework) for user-controlled backup location
+  - **Cloud:** Google Drive App Folder for opt-in, user-authenticated backup/restore (encrypted files only)
 
 ### Text Recognition Pipeline
+- **ML Kit Integration:** TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+- **Processing Pipeline:** CameraX ImageAnalysis → ML Kit TextRecognizer → Card Data Extraction
 
-```kotlin
-// ML Kit Integration
-private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+### Backup & Encryption System
+- **Backup Architecture:**
+  - Data class for BackupFile (header, encryptedData, checksum)
+  - **Encryption:** Android Keystore for app data; AES-256-GCM with PBKDF2 (Tink library) for backups
+  - **File Format:** Custom `.cvault` with version header; identical format for local/cloud backup
+- **Cloud Integration:** All encryption/decryption local-only. Google Drive is used solely for storing pre-encrypted `.cvault` files. Restore must fetch, validate, then decrypt on device.
 
-// Processing Pipeline
-CameraX ImageAnalysis -> ML Kit TextRecognizer -> Card Data Extraction -> Validation -> UI Display
-```
+### Cloud & Authentication Layer (NEW)
+- **Google Drive API:** For storing and retrieving encrypted backups (limited Drive folder access)
+- **Firebase Auth:** Mandatory for accessing Drive backup features (Google Sign-In session required)
+- **All other app features function offline, without authentication**
 
+## Dependency Injection & Architecture
+- **Pattern:** MVVM (Jetpack Compose View <-> ViewModel <-> Repository <-> Data Sources (Room, DataStore, Cloud modules))
+- **DI Framework:** Hilt
+- **New Modules:**
+  - CloudModule (Google Drive client, backup manager)
+  - AuthModule (Firebase Auth adapter, session manager)
+- **Async:** Coroutines & Flow/StateFlow
 
-### Backup \& Encryption System
-
-```kotlin
-// Backup Architecture
-data class BackupFile(
-    val header: BackupHeader,
-    val encryptedData: ByteArray,
-    val checksum: String
-)
-
-// Encryption Stack
-- Primary: Android Keystore for app data encryption
-- Backup: AES-256-GCM with PBKDF2 key derivation using Tink library
-- File Format: Custom .cvault format with version header
-```
-
-
-## Dependency Injection \& Architecture
-
-### Architecture Pattern
-
-```kotlin
-// MVVM Architecture
-View (Compose) <-> ViewModel <-> Repository <-> Data Sources (Room, DataStore)
-
-// Data Flow
-UI Events -> ViewModel -> Repository -> Database/DataStore
-Database/DataStore -> Repository -> ViewModel -> UI State
-```
-
-
-### Dependency Injection
-
-- **Framework:** Hilt for application-wide DI
-- **Module Structure:**
-    - DatabaseModule (Room, DataStore)
-    - RepositoryModule (Data repositories)
-    - NetworkModule (ML Kit, Camera dependencies)
-    - CryptoModule (Encryption utilities)
-
-
-### Async Operations
-
-```kotlin
-// Coroutines Architecture
-- ViewModelScope for UI-bound operations
-- Application scope for background tasks
-- Flow for reactive data streams
-- StateFlow for UI state management
-- SharedFlow for one-time events
-```
-
-
-## Modern Tooling \& Libraries
+## Modern Tooling & Libraries
 
 ### Core Dependencies
-
 ```gradle
 // UI & Animation
 implementation "androidx.compose:compose-bom:2024.09.00"
@@ -161,7 +79,7 @@ implementation "com.google.dagger:hilt-android:2.48"
 implementation "androidx.room:room-runtime"
 implementation "androidx.room:room-ktx"
 implementation "androidx.datastore:datastore"
-kapt "androidx.room:room-compiler" // Transitioning to KSP
+kapt "androidx.room:room-compiler" // (KSP migration recommended)
 
 // ML & Camera
 implementation "com.google.mlkit:text-recognition"
@@ -173,26 +91,26 @@ implementation "androidx.camera:camera-view"
 implementation "com.google.crypto.tink:tink-android"
 implementation "androidx.biometric:biometric"
 
+// Cloud Backup & Auth
+implementation "com.google.android.gms:play-services-auth:21.0.0" // Google Sign-In
+implementation "com.google.api-client:google-api-client-android:2.3.0" // Google Drive API client
+implementation "com.google.http-client:google-http-client-gson:1.44.1"
+implementation "com.google.firebase:firebase-auth-ktx:22.3.1" // Firebase Auth
+
 // Utilities
 implementation "io.coil-kt:coil-compose"
 implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android"
 ```
 
-
 ### Build Configuration
-
 ```gradle
-// KSP Migration
 plugins {
     id "com.google.devtools.ksp" version "2.0.10-1.0.24"
 }
-
-// Kotlin Configuration
 compileOptions {
     sourceCompatibility JavaVersion.VERSION_17
     targetCompatibility JavaVersion.VERSION_17
 }
-
 kotlinOptions {
     jvmTarget = '17'
     freeCompilerArgs += [
@@ -202,71 +120,24 @@ kotlinOptions {
 }
 ```
 
-
 ## Additional Architecture Features
 
-### Safe Area Implementation
-
-```kotlin
-// Biometric Authentication Wrapper
-sealed class AuthenticationResult {
-    object Success : AuthenticationResult()
-    object Failed : AuthenticationResult()
-    object Error : AuthenticationResult()
-}
-
-// Safe Area Repository
-class SafeAreaRepository {
-    suspend fun authenticateForSafeArea(): AuthenticationResult
-    fun getSafeAreaCards(): Flow<List<Card>>
-}
-```
-
-
-### Design System Architecture
-
-```kotlin
-// CardVault Design Tokens
-object CardVaultTheme {
-    val colors: CardVaultColors
-    val typography: CardVaultTypography
-    val shapes: CardVaultShapes
-    val elevations: CardVaultElevations
-}
-
-// Dark/Light Theme Support
-@Composable
-fun CardVaultTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
-)
-```
-
-
 ### File Format Specification
+- **`.cvault` File Structure:** Header (magic, version, type, checksum), Encrypted Payload, Footer (hash, timestamp)
 
+### Cloud Backup Workflow Example
 ```kotlin
-// .cvault File Structure
-Header (32 bytes): Magic number, version, encryption type, checksum
-Encrypted Payload: Serialized app data (JSON/Protobuf)
-Footer (16 bytes): Validation hash, timestamp
-
-// File Extension Registration
-<intent-filter>
-    <action android:name="android.intent.action.VIEW" />
-    <category android:name="android.intent.category.DEFAULT" />
-    <data android:mimeType="application/cvault" />
-</intent-filter>
+// Backup to Drive (pseudocode)
+fun backupToDrive(encryptedFile: File, userToken: String)
+fun restoreFromDrive(fileId: String, userToken: String): File
 ```
 
+## Performance Optimizations
+- LazyColumn key-based recomposition
+- Caching (image, database)
+- Indexed tables & efficient queries
+- Layer management for animations
+- Secure memory and lifecycle-aware resource cleanup
 
-### Performance Optimizations
-
-- **LazyColumn Optimizations:** Key-based recomposition prevention
-- **Image Caching:** Memory and disk caching with size limits
-- **Database Indexing:** Strategic indices on frequently queried fields
-- **Animation Optimizations:** Reduced overdraw through layer management
-- **Memory Management:** Proper lifecycle-aware resource cleanup
-
-This technical architecture ensures a robust, scalable, and maintainable codebase while delivering the premium user experience outlined in the PRD requirements.
-
+--
+This tech stack ensures robust, privacy-first offline operations while making cloud backup/restore and Google Auth available as opt-in options via strong client-side encryption.
