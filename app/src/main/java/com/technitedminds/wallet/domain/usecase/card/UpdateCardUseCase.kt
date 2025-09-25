@@ -213,6 +213,23 @@ constructor(
         return ValidationResult(true)
     }
 
+    /** Convenience overload to update when caller provides a full Card object */
+    suspend operator fun invoke(card: Card): Result<Unit> {
+        return try {
+            val exists = cardRepository.getCardById(card.id) != null
+            if (!exists) return Result.failure(IllegalArgumentException("Card not found: ${card.id}"))
+            // Validate minimal required fields
+            if (card.name.isBlank()) return Result.failure(IllegalArgumentException("Card name cannot be empty"))
+            // Category check
+            val categoryExists = categoryRepository.categoryExists(card.categoryId)
+            if (!categoryExists) return Result.failure(IllegalArgumentException("Category does not exist: ${card.categoryId}"))
+            cardRepository.updateCard(card.copy(updatedAt = System.currentTimeMillis()))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     /** Basic validation for image data */
     private fun isValidImageData(imageData: ByteArray): Boolean {
         if (imageData.size < 100) return false // Too small to be a valid image

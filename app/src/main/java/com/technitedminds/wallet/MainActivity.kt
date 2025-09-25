@@ -10,7 +10,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -19,6 +18,12 @@ import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.technitedminds.wallet.ui.theme.WalletTheme
+import com.technitedminds.wallet.presentation.screens.home.HomeScreen
+import com.technitedminds.wallet.presentation.screens.addcard.AddCardScreen
+import com.technitedminds.wallet.presentation.screens.carddetail.CardDetailScreen
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -39,11 +44,36 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             WalletTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "CardVault",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                val navController = rememberNavController()
+                NavHost(
+                    navController = navController,
+                    startDestination = "home",
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    composable("home") {
+                        HomeScreen(
+                            onCardClick = { card -> navController.navigate("detail/${card.id}") },
+                            onAddCardClick = { navController.navigate("add") }
+                        )
+                    }
+                    composable("add") {
+                        AddCardScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                            onCardSaved = { card ->
+                                navController.popBackStack()
+                                navController.navigate("detail/${card.id}")
+                            },
+                            onCameraCapture = { _ -> /* TODO: route to camera when added */ }
+                        )
+                    }
+                    composable("detail/{cardId}") {
+                        CardDetailScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                            onCardDeleted = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -93,18 +123,11 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Welcome to $name!",
-        modifier = modifier
-    )
-}
-
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
+fun HomePreview() {
     WalletTheme {
-        Greeting("CardVault")
+        // Preview kept simple without navigation
+        HomeScreen(onCardClick = { }, onAddCardClick = { }, modifier = Modifier.fillMaxSize())
     }
 }

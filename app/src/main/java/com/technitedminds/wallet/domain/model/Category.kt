@@ -1,59 +1,90 @@
 package com.technitedminds.wallet.domain.model
 
 /**
- * Data class representing a card category for organizing cards. Categories help users group their
- * cards by type, usage, or personal preference.
+ * Data class representing a category for organizing cards.
  */
 data class Category(
-        /** Unique identifier for the category */
-        val id: String,
-
-        /** Display name of the category */
-        val name: String,
-
-        /** Resource ID for the category icon */
-        val iconResId: Int,
-
-        /** Hex color code for the category (e.g., "#FF5722") */
-        val colorHex: String,
-
-        /** Whether this is a default system category that cannot be deleted */
-        val isDefault: Boolean = false,
-
-        /** Timestamp when the category was created */
-        val createdAt: Long = System.currentTimeMillis(),
-
-        /** Timestamp when the category was last updated */
-        val updatedAt: Long = System.currentTimeMillis()
+    /** Unique identifier for the category */
+    val id: String,
+    
+    /** Display name of the category */
+    val name: String,
+    
+    /** Optional description of the category */
+    val description: String? = null,
+    
+    /** Hex color code for the category (e.g., "#FF5722") */
+    val colorHex: String = "#1976D2",
+    
+    /** Icon name or identifier for the category */
+    val iconName: String? = null,
+    
+    /** Order/position for sorting categories */
+    val sortOrder: Int = 0,
+    
+    /** Timestamp when the category was created */
+    val createdAt: Long = System.currentTimeMillis(),
+    
+    /** Timestamp when the category was last updated */
+    val updatedAt: Long = System.currentTimeMillis()
 ) {
-    /** Returns true if the category has a valid color hex code */
-    fun hasValidColor(): Boolean {
-        return colorHex.matches(Regex("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$"))
-    }
-
-    /** Returns true if the category can be deleted (not a default category) */
-    fun canBeDeleted(): Boolean = !isDefault
-
-    /** Returns true if the category can be modified */
-    fun canBeModified(): Boolean = !isDefault
-
     companion object {
-        /** Default category IDs for system categories */
-        const val DEFAULT_CATEGORY_ID = "default"
-        const val CREDIT_CARDS_CATEGORY_ID = "credit_cards"
-        const val DEBIT_CARDS_CATEGORY_ID = "debit_cards"
-        const val GIFT_CARDS_CATEGORY_ID = "gift_cards"
-        const val MEMBERSHIP_CATEGORY_ID = "membership"
-
-        /** Creates a default "Uncategorized" category */
-        fun createDefaultCategory(): Category {
-            return Category(
-                    id = DEFAULT_CATEGORY_ID,
-                    name = "Uncategorized",
-                    iconResId = android.R.drawable.ic_menu_gallery, // Placeholder icon
-                    colorHex = "#757575", // Material Grey 600
-                    isDefault = true
+        /** Default category for uncategorized cards */
+        val DEFAULT = Category(
+            id = "default",
+            name = "General",
+            description = "Default category for cards",
+            colorHex = "#1976D2",
+            iconName = "category"
+        )
+        
+        /** Predefined categories */
+        val PREDEFINED_CATEGORIES = listOf(
+            Category(
+                id = "personal",
+                name = "Personal",
+                description = "Personal cards and documents",
+                colorHex = "#1976D2",
+                iconName = "person"
+            ),
+            Category(
+                id = "business",
+                name = "Business",
+                description = "Work and business related cards",
+                colorHex = "#37474F",
+                iconName = "business"
+            ),
+            Category(
+                id = "travel",
+                name = "Travel",
+                description = "Travel and transportation cards",
+                colorHex = "#00BCD4",
+                iconName = "flight"
+            ),
+            Category(
+                id = "shopping",
+                name = "Shopping",
+                description = "Retail and shopping cards",
+                colorHex = "#FF9800",
+                iconName = "shopping_cart"
+            ),
+            Category(
+                id = "health",
+                name = "Health",
+                description = "Medical and health insurance cards",
+                colorHex = "#4CAF50",
+                iconName = "local_hospital"
+            ),
+            Category(
+                id = "entertainment",
+                name = "Entertainment",
+                description = "Entertainment and leisure cards",
+                colorHex = "#E91E63",
+                iconName = "movie"
             )
-        }
+        )
     }
+    
+    /** Returns a copy of this category with updated timestamp */
+    fun withUpdatedTimestamp(): Category = copy(updatedAt = System.currentTimeMillis())
 }
