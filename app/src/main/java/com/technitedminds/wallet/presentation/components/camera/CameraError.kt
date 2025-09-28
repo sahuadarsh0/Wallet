@@ -20,7 +20,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
-/** Sealed class representing different camera error states */
+/**
+ * Enhanced camera error handling with more detailed error information
+ */
 sealed class CameraError {
     object CameraNotAvailable : CameraError()
     object CameraInUse : CameraError()
@@ -47,7 +49,9 @@ sealed class CameraError {
             }
 }
 
-/** Composable that displays camera error states with appropriate UI */
+/**
+ * Composable that displays camera error states with appropriate UI
+ */
 @Composable
 fun CameraErrorContent(
         error: CameraError,
@@ -107,10 +111,14 @@ fun CameraErrorContent(
     }
 }
 
-/** Utility functions for camera error handling */
+/**
+ * Utility functions for camera error handling
+ */
 object CameraErrorHandler {
 
-    /** Maps exceptions to CameraError types */
+    /**
+     * Maps exceptions to CameraError types
+     */
     fun mapException(exception: Exception): CameraError {
         return when (exception) {
             is ImageCaptureException -> CameraError.ImageCaptureError(exception)
@@ -129,7 +137,9 @@ object CameraErrorHandler {
         }
     }
 
-    /** Checks if the error is recoverable (user can retry) */
+    /**
+     * Checks if the error is recoverable (user can retry)
+     */
     fun isRecoverable(error: CameraError): Boolean {
         return when (error) {
             is CameraError.CameraNotAvailable, is CameraError.CameraDisabled -> false
@@ -137,19 +147,28 @@ object CameraErrorHandler {
         }
     }
 
-    /** Gets user-friendly error message with suggestions */
+    /**
+     * Gets user-friendly error message with suggestions
+     */
     fun getErrorMessageWithSuggestion(error: CameraError): String {
         val baseMessage = error.getMessage()
         val suggestion =
                 when (error) {
-                    is CameraError.CameraInUse -> "\n\nTry closing other camera apps and try again."
-                    is CameraError.CameraNotAvailable ->
-                            "\n\nThis device may not have a camera or it's not accessible."
-                    is CameraError.CameraDisabled ->
-                            "\n\nCheck your device settings to enable camera access."
-                    is CameraError.ImageCaptureError ->
-                            "\n\nMake sure you have enough storage space and try again."
-                    is CameraError.UnknownError -> "\n\nRestart the app or try again later."
+                    is CameraError.CameraInUse -> {
+                        "\n\nTry closing other camera apps and try again."
+                    }
+                    is CameraError.CameraNotAvailable -> {
+                        "\n\nThis device may not have a camera or it's not accessible."
+                    }
+                    is CameraError.CameraDisabled -> {
+                        "\n\nCheck your device settings to enable camera access."
+                    }
+                    is CameraError.ImageCaptureError -> {
+                        "\n\nMake sure you have enough storage space and try again."
+                    }
+                    is CameraError.UnknownError -> {
+                        "\n\nRestart the app or try again later."
+                    }
                 }
         return baseMessage + suggestion
     }

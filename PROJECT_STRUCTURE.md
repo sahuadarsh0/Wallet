@@ -15,7 +15,7 @@ com.technitedminds.wallet/
 │       ├── Color.kt              # Color definitions ✅
 │       ├── Theme.kt              # Theme configuration ✅
 │       └── Type.kt               # Typography definitions ✅
-├── data/                          # Data Layer ✅ IMPLEMENTED
+├── data/                         # Data Layer ✅ IMPLEMENTED
 │   ├── local/
 │   │   ├── database/             # Room database components ✅
 │   │   │   ├── entities/         # Room entities ✅
@@ -30,22 +30,22 @@ com.technitedminds.wallet/
 │   │   │   └── WalletDatabase.kt # Room database configuration ✅
 │   │   ├── files/                # File system operations ✅
 │   │   │   └── ImageFileManager.kt # Image storage and optimization
-│   │   └── preferences/          # User preferences (directory present)
+│   │   └── preferences/          # User preferences ✅
+│   │       └── SimplePreferencesManager.kt # Proto DataStore integration
 │   ├── repository/               # Repository implementations ✅
 │   │   ├── CardRepositoryImpl.kt # Card operations with Room
 │   │   ├── CategoryRepositoryImpl.kt # Category management
 │   │   ├── ImageRepositoryImpl.kt # Image file operations
-│   │   └── ExportImportRepositoryImpl.kt # Data portability
+│   │   ├── ExportImportRepositoryImpl.kt # Data portability
+│   │   └── ImageRepositoryImpl.kt # Image operations with caching
 │   └── mapper/                   # Data mapping utilities ✅
 │       └── CardMapper.kt         # Card entity ↔ domain mapping
-│   └── ocr/                      # OCR integration ✅
-│       └── MLKitTextRecognizer.kt # ML Kit text recognition implementation
 ├── domain/                       # Domain Layer ✅ IMPLEMENTED
 │   ├── model/                    # Domain models ✅
 │   │   ├── Card.kt               # Card data class with all fields
 │   │   ├── CardType.kt           # Sealed class for card types
 │   │   ├── CardImage.kt          # Image metadata handling
-│   │   └── Category.kt           # Category data class
+│   │   └── Category.kt           # Category data class with iconResId, colorHex, isDefault
 │   ├── repository/               # Repository interfaces ✅
 │   │   ├── CardRepository.kt     # Card CRUD and search operations
 │   │   ├── CategoryRepository.kt # Category management operations
@@ -60,45 +60,63 @@ com.technitedminds.wallet/
 │   │   ├── ocr/                  # OCR processing use cases ✅
 │   │   │   └── ProcessCardImageUseCase.kt # OCR for textual cards
 │   │   ├── category/             # Category management use cases ✅
-│   │   │   └── GetCategoryNameUseCase.kt # Resolve category names
+│   │   │   ├── GetCategoriesUseCase.kt # Get all categories
+│   │   │   ├── GetCategoryNameUseCase.kt # Resolve category names
+│   │   │   └── ManageCategoryUseCase.kt # CRUD operations for categories
 │   │   └── export/               # Export/import use cases ✅
 │   │       ├── ExportDataUseCase.kt # Data export functionality
 │   │       └── ImportDataUseCase.kt # Data import functionality
 │   └── util/                     # Domain utilities
-├── presentation/                 # Presentation Layer ✅ PARTIAL
-│   ├── screens/                  # Feature screens
-│   │   ├── home/                 # Home screen components
-│   │   ├── add_card/             # Add card flow
-│   │   ├── card_detail/          # Card detail view
-│   │   ├── categories/           # Category management
-│   │   └── settings/             # App settings
-│   ├── components/               # Reusable UI components
+├── presentation/                 # Presentation Layer ✅ IMPLEMENTED
+│   ├── screens/                  # Feature screens ✅
+│   │   ├── home/                 # Home screen components ✅
+│   │   │   ├── HomeScreen.kt     # Main card list with search/filter
+│   │   │   └── HomeViewModel.kt  # State management for home screen
+│   │   ├── addcard/              # Add card flow ✅
+│   │   │   ├── AddCardScreen.kt  # Multi-step add card workflow
+│   │   │   └── AddCardViewModel.kt # State management for add card flow
+│   │   ├── carddetail/           # Card detail view ✅
+│   │   │   ├── CardDetailScreen.kt # Full-screen card view with flip animation
+│   │   │   └── CardDetailViewModel.kt # State management for card details
+│   │   ├── categories/           # Category management ✅
+│   │   │   ├── CategoriesScreen.kt # List of categories with CRUD operations
+│   │   │   ├── CategoriesViewModel.kt # State management for categories
+│   │   │   └── AddEditCategoryDialog.kt # Dialog for category creation/editing
+│   │   └── settings/             # App settings ✅
+│   │       ├── SettingsScreen.kt # Settings UI with preferences
+│   │       └── SettingsViewModel.kt # State management for settings
+│   ├── components/               # Reusable UI components ✅
 │   │   ├── common/               # Common UI components ✅
-│   │   │   ├── CardListItem.kt
-│   │   │   ├── CardTypeSelector.kt
-│   │   │   ├── CategoryChip.kt
-│   │   │   ├── ColorPicker.kt
-│   │   │   ├── ConfirmationDialog.kt
-│   │   │   ├── ErrorMessage.kt
-│   │   │   ├── LoadingIndicator.kt
-│   │   │   └── ValidatedTextField.kt
+│   │   │   ├── CardListItem.kt   # Card list item with thumbnail and details
+│   │   │   ├── CardTypeSelector.kt # Card type selection UI
+│   │   │   ├── CategoryChip.kt   # Category display with color and icon
+│   │   │   ├── ColorPicker.kt    # Color selection component
+│   │   │   ├── ConfirmationDialog.kt # Generic confirmation dialog
+│   │   │   ├── ErrorMessage.kt   # Error message display component
+│   │   │   ├── LoadingIndicator.kt # Loading spinner component
+│   │   │   └── ValidatedTextField.kt # Text field with validation
 │   │   ├── animation/            # Animation components ✅
-│   │   │   ├── AnimatedList.kt
-│   │   │   ├── AnimationUtils.kt
-│   │   │   ├── CardBack.kt
-│   │   │   └── CardFront.kt
+│   │   │   ├── AnimatedList.kt   # Animate list item changes
+│   │   │   ├── AnimationUtils.kt # Common animation utilities
+│   │   │   ├── CardBack.kt       # Card back side with flip animation
+│   │   │   └── CardFront.kt      # Card front side with flip animation
 │   │   └── camera/               # Camera-related components ✅
-│   │       ├── CameraError.kt
-│   │       ├── CameraPermission.kt
-│   │       ├── CameraPreview.kt
-│   │       ├── CaptureButton.kt
+│   │       ├── CameraError.kt    # Camera error handling
+│   │       ├── CameraPermission.kt # Camera permission utilities
+│   │       ├── CameraPreview.kt  # CameraX implementation with live preview
+│   │       ├── CaptureButton.kt  # Custom capture button with states
 │   │       ├── CardOverlay.kt    # Multi-aspect ratio card positioning overlay
-│   │       └── ImagePreview.kt
-│   └── navigation/               # Navigation setup (directory present)
+│   │       └── ImagePreview.kt   # Image preview with zoom/pan capabilities
+│   ├── navigation/               # Navigation setup ✅
+│   │   └── (navigation files present)
+│   └── utils/                    # Presentation layer utilities ✅
+│       └── (utility files present)
 ├── di/                           # Dependency Injection modules ✅
-│   ├── DatabaseModule.kt
-│   └── RepositoryModule.kt
-└── utils/                        # Utility classes and extensions
+│   ├── DatabaseModule.kt         # Room database Hilt module
+│   ├── RepositoryModule.kt       # Repository interface bindings
+│   └── AppModule.kt              # Additional Hilt bindings (fixed duplicate issue)
+└── utils/                        # Utility classes and extensions ✅
+    └── Extensions.kt             # Kotlin extension functions
 ```
 
 ## Key Dependencies (as used in module)

@@ -37,7 +37,12 @@ android {
     }
     buildFeatures { compose = true }
     kotlin {
-        compilerOptions { jvmTarget.set(JvmTarget.JVM_11)
+        compilerOptions { 
+            jvmTarget.set(JvmTarget.JVM_11)
+            freeCompilerArgs.set(listOf(
+                "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+                "-opt-in=androidx.camera.core.ExperimentalGetImage"
+            ))
         }
     }
 }
@@ -62,6 +67,7 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.ui.tooling)
+    implementation(libs.androidx.compose.ui.text.google.fonts)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // Room

@@ -19,6 +19,8 @@ import com.technitedminds.wallet.presentation.components.animation.FlippableCard
 import com.technitedminds.wallet.presentation.components.common.*
 import com.technitedminds.wallet.presentation.utils.resolveCategoryName
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Notes
 
 /**
  * Card detail screen with full-screen card display, editing, and management options.
@@ -163,7 +165,7 @@ private fun CardDetailTopBar(
         navigationIcon = {
             IconButton(onClick = onNavigateBack) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Default.ArrowBack,
                     contentDescription = "Back"
                 )
             }
@@ -295,7 +297,7 @@ private fun CardInfoSection(
         if (card.customFields.isNotEmpty()) {
             InfoCard(
                 title = "Additional Information",
-                icon = Icons.Default.Notes
+                icon = Icons.AutoMirrored.Default.Notes
             ) {
                 card.customFields.forEach { (key, value) ->
                     if (key != "customColor") { // Don't show internal fields
@@ -358,7 +360,7 @@ private fun EditCardSection(
         // Custom fields editing
         InfoCard(
             title = "Additional Information",
-            icon = Icons.Default.Notes
+            icon = Icons.AutoMirrored.Default.Notes
         ) {
             // Show existing custom fields for editing
             card.customFields.forEach { (key, value) ->
