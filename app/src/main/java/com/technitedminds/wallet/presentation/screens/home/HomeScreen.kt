@@ -268,7 +268,6 @@ private fun CardTypeFilterChips(
         listOf(
             CardType.Credit,
             CardType.Debit,
-            CardType.ATM,
             CardType.GiftCard,
             CardType.LoyaltyCard,
             CardType.MembershipCard

@@ -11,7 +11,7 @@ data class Card(
         /** User-defined name for the card */
         val name: String,
 
-        /** Type of the card (Credit, Debit, ATM, or ImageOnly) */
+        /** Type of the card (Credit, Debit , or ImageOnly) */
         val type: CardType,
 
         /** ID of the category this card belongs to */
@@ -35,6 +35,15 @@ data class Card(
          */
         val customFields: Map<String, String> = emptyMap(),
 
+        /** Optional expiry date for vouchers/gift cards */
+        val expiryDate: String? = null,
+
+        /** Optional notes for image cards */
+        val notes: String? = null,
+
+        /** Custom gradient colors, null uses default */
+        val customGradient: CardGradient? = null,
+
         /** Timestamp when the card was created */
         val createdAt: Long,
 
@@ -54,7 +63,7 @@ data class Card(
     fun getCardNumber(): String? = extractedData[CARD_NUMBER_KEY]
 
     /** Returns the expiry date if available from extracted data */
-    fun getExpiryDate(): String? = extractedData[EXPIRY_DATE_KEY]
+    fun getExtractedExpiryDate(): String? = extractedData[EXPIRY_DATE_KEY]
 
     /** Returns the cardholder name if available from extracted data */
     fun getCardholderName(): String? = extractedData[CARDHOLDER_NAME_KEY]
@@ -66,7 +75,7 @@ data class Card(
     fun getBankName(): String? = extractedData[BANK_NAME_KEY]
 
     /** Returns notes from custom fields */
-    fun getNotes(): String? = customFields[NOTES_KEY]
+    fun getCustomNotes(): String? = customFields[NOTES_KEY]
 
     /** Returns the card's display color (custom color or type default) */
     fun getDisplayColor(): String = customFields["customColor"] ?: type.getDefaultColor()
@@ -96,6 +105,16 @@ data class Card(
     fun withCustomFields(newCustomFields: Map<String, String>): Card =
             copy(customFields = newCustomFields, updatedAt = System.currentTimeMillis())
 
+    /** Returns a copy of this card with a custom gradient */
+    fun withCustomGradient(gradient: CardGradient?): Card =
+            copy(customGradient = gradient, updatedAt = System.currentTimeMillis())
+
+    /** Returns the gradient to use for this card (custom or default) */
+    fun getGradient(): CardGradient = customGradient ?: getDefaultGradientForType(type)
+
+    /** Returns true if this card has a custom gradient */
+    fun hasCustomGradient(): Boolean = customGradient != null
+
     companion object {
         /** Common extracted data keys for OCR processing */
         const val CARD_NUMBER_KEY = "cardNumber"
@@ -110,5 +129,25 @@ data class Card(
         const val CUSTOMER_SERVICE_KEY = "customerService"
         const val WEBSITE_KEY = "website"
         const val PHONE_KEY = "phone"
+
+        /** Returns the default gradient for a given card type */
+        fun getDefaultGradientForType(type: CardType): CardGradient = when (type) {
+            is CardType.Credit -> CardGradient.CREDIT_CARD_GRADIENT
+            is CardType.Debit -> CardGradient.DEBIT_CARD_GRADIENT
+            is CardType.TransportCard -> CardGradient.TRANSPORT_CARD_GRADIENT
+            is CardType.GiftCard -> CardGradient.GIFT_CARD_GRADIENT
+            is CardType.LoyaltyCard -> CardGradient.LOYALTY_CARD_GRADIENT
+            is CardType.MembershipCard -> CardGradient.MEMBERSHIP_CARD_GRADIENT
+            is CardType.InsuranceCard -> CardGradient.INSURANCE_CARD_GRADIENT
+            is CardType.IdentificationCard -> CardGradient.ID_CARD_GRADIENT
+            is CardType.Voucher -> CardGradient.VOUCHER_GRADIENT
+            is CardType.Event -> CardGradient.EVENT_GRADIENT
+            is CardType.BusinessCard -> CardGradient.BUSINESS_CARD_GRADIENT
+            is CardType.LibraryCard -> CardGradient.LIBRARY_CARD_GRADIENT
+            is CardType.HotelCard -> CardGradient.HOTEL_CARD_GRADIENT
+            is CardType.StudentCard -> CardGradient.STUDENT_CARD_GRADIENT
+            is CardType.AccessCard -> CardGradient.ACCESS_CARD_GRADIENT
+            is CardType.Custom -> CardGradient.DEFAULT
+        }
     }
 }

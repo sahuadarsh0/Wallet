@@ -8,20 +8,20 @@ CardVault is an offline-first Android digital wallet application that serves as 
 
 ### Requirement 1: Card Type Selection and Management
 
-**User Story:** As a card owner, I want to choose between different card types when adding cards, so that the app can handle textual cards (credit/debit/ATM) and image-only cards (gym, voucher, etc.) appropriately.
+**User Story:** As a card owner, I want to choose between different card types when adding cards, so that the app can handle textual cards (credit/debit) and image-only cards (gym, voucher, etc.) appropriately.
 
 #### Acceptance Criteria
 
 1. WHEN a user selects "Add Card" THEN the system SHALL present card type selection interface
-2. WHEN user selects textual card type (Credit, Debit, ATM) THEN the system SHALL enable OCR/ML processing workflow
+2. WHEN user selects textual card type (Credit, Debit) THEN the system SHALL enable OCR/ML processing workflow
 3. WHEN user selects image card type (Gym, Voucher, Play Arena, Parking Pass, Event, Gift Card, Other) THEN the system SHALL enable image-only storage workflow
 4. WHEN card type is selected THEN the system SHALL proceed to appropriate capture and processing flow
 5. IF user wants to change card type after selection THEN the system SHALL allow type modification before saving
 6. WHEN card is saved THEN the system SHALL store card type information for future reference
 
-### Requirement 2: Textual Card Processing (Credit/Debit/ATM)
+### Requirement 2: Textual Card Processing (Credit/Debit)
 
-**User Story:** As a user adding credit, debit, or ATM cards, I want the camera to automatically extract important details like card number, expiry date, and name, so that I don't have to manually type sensitive information.
+**User Story:** As a user adding credit, debit , I want the camera to automatically extract important details like card number, expiry date, and name, so that I don't have to manually type sensitive information.
 
 #### Acceptance Criteria
 

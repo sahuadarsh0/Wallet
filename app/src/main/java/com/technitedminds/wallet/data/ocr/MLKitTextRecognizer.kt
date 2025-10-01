@@ -13,7 +13,7 @@ import kotlin.coroutines.suspendCoroutine
 
 /**
  * ML Kit-based text recognition implementation for offline OCR processing.
- * Specifically optimized for credit/debit/ATM card text extraction.
+ * Specifically optimized for credit/debit card text extraction.
  */
 @Singleton
 class MLKitTextRecognizer @Inject constructor() {

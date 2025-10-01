@@ -8,11 +8,12 @@ This project is built from the ground up using modern Android development practi
 
 - **🔒 100% Offline Operation:** Operates entirely without an internet connection. No network permissions, no analytics, and no data ever leaves your device.
 - **📱 Modern UI/UX:** A beautiful and intuitive interface built entirely with **Jetpack Compose** and **Material Design 3**, featuring smooth 60fps animations, including a realistic 3D card flip effect.
-- **📸 Smart Card Scanning:** Add cards quickly using your camera. On-device **ML Kit** recognizes and extracts card details for textual cards (credit/debit/ATM), with manual fallback options.
+- **📸 Smart Card Scanning:** Add cards quickly using your camera. On-device **ML Kit** recognizes and extracts card details for textual cards (credit/debit), with manual fallback options.
 - **🎨 Flexible Organization:** Group your cards into default or custom-created categories (e.g., 'Work', 'Travel', 'Memberships'), each with a distinct color theme and icon.
-- **💳 Dual Card Processing:** Handles both textual cards (with OCR processing) and image-only cards (for visual storage) with appropriate workflows.
+- **💳 Dual Card Processing:** Handles both textual cards (Credit/Debit with OCR processing) and image-only cards (15+ types including Transport, Gift, Loyalty, Membership, Insurance, ID, Voucher, Event, Business, Library, Hotel, Student, Access cards) with appropriate workflows.
 - **🔍 Aspect Ratio Selection:** Camera overlay supports multiple aspect ratios (16:9, 4:3, 3:4, credit card) for different card types.
-- **📤 Data Portability:** Export/import all your card data and images to a single .wallet file for backup or device migration.
+- **🎨 Custom Gradients:** Each card type features unique modern gradients with customization options for personalization.
+- **📤 Card Sharing:** Share captured images for image-only cards, or generate gradient card designs with extracted details for textual cards.
 - **⚡ High Performance:** Optimized for <3s app launch and smooth 60fps animations even on mid-range devices.
 
 ## 🛠️ Tech Stack & Architecture
@@ -68,11 +69,11 @@ com.technitedminds.wallet/
 │       ├── CardRepositoryImpl.kt # Card operations with Room
 │       ├── CategoryRepositoryImpl.kt # Category management
 │       ├── ImageRepositoryImpl.kt # Image file operations
-│       └── ExportImportRepositoryImpl.kt # Data portability
+
 ├── domain/                       # Domain Layer - COMPLETE
-│   ├── model/                    # Domain models (Card, CardType, Category, CardImage)
+│   ├── model/                    # Domain models (Card, CardType, Category, CardImage, CardGradient)
 │   ├── repository/               # Repository interfaces
-│   ├── usecase/                  # Business logic use cases (card, ocr, category, export)
+│   ├── usecase/                  # Business logic use cases (card, ocr, category)
 │   └── util/                     # Domain utilities
 ├── presentation/                 # Presentation Layer - COMPLETE
 │   ├── screens/                  # Feature screens (home, addcard, carddetail, categories, settings)
@@ -105,24 +106,53 @@ To build and run this project locally, follow these steps:
    - Select the `app` configuration and a target device (emulator or physical device)
    - Click the "Run" button
 
+## 🎨 Card Types & Visual Identity
+
+CardVault supports 15+ card types with unique gradient designs:
+
+### OCR-Enabled Cards (with text extraction):
+- **Credit Cards**: Purple to blue gradient (professional banking feel)
+- **Debit Cards**: Pink to red gradient (vibrant and accessible)
+
+### Image-Only Cards (visual storage):
+- **Transport Cards**: Blue to cyan gradient (tech-forward transit)
+- **Gift Cards**: Soft teal to pink gradient (friendly and gift-like)
+- **Loyalty Cards**: Cream to peach gradient (warm and rewarding)
+- **Membership Cards**: Green to teal gradient (health and community)
+- **Insurance Cards**: Purple to cream gradient (official and secure)
+- **ID Cards**: Light blue to blue gradient (official and trustworthy)
+- **Vouchers**: Pink to yellow gradient (exciting and promotional)
+- **Event Cards**: Cream to peach gradient (warm and celebratory)
+- **Business Cards**: Purple to blue gradient (professional and corporate)
+- **Library Cards**: Green to teal gradient (educational and knowledge)
+- **Hotel Cards**: Soft teal to pink gradient (hospitality and comfort)
+- **Student Cards**: Light blue to blue gradient (academic and youthful)
+- **Access Cards**: Purple to cream gradient (security and access)
+- **Custom Cards**: User-defined types with customizable gradients
+
 ## 📋 Implementation Status
 
 ### ✅ Complete Features
 - **Complete Architecture:** Clean MVVM with UDF pattern
-- **Textual Cards:** Credit/Debit/ATM cards with OCR processing via ML Kit
-- **Image Cards:** Gym/Voucher/Other cards with simple image storage
+- **Domain Layer:** Complete with 15+ card types, gradient system, and sharing functionality
+- **Data Layer:** Room database, file storage, and repository implementations
+- **Textual Cards:** Credit/Debit cards with OCR processing via ML Kit
+- **Image Cards:** 13+ card types with visual storage and custom gradients
 - **Camera Integration:** Full CameraX implementation with overlay guides
 - **3D Card Flip:** Smooth animations using Compose graphicsLayer
+- **Card Sharing:** Image sharing for image-only cards, gradient card generation for textual cards
 - **Category Management:** Custom categories with icons and colors
-- **Data Export/Import:** Full card data and image portability
 - **Performance Optimized:** 60fps animations and efficient image handling
 - **Material Design 3:** Consistent UI with proper theming
 - **Offline-First:** Zero network dependencies, all data stays on device
 
 ### 🔄 In Progress Features
+- Complete camera integration screens
+- Card type selector with gradient customization
+- Category management system
+- Settings and preferences
 - Navigation implementation and screen routing
-- Complete test suite with unit and integration tests
-- Additional performance optimizations for large card collections
+- Performance optimizations
 
 ## 📄 License
 

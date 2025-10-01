@@ -5,7 +5,7 @@ import javax.inject.Inject
 
 /**
  * Use case for processing card images with OCR for textual cards only. Extracts text information
- * from credit, debit, and ATM cards.
+ * from credit, debit cards.
  */
 class ProcessCardImageUseCase @Inject constructor() {
 
@@ -33,7 +33,6 @@ class ProcessCardImageUseCase @Inject constructor() {
                                 processTextualCard(request.imageData, request.imageSide)
                         is CardType.Debit ->
                                 processTextualCard(request.imageData, request.imageSide)
-                        is CardType.ATM -> processTextualCard(request.imageData, request.imageSide)
                         else ->
                                 emptyMap() // Non-OCR card types don't need text processing
                     }

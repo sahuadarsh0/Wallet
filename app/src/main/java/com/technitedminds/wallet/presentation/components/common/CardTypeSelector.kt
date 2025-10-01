@@ -318,12 +318,13 @@ private fun CustomCardTypeDialog(
  */
 private fun getCardTypeIcon(cardType: CardType): ImageVector = when (cardType) {
     is CardType.Credit, is CardType.Debit -> Icons.Default.CreditCard
-    is CardType.ATM -> Icons.Default.CreditCard
     is CardType.GiftCard -> Icons.Default.CardGiftcard
     is CardType.LoyaltyCard -> Icons.Default.Stars
     is CardType.MembershipCard -> Icons.Default.Badge
     is CardType.InsuranceCard -> Icons.Default.HealthAndSafety
     is CardType.IdentificationCard -> Icons.Default.Badge
+    is CardType.Voucher -> Icons.Default.LocalOffer
+    is CardType.Event -> Icons.Default.Event
     is CardType.TransportCard -> Icons.Default.DirectionsTransit
     is CardType.BusinessCard -> Icons.Default.Business
     is CardType.LibraryCard -> Icons.AutoMirrored.Filled.MenuBook
@@ -339,12 +340,13 @@ private fun getCardTypeIcon(cardType: CardType): ImageVector = when (cardType) {
 private fun getCardTypeDescription(cardType: CardType): String = when (cardType) {
     is CardType.Credit -> "Credit and charge cards"
     is CardType.Debit -> "Debit and bank cards"
-    is CardType.ATM -> "ATM and cash cards"
     is CardType.GiftCard -> "Gift cards and vouchers"
     is CardType.LoyaltyCard -> "Loyalty and rewards cards"
     is CardType.MembershipCard -> "Gym and club memberships"
     is CardType.InsuranceCard -> "Health and insurance cards"
     is CardType.IdentificationCard -> "ID cards and licenses"
+    is CardType.Voucher -> "Discount vouchers and coupons"
+    is CardType.Event -> "Event tickets and passes"
     is CardType.TransportCard -> "Metro and transit cards"
     is CardType.BusinessCard -> "Business and corporate cards"
     is CardType.LibraryCard -> "Library and education cards"

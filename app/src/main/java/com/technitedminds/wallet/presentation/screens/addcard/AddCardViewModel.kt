@@ -67,7 +67,7 @@ class AddCardViewModel @Inject constructor(
                             cardName = card.name,
                             cardType = card.type,
                             categoryId = card.categoryId,
-                            notes = card.getNotes() ?: "",
+                            notes = card.getCustomNotes() ?: "",
                             frontImagePath = card.frontImagePath,
                             backImagePath = card.backImagePath,
                             extractedData = card.extractedData,

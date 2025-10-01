@@ -35,37 +35,35 @@ com.technitedminds.wallet/
 │   ├── repository/               # Repository implementations ✅
 │   │   ├── CardRepositoryImpl.kt # Card operations with Room
 │   │   ├── CategoryRepositoryImpl.kt # Category management
-│   │   ├── ImageRepositoryImpl.kt # Image file operations
-│   │   ├── ExportImportRepositoryImpl.kt # Data portability
-│   │   └── ImageRepositoryImpl.kt # Image operations with caching
+│   │   └── ImageRepositoryImpl.kt # Image file operations
 │   └── mapper/                   # Data mapping utilities ✅
 │       └── CardMapper.kt         # Card entity ↔ domain mapping
 ├── domain/                       # Domain Layer ✅ IMPLEMENTED
 │   ├── model/                    # Domain models ✅
-│   │   ├── Card.kt               # Card data class with all fields
-│   │   ├── CardType.kt           # Sealed class for card types
+│   │   ├── Card.kt               # Card data class with gradient support
+│   │   ├── CardType.kt           # Sealed class for 15+ card types
+│   │   ├── CardGradient.kt       # Gradient customization system
 │   │   ├── CardImage.kt          # Image metadata handling
-│   │   └── Category.kt           # Category data class with iconResId, colorHex, isDefault
+│   │   └── Category.kt           # Category data class
 │   ├── repository/               # Repository interfaces ✅
 │   │   ├── CardRepository.kt     # Card CRUD and search operations
 │   │   ├── CategoryRepository.kt # Category management operations
 │   │   ├── ImageRepository.kt    # Image storage operations
-│   │   └── ExportImportRepository.kt # Data portability operations
+
 │   ├── usecase/                  # Business logic use cases ✅
 │   │   ├── card/                 # Card-related use cases ✅
 │   │   │   ├── AddCardUseCase.kt # Card creation with validation
 │   │   │   ├── GetCardsUseCase.kt # Card retrieval with filtering
 │   │   │   ├── UpdateCardUseCase.kt # Card updates with validation
-│   │   │   └── DeleteCardUseCase.kt # Card deletion with cleanup
+│   │   │   ├── DeleteCardUseCase.kt # Card deletion with cleanup
+│   │   │   └── ShareCardUseCase.kt # Card sharing functionality
 │   │   ├── ocr/                  # OCR processing use cases ✅
 │   │   │   └── ProcessCardImageUseCase.kt # OCR for textual cards
 │   │   ├── category/             # Category management use cases ✅
 │   │   │   ├── GetCategoriesUseCase.kt # Get all categories
 │   │   │   ├── GetCategoryNameUseCase.kt # Resolve category names
 │   │   │   └── ManageCategoryUseCase.kt # CRUD operations for categories
-│   │   └── export/               # Export/import use cases ✅
-│   │       ├── ExportDataUseCase.kt # Data export functionality
-│   │       └── ImportDataUseCase.kt # Data import functionality
+
 │   └── util/                     # Domain utilities
 ├── presentation/                 # Presentation Layer ✅ IMPLEMENTED
 │   ├── screens/                  # Feature screens ✅
@@ -88,7 +86,7 @@ com.technitedminds.wallet/
 │   ├── components/               # Reusable UI components ✅
 │   │   ├── common/               # Common UI components ✅
 │   │   │   ├── CardListItem.kt   # Card list item with thumbnail and details
-│   │   │   ├── CardTypeSelector.kt # Card type selection UI
+│   │   │   ├── CardTypeSelector.kt # Card type selection with gradients
 │   │   │   ├── CategoryChip.kt   # Category display with color and icon
 │   │   │   ├── ColorPicker.kt    # Color selection component
 │   │   │   ├── ConfirmationDialog.kt # Generic confirmation dialog
@@ -118,6 +116,31 @@ com.technitedminds.wallet/
 └── utils/                        # Utility classes and extensions ✅
     └── Extensions.kt             # Kotlin extension functions
 ```
+
+## Card Type System
+
+### Supported Card Types (15+ types)
+The application supports a comprehensive set of card types with unique visual identities:
+
+#### OCR-Enabled Cards (2 types)
+- **Credit**: Purple-blue gradient, supports text extraction
+- **Debit**: Pink-red gradient, supports text extraction
+
+#### Image-Only Cards (13+ types)
+- **TransportCard**: Blue-cyan gradient (metro, bus, train cards)
+- **GiftCard**: Teal-pink gradient (gift cards, vouchers)
+- **LoyaltyCard**: Cream-peach gradient (store loyalty cards)
+- **MembershipCard**: Green-teal gradient (gym, club memberships)
+- **InsuranceCard**: Purple-cream gradient (health, auto insurance)
+- **IdentificationCard**: Light blue-blue gradient (ID cards, licenses)
+- **Voucher**: Pink-yellow gradient (discount vouchers)
+- **Event**: Cream-peach gradient (event tickets, passes)
+- **BusinessCard**: Purple-blue gradient (business cards)
+- **LibraryCard**: Green-teal gradient (library cards)
+- **HotelCard**: Teal-pink gradient (hotel key cards)
+- **StudentCard**: Light blue-blue gradient (student IDs)
+- **AccessCard**: Purple-cream gradient (building access cards)
+- **Custom**: User-defined types with customizable gradients
 
 ## Key Dependencies (as used in module)
 
@@ -164,18 +187,12 @@ Only the camera permission is allowed for card scanning functionality.
 
 ## Build Status: ✅ SUCCESSFUL
 The project builds successfully with:
-- Domain layer complete
-- Data layer with Room and file storage
+- Complete domain layer with 15+ card types and gradient system
+- Advanced data layer with Room database and file storage
+- Comprehensive camera and OCR integration
 - Material 3 theming and Compose setup
 - Hilt dependency injection modules
-- Camera and OCR components present (integration foundation in place)
-
-## Recent Development Progress
-**Task 4: Camera and OCR Integration** - Advanced
-- ✅ CameraX foundation added (camera-core), UI components implemented
-- ✅ ML Kit Text Recognition wired via Play Services APIs
-- ✅ Camera UI set: Overlay, Permission, Preview, Capture, Error, Image Preview
-- 🚧 Remaining: Add additional CameraX artifacts (camera2/lifecycle/view) if needed and finalize end-to-end capture-to-OCR flow
+- Card sharing functionality
 
 ## Implementation Status
 
@@ -186,35 +203,28 @@ The project builds successfully with:
   - Material Design 3 theming (Color, Theme, Type)
   - Build configuration with core dependencies
 - **Domain Layer**: Complete implementation with all models, repositories, and use cases
-  - Core domain models (Card, CardType, Category, CardImage)
-  - Repository interfaces for all data operations
-  - Use cases for card management, OCR processing, category management, and data export/import
+  - 15+ card types with gradient system
+  - Card sharing functionality (images for image-only cards, gradient designs for textual cards)
+  - Category management system
   - Comprehensive validation and error handling
 - **Data Layer**: Complete implementation with Room database and file storage
   - Room database with entities, DAOs, and type converters
   - Image file management with compression and optimization
   - Repository implementations with proper error handling
   - Data mapping utilities between domain and data models
-  - User preferences management with SharedPreferences
-  - Export/import functionality with JSON serialization
-- **Camera & OCR Components**: Partial implementation
-  - **CardOverlay.kt**: Multi-aspect ratio overlay for card positioning
-    - Supports 16:9, 4:3, 3:4, and Credit Card aspect ratios
-    - Visual guides with corner indicators and crosshair alignment
-    - Customizable overlay transparency and capture state feedback
-    - Optimized card dimension calculations for different orientations
-  - **CameraError.kt**: Comprehensive error handling for camera operations
-    - Sealed class hierarchy for different error types
-    - User-friendly error messages with recovery suggestions
-    - Error mapping utilities and recoverability checks
-    - Material Design 3 error UI components
+- **Camera & OCR Components**: Advanced implementation
+  - Multi-aspect ratio overlay for card positioning
+  - Comprehensive error handling for camera operations
+  - ML Kit Text Recognition integration
+  - Camera UI components with proper lifecycle management
 
 ### 🚧 In Progress / Next Steps
-- **Camera & OCR Integration**: Finalize capture → process → save pipeline
-  - 🚧 Consider adding `camera-camera2`, `camera-lifecycle`, `camera-view` for full feature set
-  - 🚧 Verify permission flows and analyzer threading
-- **Presentation Layer**: Wire navigation and state between screens
-- **Navigation**: Add navigation graph and screen routes
+- **Complete Camera Integration**: Dedicated camera screens for card capture
+- **Card Type Selector**: Full gradient customization system
+- **Category Management**: Complete CRUD operations with UI
+- **Settings & Preferences**: App configuration and storage management
+- **Navigation**: Complete routing system with type-safe arguments
+- **Performance Optimization**: Image caching and animation optimization
 
 ### 📁 Current Project Structure
 ```
@@ -230,16 +240,16 @@ com.technitedminds.wallet/
 │   ├── mapper/ ✅ (CardMapper, CategoryMapper)
 │   └── ocr/ 🚧 (Empty - MLKit integration pending)
 ├── domain/ ✅ COMPLETE
-│   ├── model/ ✅ (Card, CardType, Category, CardImage)
+│   ├── model/ ✅ (Card, CardType, Category, CardImage, CardGradient)
 │   ├── repository/ ✅ (All repository interfaces)
-│   ├── usecase/ ✅ (card, category, export, ocr use cases)
+│   ├── usecase/ ✅ (card, category, ocr use cases with card sharing)
 │   └── util/ ✅
 ├── presentation/ ✅ PARTIAL
 │   ├── components/
-│   │   ├── camera/ ✅ (CameraError, CameraPermission, CameraPreview, CaptureButton, CardOverlay, ImagePreview)
-│   │   ├── common/ ✅ (CardListItem, CardTypeSelector, CategoryChip, ColorPicker, ConfirmationDialog, ErrorMessage, LoadingIndicator, ValidatedTextField)
-│   │   └── animation/ ✅ (AnimatedList, AnimationUtils, CardBack, CardFront)
-│   ├── screens/ ✅ (HomeScreen/HomeViewModel, AddCardScreen/AddCardViewModel, CardDetailScreen/CardDetailViewModel)
+│   │   ├── camera/ ✅ (Complete camera system)
+│   │   ├── common/ ✅ (All UI components with gradient support)
+│   │   └── animation/ ✅ (Card flip and list animations)
+│   ├── screens/ ✅ (HomeScreen, AddCardScreen, CardDetailScreen with ViewModels)
 │   └── navigation/ 📁 (Directory present)
 ├── di/ ✅ (DatabaseModule, RepositoryModule)
 └── utils/ ✅ (Extensions.kt)

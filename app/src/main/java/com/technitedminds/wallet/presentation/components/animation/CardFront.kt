@@ -11,6 +11,8 @@ import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.DirectionsTransit
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.Hotel
 import androidx.compose.material.icons.filled.Key
@@ -19,6 +21,7 @@ import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import com.technitedminds.wallet.domain.model.CardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,7 +36,6 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.technitedminds.wallet.domain.model.Card
-import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.presentation.components.common.resolveCategoryName
 import java.io.File
 import androidx.core.graphics.toColorInt
@@ -230,12 +232,13 @@ private fun getCardGradient(card: Card): Brush {
  */
 private fun getCardTypeIcon(cardType: CardType) = when (cardType) {
     is CardType.Credit, is CardType.Debit -> Icons.Default.CreditCard
-    is CardType.ATM -> Icons.Default.CreditCard
     is CardType.GiftCard -> Icons.Default.CardGiftcard
     is CardType.LoyaltyCard -> Icons.Default.Stars
     is CardType.MembershipCard -> Icons.Default.Badge
     is CardType.InsuranceCard -> Icons.Default.HealthAndSafety
     is CardType.IdentificationCard -> Icons.Default.Badge
+    is CardType.Voucher -> Icons.Default.LocalOffer
+    is CardType.Event -> Icons.Default.Event
     is CardType.TransportCard -> Icons.Default.DirectionsTransit
     is CardType.BusinessCard -> Icons.Default.Business
     is CardType.LibraryCard -> Icons.AutoMirrored.Filled.MenuBook
