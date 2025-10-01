@@ -6,6 +6,7 @@ import com.google.mlkit.vision.text.TextRecognition
 // ML Kit TextRecognizerOptions - using default options
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.technitedminds.wallet.domain.model.CardType
+import com.technitedminds.wallet.domain.usecase.ocr.ImageSide
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -16,7 +17,9 @@ import kotlin.coroutines.suspendCoroutine
  * Specifically optimized for credit/debit card text extraction.
  */
 @Singleton
-class MLKitTextRecognizer @Inject constructor() {
+class MLKitTextRecognizer @Inject constructor(
+    private val cardTextParser: CardTextParser
+) {
 
     private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
@@ -81,41 +84,14 @@ class MLKitTextRecognizer @Inject constructor() {
 
     /** Parses extracted text specifically for card information */
     private fun parseTextForCard(rawText: String, cardType: CardType): Map<String, String> {
-        val extractedData = mutableMapOf<String, String>()
-
         // Only process textual cards
         if (!cardType.supportsOCR()) {
-            return extractedData
+            return emptyMap()
         }
 
-        val lines = rawText.lines().map { it.trim() }.filter { it.isNotEmpty() }
-
-        // Extract card number
-        extractCardNumber(lines)?.let { cardNumber -> 
-            extractedData["cardNumber"] = cardNumber 
-        }
-
-        // Extract expiry date
-        extractExpiryDate(lines)?.let { expiryDate -> 
-            extractedData["expiryDate"] = expiryDate 
-        }
-
-        // Extract cardholder name
-        extractCardholderName(lines, cardType)?.let { name ->
-            extractedData["cardholderName"] = name
-        }
-
-        // Extract CVV (usually on back)
-        extractCVV(lines)?.let { cvv -> 
-            extractedData["cvv"] = cvv 
-        }
-
-        // Extract bank name
-        extractBankName(lines, cardType)?.let { bankName -> 
-            extractedData["bankName"] = bankName 
-        }
-
-        return extractedData
+        // Use the specialized card text parser for better accuracy
+        // Default to FRONT side if not specified (this method doesn't have side parameter)
+        return cardTextParser.parseCardText(rawText, cardType, ImageSide.FRONT)
     }
 
     /** Extracts card number from text lines */

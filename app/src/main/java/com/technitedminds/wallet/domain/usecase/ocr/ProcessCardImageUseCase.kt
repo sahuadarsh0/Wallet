@@ -1,13 +1,16 @@
 package com.technitedminds.wallet.domain.usecase.ocr
 
+import com.technitedminds.wallet.data.ocr.MLKitTextRecognizer
 import com.technitedminds.wallet.domain.model.CardType
 import javax.inject.Inject
 
 /**
  * Use case for processing card images with OCR for textual cards only. Extracts text information
- * from credit, debit cards.
+ * from credit, debit cards using ML Kit.
  */
-class ProcessCardImageUseCase @Inject constructor() {
+class ProcessCardImageUseCase @Inject constructor(
+    private val mlKitTextRecognizer: MLKitTextRecognizer
+) {
 
     /**
      * Processes a card image to extract text data
@@ -26,18 +29,14 @@ class ProcessCardImageUseCase @Inject constructor() {
                 return Result.failure(IllegalArgumentException("Invalid image data"))
             }
 
-            // Process the image based on card type and side
-            val extractedData =
-                    when (request.cardType) {
-                        is CardType.Credit ->
-                                processTextualCard(request.imageData, request.imageSide)
-                        is CardType.Debit ->
-                                processTextualCard(request.imageData, request.imageSide)
-                        else ->
-                                emptyMap() // Non-OCR card types don't need text processing
-                    }
-
-            Result.success(extractedData)
+            // Process the image using ML Kit
+            val ocrResult = mlKitTextRecognizer.processImage(request.imageData, request.cardType)
+            
+            if (ocrResult.success) {
+                Result.success(ocrResult.extractedData)
+            } else {
+                Result.failure(Exception(ocrResult.errorMessage ?: "OCR processing failed"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }

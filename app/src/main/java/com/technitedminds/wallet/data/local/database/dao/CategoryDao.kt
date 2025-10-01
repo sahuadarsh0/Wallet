@@ -18,19 +18,19 @@ import kotlinx.coroutines.flow.Flow
 interface CategoryDao {
 
     /** Get all categories as a Flow for reactive updates */
-    @Query("SELECT * FROM categories ORDER BY is_default DESC, name ASC")
+    @Query("SELECT * FROM categories ORDER BY sort_order ASC, name ASC")
     fun getAllCategories(): Flow<List<CategoryEntity>>
 
     /** Get a specific category by ID */
     @Query("SELECT * FROM categories WHERE id = :categoryId")
     suspend fun getCategoryById(categoryId: String): CategoryEntity?
 
-    /** Get default system categories */
-    @Query("SELECT * FROM categories WHERE is_default = 1 ORDER BY name ASC")
+    /** Get predefined system categories */
+    @Query("SELECT * FROM categories WHERE id IN ('default', 'personal', 'business', 'travel', 'shopping', 'health', 'entertainment') ORDER BY sort_order ASC")
     fun getDefaultCategories(): Flow<List<CategoryEntity>>
 
-    /** Get user-created categories (non-default) */
-    @Query("SELECT * FROM categories WHERE is_default = 0 ORDER BY name ASC")
+    /** Get user-created categories (non-predefined) */
+    @Query("SELECT * FROM categories WHERE id NOT IN ('default', 'personal', 'business', 'travel', 'shopping', 'health', 'entertainment') ORDER BY sort_order ASC, name ASC")
     fun getUserCategories(): Flow<List<CategoryEntity>>
 
     /** Get categories sorted by name */
@@ -38,7 +38,7 @@ interface CategoryDao {
             """
         SELECT * FROM categories 
         ORDER BY 
-            is_default DESC,
+            sort_order ASC,
             CASE WHEN :ascending = 1 THEN name END ASC,
             CASE WHEN :ascending = 0 THEN name END DESC
     """
@@ -55,7 +55,7 @@ interface CategoryDao {
     @Query("SELECT COUNT(*) FROM categories") suspend fun getCategoryCount(): Int
 
     /** Get count of user-created categories */
-    @Query("SELECT COUNT(*) FROM categories WHERE is_default = 0")
+    @Query("SELECT COUNT(*) FROM categories WHERE id NOT IN ('default', 'personal', 'business', 'travel', 'shopping', 'health', 'entertainment')")
     suspend fun getUserCategoryCount(): Int
 
     /** Check if a category exists */
@@ -76,12 +76,13 @@ interface CategoryDao {
     /** Delete a category */
     @Delete suspend fun deleteCategory(category: CategoryEntity)
 
-    /** Delete a category by ID (only if it's not a default category) */
-    @Query("DELETE FROM categories WHERE id = :categoryId AND is_default = 0")
+    /** Delete a category by ID (only if it's not a predefined category) */
+    @Query("DELETE FROM categories WHERE id = :categoryId AND id NOT IN ('default', 'personal', 'business', 'travel', 'shopping', 'health', 'entertainment')")
     suspend fun deleteCategoryById(categoryId: String): Int
 
     /** Delete all user-created categories */
-    @Query("DELETE FROM categories WHERE is_default = 0") suspend fun deleteAllUserCategories()
+    @Query("DELETE FROM categories WHERE id NOT IN ('default', 'personal', 'business', 'travel', 'shopping', 'health', 'entertainment')") 
+    suspend fun deleteAllUserCategories()
 
     /** Get categories with card counts (using subquery) */
     @Query(
@@ -89,7 +90,7 @@ interface CategoryDao {
         SELECT c.*, 
                (SELECT COUNT(*) FROM cards WHERE category_id = c.id) as card_count
         FROM categories c 
-        ORDER BY c.is_default DESC, c.name ASC
+        ORDER BY c.sort_order ASC, c.name ASC
     """
     )
     fun getCategoriesWithCardCounts(): Flow<List<CategoryWithCardCount>>
@@ -99,26 +100,26 @@ interface CategoryDao {
             """
         SELECT * FROM categories c 
         WHERE NOT EXISTS (SELECT 1 FROM cards WHERE category_id = c.id)
-        ORDER BY is_default DESC, name ASC
+        ORDER BY sort_order ASC, name ASC
     """
     )
     fun getEmptyCategories(): Flow<List<CategoryEntity>>
 
     /** Check if default categories are initialized */
-    @Query("SELECT EXISTS(SELECT 1 FROM categories WHERE is_default = 1)")
+    @Query("SELECT EXISTS(SELECT 1 FROM categories WHERE id IN ('default', 'personal', 'business', 'travel', 'shopping', 'health', 'entertainment'))")
     suspend fun hasDefaultCategories(): Boolean
 
-    /** Get missing default categories (for restoration) */
-    @Query("SELECT COUNT(*) FROM categories WHERE is_default = 1")
+    /** Get count of default categories (for restoration) */
+    @Query("SELECT COUNT(*) FROM categories WHERE id IN ('default', 'personal', 'business', 'travel', 'shopping', 'health', 'entertainment')")
     suspend fun getDefaultCategoryCount(): Int
 
     /** Data class for category with card count query result */
     data class CategoryWithCardCount(
             val id: String,
             val name: String,
-            @ColumnInfo(name = "icon_res_id") val iconResId: Int,
             @ColumnInfo(name = "color_hex") val colorHex: String,
-            @ColumnInfo(name = "is_default") val isDefault: Boolean,
+            @ColumnInfo(name = "icon_name") val iconName: String,
+            @ColumnInfo(name = "sort_order") val sortOrder: Int,
             @ColumnInfo(name = "created_at") val createdAt: Long,
             @ColumnInfo(name = "updated_at") val updatedAt: Long,
             @ColumnInfo(name = "card_count") val cardCount: Int

@@ -9,6 +9,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.technitedminds.wallet.data.local.database.converters.CardTypeConverter
 import com.technitedminds.wallet.data.local.database.converters.MapConverter
+import com.technitedminds.wallet.data.local.database.converters.CardGradientConverter
 import com.technitedminds.wallet.data.local.database.dao.CardDao
 import com.technitedminds.wallet.data.local.database.dao.CategoryDao
 import com.technitedminds.wallet.data.local.database.entities.CardEntity
@@ -18,8 +19,8 @@ import com.technitedminds.wallet.data.local.database.entities.CategoryEntity
  * Room database for the CardVault wallet application. Manages local storage of cards and categories
  * with proper configuration and migrations.
  */
-@Database(entities = [CardEntity::class, CategoryEntity::class], version = 1, exportSchema = false)
-@TypeConverters(CardTypeConverter::class, MapConverter::class)
+@Database(entities = [CardEntity::class, CategoryEntity::class], version = 2, exportSchema = false)
+@TypeConverters(CardTypeConverter::class, MapConverter::class, CardGradientConverter::class)
 abstract class WalletDatabase : RoomDatabase() {
 
     abstract fun cardDao(): CardDao
@@ -40,7 +41,7 @@ abstract class WalletDatabase : RoomDatabase() {
                                                 DATABASE_NAME
                                         )
                                         .addMigrations(
-                                                // Add future migrations here
+                                                MIGRATION_1_2
                                                 )
                                         .addCallback(DatabaseCallback())
                                         .build()
@@ -63,12 +64,42 @@ abstract class WalletDatabase : RoomDatabase() {
             }
         }
 
-        /** Migration from version 1 to 2 (example for future use) */
+        /** Migration from version 1 to 2 - Update schema for cards and categories */
         val MIGRATION_1_2 =
                 object : Migration(1, 2) {
                     override fun migrate(database: SupportSQLiteDatabase) {
-                        // Example migration - add new column
-                        // database.execSQL("ALTER TABLE cards ADD COLUMN new_column TEXT")
+                        // Add new columns to cards table
+                        database.execSQL("ALTER TABLE cards ADD COLUMN expiry_date TEXT")
+                        database.execSQL("ALTER TABLE cards ADD COLUMN notes TEXT")
+                        database.execSQL("ALTER TABLE cards ADD COLUMN custom_gradient TEXT")
+                        
+                        // Update categories table schema
+                        database.execSQL("""
+                            CREATE TABLE categories_new (
+                                id TEXT PRIMARY KEY NOT NULL,
+                                name TEXT NOT NULL,
+                                color_hex TEXT NOT NULL,
+                                icon_name TEXT NOT NULL,
+                                sort_order INTEGER NOT NULL,
+                                created_at INTEGER NOT NULL,
+                                updated_at INTEGER NOT NULL
+                            )
+                        """)
+                        
+                        // Migrate existing category data if any exists
+                        database.execSQL("""
+                            INSERT INTO categories_new (id, name, color_hex, icon_name, sort_order, created_at, updated_at)
+                            SELECT id, name, color_hex, 'category', 0, created_at, updated_at FROM categories
+                        """)
+                        
+                        // Drop old table and rename new one
+                        database.execSQL("DROP TABLE categories")
+                        database.execSQL("ALTER TABLE categories_new RENAME TO categories")
+                        
+                        // Create indices for categories
+                        database.execSQL("CREATE UNIQUE INDEX index_categories_name ON categories(name)")
+                        database.execSQL("CREATE INDEX index_categories_sort_order ON categories(sort_order)")
+                        database.execSQL("CREATE INDEX index_categories_created_at ON categories(created_at)")
                     }
                 }
 

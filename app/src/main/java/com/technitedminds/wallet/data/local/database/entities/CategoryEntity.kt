@@ -10,19 +10,19 @@ import androidx.room.PrimaryKey
  * proper Room annotations.
  */
 @Entity(
-        tableName = "categories",
-        indices =
-                [
-                        Index(value = ["name"], unique = true),
-                        Index(value = ["is_default"]),
-                        Index(value = ["created_at"])]
+    tableName = "categories",
+    indices =
+        [
+            Index(value = ["name"], unique = true),
+            Index(value = ["sort_order"]),
+            Index(value = ["created_at"])]
 )
 data class CategoryEntity(
-        @PrimaryKey @ColumnInfo(name = "id") val id: String,
-        @ColumnInfo(name = "name") val name: String,
-        @ColumnInfo(name = "icon_res_id") val iconResId: Int,
-        @ColumnInfo(name = "color_hex") val colorHex: String,
-        @ColumnInfo(name = "is_default") val isDefault: Boolean = false,
-        @ColumnInfo(name = "created_at") val createdAt: Long,
-        @ColumnInfo(name = "updated_at") val updatedAt: Long
+    @PrimaryKey @ColumnInfo(name = "id") val id: String,
+    @ColumnInfo(name = "name") val name: String,
+    @ColumnInfo(name = "color_hex") val colorHex: String,
+    @ColumnInfo(name = "icon_name") val iconName: String,
+    @ColumnInfo(name = "sort_order") val sortOrder: Int,
+    @ColumnInfo(name = "created_at") val createdAt: Long,
+    @ColumnInfo(name = "updated_at") val updatedAt: Long
 )

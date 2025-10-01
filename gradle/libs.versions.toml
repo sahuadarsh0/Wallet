@@ -31,6 +31,7 @@ mlKit = "16.0.1"
 # Other
 coil = "2.7.0"
 tink = "1.18.0"
+kotlinxSerializationJson = "1.7.0"
 
 # Testing
 junit = "4.13.2"
@@ -87,6 +88,9 @@ coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coi
 # Security
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
 google-tink = { group = "com.google.crypto.tink", name = "tink-android", version.ref = "tink" }
+
+# Kotlinx Serialization
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

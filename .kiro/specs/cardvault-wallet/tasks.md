@@ -22,7 +22,7 @@
   - Create ImageRepository interface for image storage and retrieval operations
   - _Requirements: 4.1, 4.2, 6.1_
 
-- [-] 2.3 Implement domain use cases
+- [x] 2.3 Implement domain use cases
   - Create AddCardUseCase with validation logic for both textual and image card types
   - Implement GetCardsUseCase with filtering and sorting capabilities
   - Create UpdateCardUseCase and DeleteCardUseCase with proper error handling
@@ -85,7 +85,7 @@
   - Implement preview and retake functionality for both front and back images
   - _Requirements: 2.1, 2.2, 2.6, 2.7_
 
-- [x] 5. Core UI Components and Animations
+- [ ] 5. Core UI Components and Animations
 - [x] 5.1 Implement card flip animation system
   - Create FlippableCard composable with 3D rotation animation using graphicsLayer
   - Implement smooth 300ms flip transition with proper easing curves
