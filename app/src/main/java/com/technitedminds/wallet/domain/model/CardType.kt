@@ -137,6 +137,30 @@ sealed class CardType {
                 is Custom -> Pair("#667eea", "#764ba2")           // Default purple to blue
             }
 
+    /** Returns a serializable name for navigation */
+    fun getSerializableName(): String =
+        when (this) {
+            is Credit -> "Credit"
+            is Debit -> "Debit"
+            is TransportCard -> "TransportCard"
+            is GiftCard -> "GiftCard"
+            is LoyaltyCard -> "LoyaltyCard"
+            is MembershipCard -> "MembershipCard"
+            is InsuranceCard -> "InsuranceCard"
+            is IdentificationCard -> "IdentificationCard"
+            is Voucher -> "Voucher"
+            is Event -> "Event"
+            is BusinessCard -> "BusinessCard"
+            is LibraryCard -> "LibraryCard"
+            is HotelCard -> "HotelCard"
+            is StudentCard -> "StudentCard"
+            is AccessCard -> "AccessCard"
+            is Custom -> "Custom_${typeName}_${colorHex}"
+        }
+
+    /** Returns a navigation-safe string representation */
+    fun toNavigationString(): String = getSerializableName()
+
     companion object {
         /** Get all predefined card types */
         fun getAllPredefinedTypes(): List<CardType> = listOf(
@@ -149,5 +173,36 @@ sealed class CardType {
         fun createCustom(name: String, color: String = "#757575"): Custom {
             return Custom(name, color)
         }
+
+        /** Creates CardType from serializable name */
+        fun fromSerializableName(name: String): CardType =
+            when {
+                name == "Credit" -> Credit
+                name == "Debit" -> Debit
+                name == "TransportCard" -> TransportCard
+                name == "GiftCard" -> GiftCard
+                name == "LoyaltyCard" -> LoyaltyCard
+                name == "MembershipCard" -> MembershipCard
+                name == "InsuranceCard" -> InsuranceCard
+                name == "IdentificationCard" -> IdentificationCard
+                name == "Voucher" -> Voucher
+                name == "Event" -> Event
+                name == "BusinessCard" -> BusinessCard
+                name == "LibraryCard" -> LibraryCard
+                name == "HotelCard" -> HotelCard
+                name == "StudentCard" -> StudentCard
+                name == "AccessCard" -> AccessCard
+                name.startsWith("Custom_") -> {
+                    val parts = name.removePrefix("Custom_").split("_")
+                    if (parts.size >= 2) {
+                        val typeName = parts.dropLast(1).joinToString("_")
+                        val colorHex = parts.last()
+                        Custom(typeName, colorHex)
+                    } else {
+                        Custom("Custom Card", "#757575")
+                    }
+                }
+                else -> Credit // Default fallback
+            }
     }
 }

@@ -238,6 +238,7 @@ fun CameraControls(
     captureButtonState: CaptureButtonState = CaptureButtonState.IDLE,
     isFlashOn: Boolean = false,
     hasFrontCamera: Boolean = true,
+    isCameraReady: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -282,7 +283,8 @@ fun CameraControls(
         ) {
             CaptureButton(
                 onClick = onCaptureClick,
-                state = captureButtonState
+                state = if (!isCameraReady) CaptureButtonState.PROCESSING else captureButtonState,
+                enabled = isCameraReady
             )
         }
     }

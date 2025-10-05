@@ -29,8 +29,12 @@ class ProcessCardImageUseCase @Inject constructor(
                 return Result.failure(IllegalArgumentException("Invalid image data"))
             }
 
-            // Process the image using ML Kit
-            val ocrResult = mlKitTextRecognizer.processImage(request.imageData, request.cardType)
+            // Process the image using ML Kit with side information
+            val ocrResult = mlKitTextRecognizer.processImageSide(
+                request.imageData, 
+                request.cardType, 
+                request.imageSide
+            )
             
             if (ocrResult.success) {
                 Result.success(ocrResult.extractedData)
@@ -60,22 +64,40 @@ class ProcessCardImageUseCase @Inject constructor(
             }
 
             // Process front side
-            val frontResult =
-                    invoke(ProcessCardImageRequest(frontImageData, cardType, ImageSide.FRONT))
-
+            val frontResult = mlKitTextRecognizer.processImageSide(frontImageData, cardType, ImageSide.FRONT)
+            
             // Process back side
-            val backResult =
-                    invoke(ProcessCardImageRequest(backImageData, cardType, ImageSide.BACK))
+            val backResult = mlKitTextRecognizer.processImageSide(backImageData, cardType, ImageSide.BACK)
 
             // Combine results
-            val frontData = frontResult.getOrElse { emptyMap() }
-            val backData = backResult.getOrElse { emptyMap() }
-
             val combinedData = mutableMapOf<String, String>()
-            combinedData.putAll(frontData)
-            combinedData.putAll(backData)
+            
+            if (frontResult.success) {
+                combinedData.putAll(frontResult.extractedData)
+            }
+            
+            if (backResult.success) {
+                combinedData.putAll(backResult.extractedData)
+            }
 
-            Result.success(combinedData.toMap())
+            // Filter to only extract the 4 required fields: cardNumber, expiryDate, cardholderName, cvv
+            val filteredData = mutableMapOf<String, String>()
+            combinedData["cardNumber"]?.let { filteredData["cardNumber"] = it }
+            combinedData["expiryDate"]?.let { filteredData["expiryDate"] = it }
+            combinedData["cardholderName"]?.let { filteredData["cardholderName"] = it }
+            combinedData["cvv"]?.let { filteredData["cvv"] = it }
+
+            // Return success if we got any data, even if one side failed
+            if (filteredData.isNotEmpty()) {
+                Result.success(filteredData.toMap())
+            } else {
+                val errorMessage = listOfNotNull(
+                    frontResult.errorMessage?.let { "Front: $it" },
+                    backResult.errorMessage?.let { "Back: $it" }
+                ).joinToString("; ").ifEmpty { "OCR processing failed for both sides" }
+                
+                Result.failure(Exception(errorMessage))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }

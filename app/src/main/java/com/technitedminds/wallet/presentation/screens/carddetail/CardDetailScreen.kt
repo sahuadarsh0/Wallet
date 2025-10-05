@@ -28,8 +28,9 @@ import androidx.compose.material.icons.automirrored.filled.Notes
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardDetailScreen(
+    cardId: String,
     onNavigateBack: () -> Unit,
-    onCardDeleted: () -> Unit,
+    onNavigateToEdit: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: CardDetailViewModel = hiltViewModel()
 ) {
@@ -37,13 +38,13 @@ fun CardDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isEditing by viewModel.isEditing.collectAsStateWithLifecycle()
     val editedCard by viewModel.editedCard.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+
 
     // Handle events
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                is CardDetailEvent.CardDeleted -> onCardDeleted()
+                is CardDetailEvent.CardDeleted -> onNavigateBack()
                 is CardDetailEvent.CardSaved -> {
                     // Show success message or handle as needed
                 }
@@ -231,12 +232,13 @@ private fun CardDisplaySection(
         // Card with flip animation
         FlippableCard(
             card = card,
-            isFlipped = isFlipped,
-            onFlip = onFlip,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp),
-            enableClick = true
+            showShareButtons = true,
+            onShare = { sharingOption ->
+                // Handle card sharing
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))

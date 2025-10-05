@@ -1,5 +1,6 @@
 package com.technitedminds.wallet.domain.util
 
+import android.graphics.Bitmap
 import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.domain.repository.ImageRepository
 import javax.inject.Inject
@@ -38,6 +39,34 @@ class CardGradientGenerator @Inject constructor(
         // For now, return a placeholder path
         // This will be implemented when we add the actual image generation logic
         return "generated_card_${card.id}_${System.currentTimeMillis()}.png"
+    }
+    
+    /**
+     * Generate front card image as bitmap
+     */
+    suspend fun generateCardFrontImage(
+        card: Card,
+        showAllDetails: Boolean = true,
+        width: Int = 1200,
+        height: Int = 800
+    ): Bitmap? {
+        // TODO: Implement front card bitmap generation
+        // For now, return null to indicate not implemented
+        return null
+    }
+    
+    /**
+     * Generate back card image as bitmap
+     */
+    suspend fun generateCardBackImage(
+        card: Card,
+        showAllDetails: Boolean = true,
+        width: Int = 1200,
+        height: Int = 800
+    ): Bitmap? {
+        // TODO: Implement back card bitmap generation
+        // For now, return null to indicate not implemented
+        return null
     }
     
     /**

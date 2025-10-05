@@ -8,7 +8,16 @@ import com.technitedminds.wallet.domain.usecase.card.AddCardUseCase
 import com.technitedminds.wallet.domain.usecase.card.GetCardsUseCase
 import com.technitedminds.wallet.domain.usecase.card.UpdateCardUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -178,30 +187,69 @@ class AddCardViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isSaving = true, error = null)
             
             try {
-                val card = Card(
-                    id = currentState.cardId ?: generateCardId(),
-                    name = currentState.cardName,
-                    type = currentState.cardType,
-                    categoryId = currentState.categoryId,
-                    frontImagePath = currentState.frontImagePath ?: "",
-                    backImagePath = currentState.backImagePath ?: "",
-                    extractedData = currentState.extractedData,
-                    customFields = currentState.customFields,
-                    createdAt = System.currentTimeMillis(),
-                    updatedAt = System.currentTimeMillis()
-                )
-                
                 if (currentState.isEditMode) {
+                    // For editing, create Card object directly
+                    val card = Card(
+                        id = currentState.cardId ?: generateCardId(),
+                        name = currentState.cardName,
+                        type = currentState.cardType,
+                        categoryId = currentState.categoryId,
+                        frontImagePath = currentState.frontImagePath ?: "",
+                        backImagePath = currentState.backImagePath ?: "",
+                        extractedData = currentState.extractedData,
+                        customFields = currentState.customFields,
+                        createdAt = System.currentTimeMillis(),
+                        updatedAt = System.currentTimeMillis()
+                    )
                     updateCardUseCase(card)
+                    _events.emit(AddCardEvent.CardSaved(card))
                 } else {
-                    addCardUseCase(card)
+                    // For adding new card, use AddCardRequest
+                    val frontImageData = currentState.frontImagePath?.let { 
+                        java.io.File(it).readBytes() 
+                    } ?: ByteArray(0)
+                    val backImageData = currentState.backImagePath?.let { 
+                        java.io.File(it).readBytes() 
+                    } ?: ByteArray(0)
+                    
+                    val request = com.technitedminds.wallet.domain.usecase.card.AddCardRequest(
+                        cardId = currentState.cardId ?: generateCardId(),
+                        name = currentState.cardName,
+                        type = currentState.cardType,
+                        categoryId = currentState.categoryId,
+                        frontImageData = frontImageData,
+                        backImageData = backImageData,
+                        extractedData = currentState.extractedData,
+                        customFields = currentState.customFields
+                    )
+                    
+                    val result = addCardUseCase(request)
+                    result.fold(
+                        onSuccess = { cardId ->
+                            val card = Card(
+                                id = cardId,
+                                name = currentState.cardName,
+                                type = currentState.cardType,
+                                categoryId = currentState.categoryId,
+                                frontImagePath = currentState.frontImagePath ?: "",
+                                backImagePath = currentState.backImagePath ?: "",
+                                extractedData = currentState.extractedData,
+                                customFields = currentState.customFields,
+                                createdAt = System.currentTimeMillis(),
+                                updatedAt = System.currentTimeMillis()
+                            )
+                            _events.emit(AddCardEvent.CardSaved(card))
+                        },
+                        onFailure = { error ->
+                            throw error
+                        }
+                    )
                 }
                 
                 _uiState.value = _uiState.value.copy(
                     isSaving = false,
                     isSaved = true
                 )
-                _events.emit(AddCardEvent.CardSaved(card))
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isSaving = false,
@@ -248,6 +296,148 @@ class AddCardViewModel @Inject constructor(
     fun setBackImagePath(path: String) {
         _uiState.value = _uiState.value.copy(backImagePath = path)
     }
+    
+    fun setCapturedImages(frontPath: String, backPath: String?, extractedData: Map<String, String>) {
+        _uiState.value = _uiState.value.copy(
+            frontImagePath = frontPath,
+            backImagePath = backPath,
+            extractedData = extractedData
+        )
+        // Handle OCR results if any
+        if (extractedData.isNotEmpty()) {
+            handleOCRResults(extractedData)
+        }
+        // Move to form details step after capturing images
+        _currentStep.value = AddCardStep.FORM_DETAILS
+    }
+
+    
+    /**
+     * Handle OCR results from camera capture
+     */
+    fun handleOCRResults(extractedData: Map<String, String>) {
+        val currentState = _uiState.value
+        
+        // Debug logging
+        println("AddCardViewModel: handleOCRResults called")
+        println("AddCardViewModel: Current card type: ${currentState.cardType}")
+        println("AddCardViewModel: Card type supports OCR: ${currentState.cardType.supportsOCR()}")
+        println("AddCardViewModel: Extracted data: $extractedData")
+        
+        // Check both the current state card type and the selected card type as fallback
+        val cardTypeSupportsOCR = currentState.cardType.supportsOCR() || 
+                                 (_selectedCardType.value?.supportsOCR() == true)
+        
+        if (cardTypeSupportsOCR) {
+            println("AddCardViewModel: Processing OCR data for textual card")
+            
+            // Only populate the dedicated card fields, NOT the custom fields
+            // This prevents duplication in "Additional Information" section
+            _uiState.value = currentState.copy(
+                extractedData = extractedData,
+                hasOCRData = extractedData.isNotEmpty(),
+                // Pre-fill only the dedicated OCR fields
+                cardNumber = extractedData["cardNumber"] ?: "",
+                expiryDate = extractedData["expiryDate"] ?: "",
+                cardholderName = extractedData["cardholderName"] ?: "",
+                cvv = extractedData["cvv"] ?: ""
+            )
+            
+            println("AddCardViewModel: Populated dedicated card fields only")
+        } else {
+            println("AddCardViewModel: Skipping OCR data - card type does not support OCR")
+            println("AddCardViewModel: Current state card type: ${currentState.cardType}")
+            println("AddCardViewModel: Selected card type: ${_selectedCardType.value}")
+            
+            _uiState.value = currentState.copy(
+                extractedData = extractedData,
+                hasOCRData = false
+            )
+        }
+        
+        println("AddCardViewModel: Final UI state card number: ${_uiState.value.cardNumber}")
+    }
+    
+    /**
+     * Clear all OCR data and allow manual entry
+     */
+    fun clearOCRData() {
+        val currentState = _uiState.value
+        
+        _uiState.value = currentState.copy(
+            extractedData = emptyMap(),
+            hasOCRData = false,
+            cardNumber = "",
+            expiryDate = "",
+            cardholderName = "",
+            cvv = "",
+            cardNumberError = null,
+            expiryDateError = null,
+            cardholderNameError = null,
+            cvvError = null
+        )
+    }
+    
+    /**
+     * Update card number field
+     */
+    fun updateCardNumber(cardNumber: String) {
+        val currentState = _uiState.value
+        
+        _uiState.value = currentState.copy(
+            cardNumber = cardNumber,
+            cardNumberError = null
+        )
+    }
+    
+    /**
+     * Update expiry date field
+     */
+    fun updateExpiryDate(expiryDate: String) {
+        val currentState = _uiState.value
+        val formatted = formatExpiryInput(expiryDate)
+        
+        _uiState.value = currentState.copy(
+            expiryDate = formatted,
+            expiryDateError = null
+        )
+    }
+    
+    /**
+     * Update cardholder name field
+     */
+    fun updateCardholderName(cardholderName: String) {
+        val currentState = _uiState.value
+        
+        _uiState.value = currentState.copy(
+            cardholderName = cardholderName,
+            cardholderNameError = null
+        )
+    }
+    
+    /**
+     * Update CVV field
+     */
+    fun updateCvv(cvv: String) {
+        val currentState = _uiState.value
+        
+        _uiState.value = currentState.copy(
+            cvv = cvv,
+            cvvError = null
+        )
+    }
+    
+    /**
+     * Format expiry date input as user types (MM/YY)
+     */
+    private fun formatExpiryInput(input: String): String {
+        val digitsOnly = input.filter { it.isDigit() }
+        return when {
+            digitsOnly.length <= 2 -> digitsOnly
+            digitsOnly.length <= 4 -> "${digitsOnly.take(2)}/${digitsOnly.drop(2)}"
+            else -> "${digitsOnly.take(2)}/${digitsOnly.drop(2).take(2)}"
+        }
+    }
 
     fun clearError() { _uiState.value = _uiState.value.copy(error = null) }
 
@@ -290,5 +480,20 @@ data class AddCardUiState(
     val isSaved: Boolean = false,
     val error: String? = null,
     val canSave: Boolean = false,
-    val showColorPicker: Boolean = false
-)
+    val showColorPicker: Boolean = false,
+    // OCR-related fields
+    val hasOCRData: Boolean = false,
+    val cardNumber: String = "",
+    val expiryDate: String = "",
+    val cardholderName: String = "",
+    val cvv: String = "",
+    // Field errors
+    val cardNumberError: String? = null,
+    val expiryDateError: String? = null,
+    val cardholderNameError: String? = null,
+    val cvvError: String? = null
+) {
+    // Computed property for OCR status
+    val hasOCRDataComputed: Boolean
+        get() = extractedData.isNotEmpty()
+}

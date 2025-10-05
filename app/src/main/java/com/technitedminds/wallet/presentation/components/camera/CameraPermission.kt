@@ -1,6 +1,11 @@
 package com.technitedminds.wallet.presentation.components.camera
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -14,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 
 /**
  * Composable that handles camera permission requests and states.
@@ -186,4 +192,30 @@ fun RequireCameraPermission(
         onPermissionGranted = content,
         onPermissionDenied = { DefaultPermissionDeniedContent() }
     )
+}
+
+/**
+ * Utility object for camera permission operations
+ */
+object CameraPermissionUtils {
+    
+    /**
+     * Check if camera permission is granted
+     */
+    fun isCameraPermissionGranted(context: Context): Boolean {
+        return ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+    
+    /**
+     * Open app settings for manual permission grant
+     */
+    fun openAppSettings(context: Context) {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
+        }
+        context.startActivity(intent)
+    }
 }

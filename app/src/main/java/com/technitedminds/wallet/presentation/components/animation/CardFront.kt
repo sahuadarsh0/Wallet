@@ -6,19 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Badge
-import androidx.compose.material.icons.filled.Business
-import androidx.compose.material.icons.filled.CardGiftcard
-import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.DirectionsTransit
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.LocalOffer
-import androidx.compose.material.icons.filled.HealthAndSafety
-import androidx.compose.material.icons.filled.Hotel
-import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.Stars
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import com.technitedminds.wallet.domain.model.CardType
@@ -36,9 +24,13 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.technitedminds.wallet.domain.model.Card
-import com.technitedminds.wallet.presentation.components.common.resolveCategoryName
+import com.technitedminds.wallet.presentation.utils.resolveCategoryName
+import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
 import java.io.File
 import androidx.core.graphics.toColorInt
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 
 /**
  * Front side of the card display with proper image loading and card information.
@@ -48,7 +40,9 @@ import androidx.core.graphics.toColorInt
 fun CardFront(
     card: Card,
     modifier: Modifier = Modifier,
-    isCompact: Boolean = false
+    isCompact: Boolean = false,
+    showShareButton: Boolean = false,
+    onShare: ((CardSharingOption) -> Unit)? = null
 ) {
     val context = LocalContext.current
     
@@ -190,16 +184,42 @@ fun CardFront(
             }
         }
         
-        // Card type icon (top right)
-        Icon(
-            imageVector = getCardTypeIcon(card.type),
-            contentDescription = "${card.type.getDisplayName()} icon",
-            tint = Color.White.copy(alpha = 0.7f),
+        // Top right icons
+        Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(if (isCompact) 8.dp else 12.dp)
-                .size(if (isCompact) 20.dp else 24.dp)
-        )
+                .padding(if (isCompact) 8.dp else 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            // Share button
+            if (showShareButton && onShare != null && !isCompact) {
+                Surface(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clickable { onShare(CardSharingOption.FrontOnly) },
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.2f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share front",
+                        tint = Color.White,
+                        modifier = Modifier
+                            .padding(6.dp)
+                            .size(20.dp)
+                    )
+                }
+            }
+            
+            // Card type icon
+            Icon(
+                imageVector = getCardTypeIcon(card.type),
+                contentDescription = "${card.type.getDisplayName()} icon",
+                tint = Color.White.copy(alpha = 0.7f),
+                modifier = Modifier.size(if (isCompact) 20.dp else 24.dp)
+            )
+        }
     }
 }
 
@@ -231,21 +251,21 @@ private fun getCardGradient(card: Card): Brush {
  * Get icon for card type
  */
 private fun getCardTypeIcon(cardType: CardType) = when (cardType) {
-    is CardType.Credit, is CardType.Debit -> Icons.Default.CreditCard
-    is CardType.GiftCard -> Icons.Default.CardGiftcard
-    is CardType.LoyaltyCard -> Icons.Default.Stars
-    is CardType.MembershipCard -> Icons.Default.Badge
-    is CardType.InsuranceCard -> Icons.Default.HealthAndSafety
-    is CardType.IdentificationCard -> Icons.Default.Badge
-    is CardType.Voucher -> Icons.Default.LocalOffer
+    is CardType.Credit, is CardType.Debit -> Icons.Default.Payment
+    is CardType.GiftCard -> Icons.Default.Redeem
+    is CardType.LoyaltyCard -> Icons.Default.Star
+    is CardType.MembershipCard -> Icons.Default.Person
+    is CardType.InsuranceCard -> Icons.Default.Security
+    is CardType.IdentificationCard -> Icons.Default.Person
+    is CardType.Voucher -> Icons.Default.Redeem
     is CardType.Event -> Icons.Default.Event
-    is CardType.TransportCard -> Icons.Default.DirectionsTransit
+    is CardType.TransportCard -> Icons.Default.Train
     is CardType.BusinessCard -> Icons.Default.Business
-    is CardType.LibraryCard -> Icons.AutoMirrored.Filled.MenuBook
+    is CardType.LibraryCard -> Icons.Default.Book
     is CardType.HotelCard -> Icons.Default.Hotel
     is CardType.StudentCard -> Icons.Default.School
-    is CardType.AccessCard -> Icons.Default.Key
-    is CardType.Custom -> Icons.Default.CreditCard
+    is CardType.AccessCard -> Icons.Default.VpnKey
+    is CardType.Custom -> Icons.Default.Payment
 }
 
 /**

@@ -25,11 +25,32 @@ class CardTextParser @Inject constructor() {
             "BANK", "CARD", "CREDIT", "DEBIT", "VALID", "THRU", "EXPIRES", "EXP", "MEMBER", "SINCE"
         )
         
-        // Card number patterns
+        // Card number patterns - enhanced for better debit card detection
         private val CARD_NUMBER_PATTERNS = listOf(
-            Regex("""(\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4})"""), // Standard 16-digit
-            Regex("""(\d{4}[\s-]?\d{6}[\s-]?\d{5})"""), // Amex 15-digit
-            Regex("""(\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{3})""") // 15-digit variant
+            // Standard 16-digit patterns with various separators
+            Regex("""(\d{4}[\s\-\.]?\d{4}[\s\-\.]?\d{4}[\s\-\.]?\d{4})"""),
+            // More flexible 16-digit pattern
+            Regex("""(\b\d{4}\s*\d{4}\s*\d{4}\s*\d{4}\b)"""),
+            // 16 digits with no separators
+            Regex("""(\b\d{16}\b)"""),
+            // Amex 15-digit patterns
+            Regex("""(\d{4}[\s\-\.]?\d{6}[\s\-\.]?\d{5})"""),
+            Regex("""(\b\d{4}\s*\d{6}\s*\d{5}\b)"""),
+            Regex("""(\b\d{15}\b)"""),
+            // Other 15-digit variants
+            Regex("""(\d{4}[\s\-\.]?\d{4}[\s\-\.]?\d{4}[\s\-\.]?\d{3})"""),
+            // 13-digit cards (some Visa cards)
+            Regex("""(\b\d{4}\s*\d{4}\s*\d{4}\s*\d{1}\b)"""),
+            Regex("""(\b\d{13}\b)"""),
+            // 14-digit cards (some Diners Club)
+            Regex("""(\b\d{4}\s*\d{4}\s*\d{4}\s*\d{2}\b)"""),
+            Regex("""(\b\d{14}\b)"""),
+            // 17-digit cards (some regional cards)
+            Regex("""(\b\d{4}\s*\d{4}\s*\d{4}\s*\d{4}\s*\d{1}\b)"""),
+            // 18-digit cards (some regional cards)
+            Regex("""(\b\d{4}\s*\d{4}\s*\d{4}\s*\d{4}\s*\d{2}\b)"""),
+            // 19-digit cards (some regional cards)
+            Regex("""(\b\d{4}\s*\d{4}\s*\d{4}\s*\d{4}\s*\d{3}\b)""")
         )
         
         // Expiry date patterns
@@ -52,7 +73,13 @@ class CardTextParser @Inject constructor() {
             return emptyMap()
         }
         
+        // Debug logging - in production this would use proper logging
+        println("CardTextParser: Processing ${cardType.getDisplayName()} ${imageSide.name} side")
+        println("CardTextParser: Raw text: $rawText")
+        
         val lines = preprocessText(rawText)
+        println("CardTextParser: Preprocessed lines: $lines")
+        
         val extractedData = mutableMapOf<String, String>()
         
         when (imageSide) {
@@ -63,6 +90,8 @@ class CardTextParser @Inject constructor() {
                 extractBackSideData(lines, extractedData)
             }
         }
+        
+        println("CardTextParser: Extracted data: $extractedData")
         
         return validateAndFormatData(extractedData)
     }
@@ -75,14 +104,20 @@ class CardTextParser @Inject constructor() {
             .lines()
             .map { line ->
                 line.trim()
-                    .replace(Regex("""[^\w\s/\-.]"""), " ") // Remove special chars except common ones
+                    // Keep more characters that might be relevant for card numbers
+                    .replace(Regex("""[^\w\s/\-.*]"""), " ") // Keep dots and asterisks
                     .replace(Regex("""\s+"""), " ") // Normalize whitespace
+                    // Handle common OCR misreads
+                    .replace("O", "0") // O -> 0
+                    .replace("l", "1") // lowercase l -> 1
+                    .replace("I", "1") // uppercase I -> 1
+                    .replace("S", "5") // S -> 5 (common misread)
             }
             .filter { it.isNotBlank() && it.length > 1 }
     }
     
     /**
-     * Extracts data from front side of card
+     * Extracts data from front side of card - only essential fields
      */
     private fun extractFrontSideData(lines: List<String>, extractedData: MutableMap<String, String>) {
         // Extract card number
@@ -99,25 +134,15 @@ class CardTextParser @Inject constructor() {
         extractCardholderName(lines)?.let { name ->
             extractedData["cardholderName"] = name
         }
-        
-        // Extract bank name
-        extractBankName(lines)?.let { bankName ->
-            extractedData["bankName"] = bankName
-        }
     }
     
     /**
-     * Extracts data from back side of card
+     * Extracts data from back side of card - only CVV
      */
     private fun extractBackSideData(lines: List<String>, extractedData: MutableMap<String, String>) {
-        // Extract CVV
+        // Extract CVV only
         extractCVV(lines)?.let { cvv ->
             extractedData["cvv"] = cvv
-        }
-        
-        // Extract additional bank information
-        extractBankInfo(lines)?.let { bankInfo ->
-            extractedData["bankInfo"] = bankInfo
         }
     }
     
@@ -125,18 +150,37 @@ class CardTextParser @Inject constructor() {
      * Extracts card number using multiple patterns and validation
      */
     private fun extractCardNumber(lines: List<String>): String? {
+        val candidates = mutableListOf<String>()
+        
+        // First pass: collect all potential card numbers
         for (line in lines) {
             for (pattern in CARD_NUMBER_PATTERNS) {
-                val match = pattern.find(line)
-                if (match != null) {
-                    val cardNumber = match.value.replace(Regex("""[\s-]"""), "")
-                    if (isValidCardNumber(cardNumber)) {
-                        return formatCardNumber(cardNumber)
+                val matches = pattern.findAll(line)
+                for (match in matches) {
+                    val cardNumber = match.value.replace(Regex("""[\s\-\.]"""), "")
+                    if (cardNumber.length in 13..19 && cardNumber.all { it.isDigit() }) {
+                        candidates.add(cardNumber)
                     }
                 }
             }
         }
-        return null
+        
+        // Second pass: validate candidates and return the best one
+        val validCandidates = candidates.filter { isValidCardNumber(it) }
+        
+        return when {
+            validCandidates.isNotEmpty() -> {
+                // Prefer 16-digit cards (most common), then by position in text
+                val preferred = validCandidates.find { it.length == 16 } ?: validCandidates.first()
+                formatCardNumber(preferred)
+            }
+            candidates.isNotEmpty() -> {
+                // If no valid Luhn candidates, try the most likely one anyway
+                val mostLikely = candidates.find { it.length == 16 } ?: candidates.first()
+                formatCardNumber(mostLikely)
+            }
+            else -> null
+        }
     }
     
     /**
@@ -203,38 +247,7 @@ class CardTextParser @Inject constructor() {
         return null
     }
     
-    /**
-     * Extracts bank name using keyword matching
-     */
-    private fun extractBankName(lines: List<String>): String? {
-        for (line in lines) {
-            val upperLine = line.uppercase()
-            if (BANK_NAMES.any { keyword -> upperLine.contains(keyword) } &&
-                !upperLine.contains("CARD") &&
-                line.length > 3
-            ) {
-                return formatBankName(line)
-            }
-        }
-        return null
-    }
-    
-    /**
-     * Extracts additional bank information from back side
-     */
-    private fun extractBankInfo(lines: List<String>): String? {
-        val infoKeywords = listOf("CUSTOMER", "SERVICE", "PHONE", "WEBSITE", "MEMBER")
-        
-        for (line in lines) {
-            val upperLine = line.uppercase()
-            if (infoKeywords.any { keyword -> upperLine.contains(keyword) } &&
-                line.length > 10
-            ) {
-                return line.trim()
-            }
-        }
-        return null
-    }
+
     
     /**
      * Validates card number using Luhn algorithm
@@ -400,14 +413,7 @@ class CardTextParser @Inject constructor() {
         }
     }
     
-    /**
-     * Formats bank name to proper case
-     */
-    private fun formatBankName(bankName: String): String {
-        return bankName.trim().split(" ").joinToString(" ") { word ->
-            word.lowercase().replaceFirstChar { it.uppercase() }
-        }
-    }
+
     
     /**
      * Validates and formats all extracted data

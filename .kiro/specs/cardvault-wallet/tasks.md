@@ -85,7 +85,7 @@
   - Implement preview and retake functionality for both front and back images
   - _Requirements: 2.1, 2.2, 2.6, 2.7_
 
-- [ ] 5. Core UI Components and Animations
+- [x] 5. Core UI Components and Animations
 - [x] 5.1 Implement card flip animation system
   - Create FlippableCard composable with 3D rotation animation using graphicsLayer
   - Implement smooth 300ms flip transition with proper easing curves
@@ -138,8 +138,8 @@
   - Add form validation with real-time error display
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 3.1_
 
-- [ ] 7. Complete Camera Integration and Card Type Selector
-- [ ] 7.1 Create dedicated CameraScreen for card capture
+- [x] 7. Complete Camera Integration and Card Type Selector
+- [x] 7.1 Create dedicated CameraScreen for card capture
   - Implement standalone CameraScreen with full camera functionality
   - Create step-by-step capture flow (front → back → review)
   - Add OCR processing integration for textual cards (Credit/Debit)
@@ -148,7 +148,7 @@
   - Add camera permission handling and error states
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
 
-- [ ] 7.2 Implement complete CardTypeSelector with gradient system
+- [x] 7.2 Implement complete CardTypeSelector with gradient system
   - Implement CardTypeSelector with all card types from design (15+ types)
   - Add default gradient system for each card type (Credit: purple-blue, Debit: pink-red, TransportCard: blue-cyan, etc.)
   - Create GradientPickerDialog for custom gradient selection
@@ -157,7 +157,7 @@
   - Create gradient preview functionality with real-time updates
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 7.3 Enhance FlippableCard with sharing integration
+- [x] 7.3 Enhance FlippableCard with sharing integration
   - Add share buttons to CardFront and CardBack components
   - Implement onShare callbacks for different sharing options (FrontOnly, BackOnly, BothSides)
   - Create CardSharingManager with dual sharing strategy:
