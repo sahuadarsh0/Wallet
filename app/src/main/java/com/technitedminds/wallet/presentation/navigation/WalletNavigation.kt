@@ -14,6 +14,7 @@ import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.presentation.screens.addcard.AddCardScreen
 import com.technitedminds.wallet.presentation.screens.camera.CameraScreen
 import com.technitedminds.wallet.presentation.screens.carddetail.CardDetailScreen
+import com.technitedminds.wallet.presentation.screens.categories.CategoriesScreen
 import com.technitedminds.wallet.presentation.screens.home.HomeScreen
 
 /**
@@ -136,15 +137,13 @@ fun WalletNavigation(
             )
         }
         
-        // Categories screen (placeholder)
+        // Categories screen
         composable(NavigationDestinations.Categories.route) {
-            // TODO: Implement CategoriesScreen
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Categories Screen - Coming Soon")
-            }
+            CategoriesScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
         }
         
         // Settings screen (placeholder)

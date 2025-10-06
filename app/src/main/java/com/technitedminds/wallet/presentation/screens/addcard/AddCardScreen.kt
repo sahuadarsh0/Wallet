@@ -38,8 +38,10 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -123,6 +125,7 @@ fun AddCardScreen(
                 isFormValid = isFormValid,
                 isLoading = uiState.isLoading,
                 onNextStep = viewModel::nextStep,
+                onSaveCard = viewModel::saveCard,
                 onSkipCamera = viewModel::skipCameraCapture
             )
         },
@@ -247,6 +250,7 @@ private fun AddCardBottomBar(
     isFormValid: Boolean,
     isLoading: Boolean,
     onNextStep: () -> Unit,
+    onSaveCard: () -> Unit,
     onSkipCamera: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -280,13 +284,14 @@ private fun AddCardBottomBar(
                 }
                 AddCardStep.FORM_DETAILS -> {
                     Button(
-                        onClick = onNextStep,
+                        onClick = onSaveCard,
                         enabled = isFormValid && !isLoading,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         if (isLoading) {
-                            CompactLoadingIndicator(
-                                modifier = Modifier.size(16.dp)
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                         }
@@ -971,7 +976,7 @@ private fun CategoryDropdown(
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable,true)
         )
 
         ExposedDropdownMenu(

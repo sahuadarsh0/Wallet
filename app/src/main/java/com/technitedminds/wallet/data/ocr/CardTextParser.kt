@@ -22,7 +22,13 @@ class CardTextParser @Inject constructor() {
         
         // Words to exclude from name detection
         private val EXCLUDED_WORDS = setOf(
-            "BANK", "CARD", "CREDIT", "DEBIT", "VALID", "THRU", "EXPIRES", "EXP", "MEMBER", "SINCE"
+            "BANK", "CARD", "CREDIT", "DEBIT", "VALID", "THRU", "EXPIRES", "EXP", "MEMBER", "SINCE",
+            "VISA", "MASTERCARD", "AMERICAN", "EXPRESS", "DISCOVER", "PLATINUM", "GOLD", "CLASSIC",
+            "REWARDS", "CASH", "BACK", "MILES", "POINTS", "SIGNATURE", "WORLD", "ELITE", "PREFERRED",
+            "BUSINESS", "CORPORATE", "STUDENT", "SECURED", "PREPAID", "GIFT", "TRAVEL", "DINING",
+            "ENTERTAINMENT", "GAS", "GROCERY", "DEPARTMENT", "STORE", "ONLINE", "SHOPPING", "MOBILE",
+            "CONTACTLESS", "CHIP", "PIN", "MAGNETIC", "STRIPE", "SECURITY", "CODE", "CVV", "CVC",
+            "CUSTOMER", "SERVICE", "PHONE", "NUMBER", "WEBSITE", "ADDRESS", "ZIP", "CODE", "STATE"
         )
         
         // Card number patterns - enhanced for better debit card detection
@@ -204,29 +210,49 @@ class CardTextParser @Inject constructor() {
     
     /**
      * Extracts cardholder name using advanced heuristics
+     * Focuses on capital letter names in First Last format
      */
     private fun extractCardholderName(lines: List<String>): String? {
+        println("CardTextParser: extractCardholderName called with ${lines.size} lines")
         val candidates = mutableListOf<String>()
         
         for (line in lines) {
-            val upperLine = line.uppercase()
+            val trimmedLine = line.trim()
+            val upperLine = trimmedLine.uppercase()
+            
+            println("CardTextParser: Processing line: '$trimmedLine'")
             
             // Skip lines with excluded words
             if (EXCLUDED_WORDS.any { upperLine.contains(it) }) {
+                println("CardTextParser: Skipping line with excluded words: '$trimmedLine'")
                 continue
             }
             
-            // Look for lines that could be names
-            if (isLikelyName(line)) {
-                candidates.add(line)
+            // Skip lines with numbers (except Roman numerals like II, III)
+            if (trimmedLine.any { it.isDigit() } && !trimmedLine.matches(Regex(""".*\b(II|III|IV|V|JR|SR)\b.*"""))) {
+                println("CardTextParser: Skipping line with numbers: '$trimmedLine'")
+                continue
+            }
+            
+            // Look for lines that are likely cardholder names
+            if (isCardholderName(trimmedLine)) {
+                println("CardTextParser: Found potential cardholder name: '$trimmedLine'")
+                candidates.add(trimmedLine)
+            } else {
+                println("CardTextParser: Line not recognized as cardholder name: '$trimmedLine'")
             }
         }
         
-        // Return the most likely candidate
-        return candidates
-            .filter { it.split(" ").size >= 2 } // At least first and last name
-            .maxByOrNull { calculateNameScore(it) }
-            ?.let { formatCardholderName(it) }
+        println("CardTextParser: Found ${candidates.size} cardholder name candidates: $candidates")
+        
+        // Return the best candidate based on cardholder name scoring
+        val filteredCandidates = candidates.filter { it.split(" ").size in 2..4 }
+        println("CardTextParser: Filtered candidates (2-4 words): $filteredCandidates")
+        
+        val bestCandidate = filteredCandidates.maxByOrNull { calculateCardholderNameScore(it) }
+        println("CardTextParser: Best candidate: '$bestCandidate'")
+        
+        return bestCandidate?.let { formatCardholderName(it) }
     }
     
     /**
@@ -310,7 +336,57 @@ class CardTextParser @Inject constructor() {
     }
     
     /**
-     * Checks if a line is likely to be a person's name
+     * Checks if a line is likely to be a cardholder name
+     * Focuses on capital letter names typical on credit/debit cards
+     */
+    private fun isCardholderName(line: String): Boolean {
+        val trimmedLine = line.trim()
+        
+        println("CardTextParser: isCardholderName checking: '$trimmedLine'")
+        
+        // Must have reasonable length for a name
+        if (trimmedLine.length < 4 || trimmedLine.length > 30) {
+            println("CardTextParser: Length check failed: ${trimmedLine.length}")
+            return false
+        }
+        
+        // Must be mostly letters and spaces
+        val letterSpaceCount = trimmedLine.count { it.isLetter() || it.isWhitespace() }
+        val letterSpaceRatio = letterSpaceCount.toFloat() / trimmedLine.length
+        if (letterSpaceRatio < 0.9) {
+            println("CardTextParser: Letter/space ratio check failed: $letterSpaceRatio")
+            return false
+        }
+        
+        // Split into words
+        val words = trimmedLine.split(Regex("""\s+""")).filter { it.isNotEmpty() }
+        println("CardTextParser: Words: $words (count: ${words.size})")
+        
+        // Must have 2-4 words (First Last, First Middle Last, etc.)
+        if (words.size !in 2..4) {
+            println("CardTextParser: Word count check failed: ${words.size}")
+            return false
+        }
+        
+        // Each word should be 2+ characters and mostly uppercase letters
+        val allWordsValid = words.all { word ->
+            val lengthOk = word.length >= 2
+            val allLetters = word.all { it.isLetter() }
+            val uppercaseCount = word.count { it.isUpperCase() }
+            val uppercaseRatio = uppercaseCount.toFloat() / word.length
+            val uppercaseOk = uppercaseRatio >= 0.8
+            
+            println("CardTextParser: Word '$word' - length: $lengthOk, allLetters: $allLetters, uppercase ratio: $uppercaseRatio ($uppercaseOk)")
+            
+            lengthOk && allLetters && uppercaseOk
+        }
+        
+        println("CardTextParser: All words valid: $allWordsValid")
+        return allWordsValid
+    }
+    
+    /**
+     * Checks if a line is likely to be a person's name (legacy method)
      */
     private fun isLikelyName(line: String): Boolean {
         val upperLine = line.uppercase()
@@ -337,7 +413,52 @@ class CardTextParser @Inject constructor() {
     }
     
     /**
-     * Calculates a score for how likely a string is to be a name
+     * Calculates a score for how likely a string is to be a cardholder name
+     * Prioritizes capital letter names typical on cards
+     */
+    private fun calculateCardholderNameScore(name: String): Int {
+        var score = 0
+        val words = name.split(Regex("""\s+""")).filter { it.isNotEmpty() }
+        
+        // Prefer 2-3 words (First Last, First Middle Last)
+        score += when (words.size) {
+            2 -> 15  // First Last - most common
+            3 -> 12  // First Middle Last
+            4 -> 8   // First Middle Middle Last
+            else -> 1
+        }
+        
+        // Prefer reasonable total length
+        when (name.length) {
+            in 8..20 -> score += 10  // Optimal length
+            in 6..25 -> score += 5   // Acceptable length
+            else -> score -= 5       // Too short or too long
+        }
+        
+        // Strongly prefer all uppercase (typical on cards)
+        if (words.all { it.all { char -> char.isUpperCase() } }) {
+            score += 20
+        }
+        
+        // Each word should be reasonable length for a name
+        words.forEach { word ->
+            when (word.length) {
+                in 2..12 -> score += 3  // Good name length
+                in 1..1 -> score -= 5   // Too short for a name
+                else -> score -= 2      // Too long
+            }
+        }
+        
+        // Bonus for common name patterns
+        if (words.size == 2 && words.all { it.length in 3..10 }) {
+            score += 5  // Classic First Last pattern
+        }
+        
+        return score
+    }
+    
+    /**
+     * Calculates a score for how likely a string is to be a name (legacy method)
      */
     private fun calculateNameScore(name: String): Int {
         var score = 0

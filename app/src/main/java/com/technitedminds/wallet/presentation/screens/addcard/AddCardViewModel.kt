@@ -34,7 +34,9 @@ sealed interface AddCardEvent { data class CardSaved(val card: com.technitedmind
 class AddCardViewModel @Inject constructor(
     private val addCardUseCase: AddCardUseCase,
     private val updateCardUseCase: UpdateCardUseCase,
-    private val getCardsUseCase: GetCardsUseCase
+    private val getCardsUseCase: GetCardsUseCase,
+    private val getCategoriesUseCase: com.technitedminds.wallet.domain.usecase.category.GetCategoriesUseCase,
+    private val manageCategoryUseCase: com.technitedminds.wallet.domain.usecase.category.ManageCategoryUseCase
 ) : ViewModel() {
     private val _currentStep = MutableStateFlow(AddCardStep.TYPE_SELECTION)
     val currentStep: StateFlow<AddCardStep> = _currentStep.asStateFlow()
@@ -54,11 +56,16 @@ class AddCardViewModel @Inject constructor(
     val cardName: StateFlow<String> = uiState.map { it.cardName }.stateIn(viewModelScope, SharingStarted.Eagerly, "")
     val selectedCategory: StateFlow<String> = uiState.map { it.categoryId }.stateIn(viewModelScope, SharingStarted.Eagerly, "personal")
     val customFields: StateFlow<Map<String, String>> = uiState.map { it.customFields }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
-    val categories: StateFlow<List<com.technitedminds.wallet.domain.model.Category>> = flowOf(emptyList<com.technitedminds.wallet.domain.model.Category>()).stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val categories: StateFlow<List<com.technitedminds.wallet.domain.model.Category>> = getCategoriesUseCase().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val extractedData: StateFlow<Map<String, String>> = uiState.map { it.extractedData }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     private val _selectedCardType = MutableStateFlow<CardType?>(null)
     val selectedCardType: StateFlow<CardType?> = _selectedCardType.asStateFlow()
+    
+    init {
+        // Load categories and ensure default categories exist
+        loadCategories()
+    }
     
     /**
      * Load card for editing
@@ -181,7 +188,53 @@ class AddCardViewModel @Inject constructor(
      */
     fun saveCard() {
         val currentState = _uiState.value
-        if (!currentState.canSave) return
+        
+        // Enhanced validation with specific error messages
+        if (currentState.cardName.isBlank()) {
+            _uiState.value = currentState.copy(error = "Card name is required")
+            return
+        }
+        
+        if (currentState.cardName.length < 2) {
+            _uiState.value = currentState.copy(error = "Card name must be at least 2 characters")
+            return
+        }
+        
+        if (currentState.categoryId.isBlank()) {
+            _uiState.value = currentState.copy(error = "Please select a category")
+            return
+        }
+        
+        if (currentState.frontImagePath == null) {
+            _uiState.value = currentState.copy(error = "Front image is required. Please capture both sides of the card.")
+            return
+        }
+        
+        if (currentState.backImagePath == null) {
+            _uiState.value = currentState.copy(error = "Back image is required. Please capture both sides of the card.")
+            return
+        }
+        
+        // Validate textual card fields if it's a credit/debit card
+        if (currentState.cardType.supportsOCR()) {
+            if (currentState.cardNumber.isBlank()) {
+                _uiState.value = currentState.copy(error = "Card number is required for ${currentState.cardType.getDisplayName()}")
+                return
+            }
+            if (currentState.expiryDate.isBlank()) {
+                _uiState.value = currentState.copy(error = "Expiry date is required for ${currentState.cardType.getDisplayName()}")
+                return
+            }
+            // Make cardholder name optional for now - OCR might not always extract it
+            // if (currentState.cardholderName.isBlank()) {
+            //     _uiState.value = currentState.copy(error = "Cardholder name is required for ${currentState.cardType.getDisplayName()}")
+            //     return
+            // }
+            if (currentState.cvv.isBlank()) {
+                _uiState.value = currentState.copy(error = "CVV is required for ${currentState.cardType.getDisplayName()}")
+                return
+            }
+        }
         
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSaving = true, error = null)
@@ -205,12 +258,41 @@ class AddCardViewModel @Inject constructor(
                     _events.emit(AddCardEvent.CardSaved(card))
                 } else {
                     // For adding new card, use AddCardRequest
-                    val frontImageData = currentState.frontImagePath?.let { 
-                        java.io.File(it).readBytes() 
-                    } ?: ByteArray(0)
-                    val backImageData = currentState.backImagePath?.let { 
-                        java.io.File(it).readBytes() 
-                    } ?: ByteArray(0)
+                    println("AddCardViewModel: Saving new card - ${currentState.cardName}")
+                    println("AddCardViewModel: Card type - ${currentState.cardType.getDisplayName()}")
+                    println("AddCardViewModel: Category - ${currentState.categoryId}")
+                    println("AddCardViewModel: Front image path - ${currentState.frontImagePath}")
+                    println("AddCardViewModel: Back image path - ${currentState.backImagePath}")
+                    
+                    // Validate image files exist
+                    val frontImageFile = java.io.File(currentState.frontImagePath!!)
+                    val backImageFile = java.io.File(currentState.backImagePath!!)
+                    
+                    if (!frontImageFile.exists()) {
+                        throw Exception("Front image file not found: ${currentState.frontImagePath}")
+                    }
+                    
+                    if (!backImageFile.exists()) {
+                        throw Exception("Back image file not found: ${currentState.backImagePath}")
+                    }
+                    
+                    val frontImageData = frontImageFile.readBytes()
+                    val backImageData = backImageFile.readBytes()
+                    
+                    println("AddCardViewModel: Front image size - ${frontImageData.size} bytes")
+                    println("AddCardViewModel: Back image size - ${backImageData.size} bytes")
+                    
+                    // Prepare extracted data for textual cards
+                    val finalExtractedData = if (currentState.cardType.supportsOCR()) {
+                        mapOf(
+                            "cardNumber" to currentState.cardNumber,
+                            "expiryDate" to currentState.expiryDate,
+                            "cardholderName" to currentState.cardholderName,
+                            "cvv" to currentState.cvv
+                        ).filterValues { it.isNotBlank() }
+                    } else {
+                        currentState.extractedData
+                    }
                     
                     val request = com.technitedminds.wallet.domain.usecase.card.AddCardRequest(
                         cardId = currentState.cardId ?: generateCardId(),
@@ -219,13 +301,15 @@ class AddCardViewModel @Inject constructor(
                         categoryId = currentState.categoryId,
                         frontImageData = frontImageData,
                         backImageData = backImageData,
-                        extractedData = currentState.extractedData,
+                        extractedData = finalExtractedData,
                         customFields = currentState.customFields
                     )
                     
+                    println("AddCardViewModel: Calling addCardUseCase with request")
                     val result = addCardUseCase(request)
                     result.fold(
                         onSuccess = { cardId ->
+                            println("AddCardViewModel: Card saved successfully with ID: $cardId")
                             val card = Card(
                                 id = cardId,
                                 name = currentState.cardName,
@@ -233,7 +317,7 @@ class AddCardViewModel @Inject constructor(
                                 categoryId = currentState.categoryId,
                                 frontImagePath = currentState.frontImagePath ?: "",
                                 backImagePath = currentState.backImagePath ?: "",
-                                extractedData = currentState.extractedData,
+                                extractedData = finalExtractedData,
                                 customFields = currentState.customFields,
                                 createdAt = System.currentTimeMillis(),
                                 updatedAt = System.currentTimeMillis()
@@ -241,6 +325,7 @@ class AddCardViewModel @Inject constructor(
                             _events.emit(AddCardEvent.CardSaved(card))
                         },
                         onFailure = { error ->
+                            println("AddCardViewModel: Failed to save card: ${error.message}")
                             throw error
                         }
                     )
@@ -281,7 +366,8 @@ class AddCardViewModel @Inject constructor(
 
     fun selectCardType(type: CardType) {
         _selectedCardType.value = type
-        _uiState.value = _uiState.value.copy(cardType = type)
+        val newState = _uiState.value.copy(cardType = type)
+        _uiState.value = newState.copy(canSave = validateForm(newState))
         _currentStep.value = AddCardStep.CAMERA_CAPTURE
     }
 
@@ -298,11 +384,13 @@ class AddCardViewModel @Inject constructor(
     }
     
     fun setCapturedImages(frontPath: String, backPath: String?, extractedData: Map<String, String>) {
-        _uiState.value = _uiState.value.copy(
+        val newState = _uiState.value.copy(
             frontImagePath = frontPath,
             backImagePath = backPath,
             extractedData = extractedData
         )
+        _uiState.value = newState.copy(canSave = validateForm(newState))
+        
         // Handle OCR results if any
         if (extractedData.isNotEmpty()) {
             handleOCRResults(extractedData)
@@ -333,7 +421,7 @@ class AddCardViewModel @Inject constructor(
             
             // Only populate the dedicated card fields, NOT the custom fields
             // This prevents duplication in "Additional Information" section
-            _uiState.value = currentState.copy(
+            val newState = currentState.copy(
                 extractedData = extractedData,
                 hasOCRData = extractedData.isNotEmpty(),
                 // Pre-fill only the dedicated OCR fields
@@ -342,6 +430,7 @@ class AddCardViewModel @Inject constructor(
                 cardholderName = extractedData["cardholderName"] ?: "",
                 cvv = extractedData["cvv"] ?: ""
             )
+            _uiState.value = newState.copy(canSave = validateForm(newState))
             
             println("AddCardViewModel: Populated dedicated card fields only")
         } else {
@@ -364,7 +453,7 @@ class AddCardViewModel @Inject constructor(
     fun clearOCRData() {
         val currentState = _uiState.value
         
-        _uiState.value = currentState.copy(
+        val newState = currentState.copy(
             extractedData = emptyMap(),
             hasOCRData = false,
             cardNumber = "",
@@ -376,6 +465,7 @@ class AddCardViewModel @Inject constructor(
             cardholderNameError = null,
             cvvError = null
         )
+        _uiState.value = newState.copy(canSave = validateForm(newState))
     }
     
     /**
@@ -383,11 +473,11 @@ class AddCardViewModel @Inject constructor(
      */
     fun updateCardNumber(cardNumber: String) {
         val currentState = _uiState.value
-        
-        _uiState.value = currentState.copy(
+        val newState = currentState.copy(
             cardNumber = cardNumber,
             cardNumberError = null
         )
+        _uiState.value = newState.copy(canSave = validateForm(newState))
     }
     
     /**
@@ -396,11 +486,11 @@ class AddCardViewModel @Inject constructor(
     fun updateExpiryDate(expiryDate: String) {
         val currentState = _uiState.value
         val formatted = formatExpiryInput(expiryDate)
-        
-        _uiState.value = currentState.copy(
+        val newState = currentState.copy(
             expiryDate = formatted,
             expiryDateError = null
         )
+        _uiState.value = newState.copy(canSave = validateForm(newState))
     }
     
     /**
@@ -408,11 +498,11 @@ class AddCardViewModel @Inject constructor(
      */
     fun updateCardholderName(cardholderName: String) {
         val currentState = _uiState.value
-        
-        _uiState.value = currentState.copy(
+        val newState = currentState.copy(
             cardholderName = cardholderName,
             cardholderNameError = null
         )
+        _uiState.value = newState.copy(canSave = validateForm(newState))
     }
     
     /**
@@ -420,11 +510,11 @@ class AddCardViewModel @Inject constructor(
      */
     fun updateCvv(cvv: String) {
         val currentState = _uiState.value
-        
-        _uiState.value = currentState.copy(
+        val newState = currentState.copy(
             cvv = cvv,
             cvvError = null
         )
+        _uiState.value = newState.copy(canSave = validateForm(newState))
     }
     
     /**
@@ -447,9 +537,57 @@ class AddCardViewModel @Inject constructor(
      * Validate the form and determine if it can be saved
      */
     private fun validateForm(state: AddCardUiState): Boolean {
-        return state.cardName.isNotBlank() &&
-               state.cardName.length >= 2 &&
-               state.categoryId.isNotBlank()
+        println("AddCardViewModel: validateForm called")
+        println("AddCardViewModel: cardName = '${state.cardName}' (length: ${state.cardName.length})")
+        println("AddCardViewModel: categoryId = '${state.categoryId}'")
+        println("AddCardViewModel: frontImagePath = '${state.frontImagePath}'")
+        println("AddCardViewModel: backImagePath = '${state.backImagePath}'")
+        println("AddCardViewModel: cardType = '${state.cardType.getDisplayName()}'")
+        println("AddCardViewModel: cardType.supportsOCR() = ${state.cardType.supportsOCR()}")
+        
+        val basicValidation = state.cardName.isNotBlank() &&
+                             state.cardName.length >= 2 &&
+                             state.categoryId.isNotBlank() &&
+                             state.frontImagePath != null &&
+                             state.backImagePath != null
+        
+        println("AddCardViewModel: basicValidation = $basicValidation")
+        
+        // Additional validation for textual cards
+        if (state.cardType.supportsOCR()) {
+            println("AddCardViewModel: cardNumber = '${state.cardNumber}'")
+            println("AddCardViewModel: expiryDate = '${state.expiryDate}'")
+            println("AddCardViewModel: cardholderName = '${state.cardholderName}'")
+            println("AddCardViewModel: cvv = '${state.cvv}'")
+            
+            // Make cardholder name optional for now - OCR might not always extract it
+            val textualValidation = basicValidation &&
+                   state.cardNumber.isNotBlank() &&
+                   state.expiryDate.isNotBlank() &&
+                   // state.cardholderName.isNotBlank() && // Optional for now
+                   state.cvv.isNotBlank()
+            
+            println("AddCardViewModel: textualValidation = $textualValidation")
+            return textualValidation
+        }
+        
+        println("AddCardViewModel: final validation = $basicValidation")
+        return basicValidation
+    }
+    
+    /**
+     * Load categories and create default ones if none exist
+     */
+    private fun loadCategories() {
+        viewModelScope.launch {
+            // Check if categories exist, if not create default ones
+            getCategoriesUseCase().collect { categories ->
+                if (categories.isEmpty()) {
+                    // Create default categories
+                    manageCategoryUseCase.createDefaultCategories()
+                }
+            }
+        }
     }
     
     /**
