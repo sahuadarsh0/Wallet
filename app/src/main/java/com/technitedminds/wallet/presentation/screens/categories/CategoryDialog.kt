@@ -44,6 +44,7 @@ import androidx.compose.ui.window.Dialog
 import com.technitedminds.wallet.domain.model.Category
 import com.technitedminds.wallet.presentation.components.common.getIconFromName
 import com.technitedminds.wallet.presentation.components.common.getIconName
+import com.technitedminds.wallet.presentation.constants.AppConstants
 
 /**
  * Dialog for creating or editing a category
@@ -127,7 +128,7 @@ fun CategoryDialog(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Cancel")
+                        Text(AppConstants.DialogText.CANCEL_BUTTON)
                     }
                     
                     Button(

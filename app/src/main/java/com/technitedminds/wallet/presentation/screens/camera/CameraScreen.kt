@@ -23,6 +23,7 @@ import com.technitedminds.wallet.presentation.components.camera.*
 import com.technitedminds.wallet.presentation.components.common.LoadingIndicator
 import java.io.File
 import androidx.compose.ui.platform.LocalContext
+import com.technitedminds.wallet.presentation.constants.AppConstants
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 
@@ -182,7 +183,7 @@ private fun CameraTopBar(
             IconButton(onClick = onNavigateBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = AppConstants.ContentDescriptions.BACK
                 )
             }
         },

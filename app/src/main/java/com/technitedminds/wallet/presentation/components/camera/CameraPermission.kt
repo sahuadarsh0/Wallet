@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
+import com.technitedminds.wallet.presentation.constants.AppConstants
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -92,7 +93,7 @@ private fun CameraPermissionRationale(
             ) {
                 Icon(
                     imageVector = Icons.Default.PhotoCamera,
-                    contentDescription = "Camera",
+                    contentDescription = AppConstants.NavigationLabels.CAMERA,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(64.dp)
                 )

@@ -18,6 +18,7 @@ import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.presentation.components.animation.FlippableCard
 import com.technitedminds.wallet.presentation.components.common.*
 import com.technitedminds.wallet.presentation.utils.resolveCategoryName
+import com.technitedminds.wallet.presentation.constants.AppConstants
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Notes
@@ -159,7 +160,7 @@ private fun CardDetailTopBar(
     TopAppBar(
         title = {
             Text(
-                text = if (isEditing) "Edit Card" else card.name,
+                text = if (isEditing) AppConstants.NavigationLabels.EDIT_CARD else card.name,
                 maxLines = 1
             )
         },
@@ -167,7 +168,7 @@ private fun CardDetailTopBar(
             IconButton(onClick = onNavigateBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = AppConstants.ContentDescriptions.BACK
                 )
             }
         },
@@ -177,7 +178,7 @@ private fun CardDetailTopBar(
                 IconButton(onClick = onCancelEdit) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Cancel"
+                        contentDescription = AppConstants.DialogText.CANCEL_BUTTON
                     )
                 }
                 // Save edit
@@ -206,7 +207,7 @@ private fun CardDetailTopBar(
                 IconButton(onClick = onDeleteCard) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete"
+                        contentDescription = AppConstants.DialogText.DELETE_BUTTON
                     )
                 }
             }

@@ -46,3 +46,9 @@ globs: *.kt
 - Return domain models or `Result<T>` wrapper
 - Use `suspend` for async operations
 - Add input validation and error handling
+
+## Constants Usage
+- Use `AppConstants` Define constants in a centralized object or file for reuse across the app
+- Avoid hardcoding values directly in the codebase
+- Use descriptive names for constants to convey their purpose
+- Group related constants together for better organization

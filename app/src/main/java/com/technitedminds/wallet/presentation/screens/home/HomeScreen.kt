@@ -27,6 +27,7 @@ import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.presentation.components.animation.AnimatedLazyColumn
 import com.technitedminds.wallet.presentation.components.animation.AnimatedLazyVerticalGrid
 import com.technitedminds.wallet.presentation.components.common.*
+import com.technitedminds.wallet.presentation.constants.AppConstants
 
 /**
  * Home screen displaying cards with search, filtering, and layout options.
@@ -65,7 +66,7 @@ fun HomeScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Add Card"
+                    contentDescription = AppConstants.ContentDescriptions.ADD_CARD
                 )
             }
         }

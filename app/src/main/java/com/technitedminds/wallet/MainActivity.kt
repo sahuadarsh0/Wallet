@@ -9,15 +9,19 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
 import com.technitedminds.wallet.ui.theme.WalletTheme
 import com.technitedminds.wallet.presentation.navigation.WalletAppScaffold
 import com.technitedminds.wallet.presentation.screens.home.HomeScreen
+import com.technitedminds.wallet.presentation.screens.settings.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -37,7 +41,13 @@ class MainActivity : ComponentActivity() {
         runSplashScreenAnimation(splashScreen)
 
         setContent {
-            WalletTheme {
+            // Get the settings view model to observe theme changes
+            val settingsViewModel: SettingsViewModel = hiltViewModel()
+            val uiState by settingsViewModel.uiState.collectAsState()
+            
+            WalletTheme(
+                themeMode = uiState.themeMode
+            ) {
                 WalletAppScaffold(
                     modifier = Modifier.fillMaxSize()
                 )

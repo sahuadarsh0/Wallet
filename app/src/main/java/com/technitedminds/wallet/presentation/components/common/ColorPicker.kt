@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.technitedminds.wallet.presentation.constants.AppConstants
 
 /**
  * Color picker component for selecting card colors
@@ -239,7 +240,7 @@ private fun CustomColorDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Cancel")
+                        Text(AppConstants.DialogText.CANCEL_BUTTON)
                     }
                     
                     Button(

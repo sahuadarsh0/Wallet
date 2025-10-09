@@ -68,6 +68,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.presentation.components.common.CardTypeSelector
+import com.technitedminds.wallet.presentation.constants.AppConstants
 import com.technitedminds.wallet.presentation.components.common.CompactLoadingIndicator
 import com.technitedminds.wallet.presentation.components.common.LoadingOverlay
 
@@ -225,7 +226,7 @@ private fun AddCardTopBar(
             ) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = AppConstants.ContentDescriptions.BACK
                 )
             }
         },
@@ -233,7 +234,7 @@ private fun AddCardTopBar(
             IconButton(onClick = onNavigateBack) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Cancel"
+                    contentDescription = AppConstants.DialogText.CANCEL_BUTTON
                 )
             }
         },

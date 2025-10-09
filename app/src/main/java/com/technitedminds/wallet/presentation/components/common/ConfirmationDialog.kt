@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.technitedminds.wallet.presentation.constants.AppConstants
 
 /**
  * Types of confirmation dialogs with different styling
@@ -40,7 +41,7 @@ fun ConfirmationDialog(
     modifier: Modifier = Modifier,
     type: ConfirmationType = ConfirmationType.INFO,
     confirmText: String = "Confirm",
-    dismissText: String = "Cancel",
+    dismissText: String = AppConstants.DialogText.CANCEL_BUTTON,
     icon: ImageVector? = null
 ) {
     if (isVisible) {
@@ -197,8 +198,8 @@ fun DeleteConfirmationDialog(
         onConfirm = onConfirm,
         onDismiss = onDismiss,
         type = ConfirmationType.DELETE,
-        confirmText = "Delete",
-        dismissText = "Cancel",
+        confirmText = AppConstants.DialogText.DELETE_BUTTON,
+        dismissText = AppConstants.DialogText.CANCEL_BUTTON,
         modifier = modifier
     )
 }
@@ -252,8 +253,8 @@ fun CategoryDeleteConfirmationDialog(
         onConfirm = onConfirm,
         onDismiss = onDismiss,
         type = ConfirmationType.DELETE,
-        confirmText = "Delete Category",
-        dismissText = "Cancel",
+        confirmText = AppConstants.DialogText.DELETE_BUTTON,
+        dismissText = AppConstants.DialogText.CANCEL_BUTTON,
         modifier = modifier
     )
 }
@@ -276,7 +277,7 @@ fun ExportConfirmationDialog(
         onDismiss = onDismiss,
         type = ConfirmationType.INFO,
         confirmText = "Export",
-        dismissText = "Cancel",
+        dismissText = AppConstants.DialogText.CANCEL_BUTTON,
         modifier = modifier
     )
 }
@@ -299,7 +300,7 @@ fun ImportConfirmationDialog(
         onDismiss = onDismiss,
         type = ConfirmationType.WARNING,
         confirmText = "Import",
-        dismissText = "Cancel",
+        dismissText = AppConstants.DialogText.CANCEL_BUTTON,
         modifier = modifier
     )
 }

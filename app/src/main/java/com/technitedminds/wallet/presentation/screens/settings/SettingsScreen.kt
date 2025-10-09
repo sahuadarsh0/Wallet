@@ -457,16 +457,16 @@ private fun ThemeSelector(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL)
     ) {
         ThemeMode.entries.forEach { theme ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onThemeSelected(theme) }
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = AppConstants.Dimensions.SPACING_SMALL),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM)
             ) {
                 RadioButton(
                     selected = selectedTheme == theme,
@@ -480,7 +480,7 @@ private fun ThemeSelector(
                         ThemeMode.SYSTEM -> Icons.Default.SettingsBrightness
                     },
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
@@ -517,7 +517,7 @@ private fun getAppVersion(context: android.content.Context): String {
         val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
         packageInfo.versionName ?: AppConstants.StatisticsLabels.UNKNOWN
     } catch (e: Exception) {
-        "Unknown"
+        AppConstants.StatisticsLabels.UNKNOWN
     }
 }
 

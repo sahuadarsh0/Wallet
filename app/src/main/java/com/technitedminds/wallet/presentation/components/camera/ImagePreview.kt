@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import java.io.File
+import com.technitedminds.wallet.presentation.constants.AppConstants
 
 /**
  * Image preview component with zoom, pan, and action buttons.
@@ -368,7 +369,7 @@ private fun ImagePreviewActions(
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Cancel")
+            Text(AppConstants.DialogText.CANCEL_BUTTON)
         }
         
         Spacer(modifier = Modifier.width(16.dp))
@@ -442,7 +443,7 @@ private fun FullscreenImageDialog(
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Close",
+                    contentDescription = AppConstants.DialogText.CLOSE_BUTTON,
                     tint = Color.White,
                     modifier = Modifier.size(32.dp)
                 )

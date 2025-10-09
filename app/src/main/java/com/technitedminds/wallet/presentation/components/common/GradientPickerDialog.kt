@@ -55,6 +55,7 @@ import androidx.compose.ui.window.Dialog
 import com.technitedminds.wallet.domain.model.CardGradient
 import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.domain.model.GradientDirection
+import com.technitedminds.wallet.presentation.constants.AppConstants
 
 /**
  * Gradient picker dialog for customizing card gradients
@@ -206,7 +207,7 @@ fun GradientPickerDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Cancel")
+                        Text(AppConstants.DialogText.CANCEL_BUTTON)
                     }
                     
                     Button(
