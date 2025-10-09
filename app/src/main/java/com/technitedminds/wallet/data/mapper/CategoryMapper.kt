@@ -10,7 +10,7 @@ fun CategoryEntity.toDomainModel(): Category {
     return Category(
         id = id,
         name = name,
-        description = null, // CategoryEntity doesn't store description
+        description = description,
         colorHex = colorHex,
         iconName = iconName,
         sortOrder = sortOrder,
@@ -24,6 +24,7 @@ fun Category.toEntity(): CategoryEntity {
     return CategoryEntity(
         id = id,
         name = name,
+        description = description,
         colorHex = colorHex,
         iconName = iconName ?: "category",
         sortOrder = sortOrder,

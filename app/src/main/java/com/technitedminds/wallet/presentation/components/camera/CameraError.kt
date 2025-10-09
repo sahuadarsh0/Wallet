@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.technitedminds.wallet.presentation.constants.AppConstants
 
 /**
  * Enhanced camera error handling with more detailed error information
@@ -74,7 +75,7 @@ fun CameraErrorContent(
             ) {
                 Icon(
                         painter = painterResource(id = android.R.drawable.ic_dialog_alert),
-                        contentDescription = "Error",
+                        contentDescription = AppConstants.UIText.ERROR_ICON,
                         tint = MaterialTheme.colorScheme.error
                 )
 

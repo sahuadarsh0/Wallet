@@ -185,7 +185,7 @@ private fun CardDetailTopBar(
                 IconButton(onClick = onSaveEdit) {
                     Icon(
                         imageVector = Icons.Default.Check,
-                        contentDescription = "Save"
+                        contentDescription = AppConstants.ContentDescriptions.SAVE
                     )
                 }
             } else {
@@ -200,7 +200,7 @@ private fun CardDetailTopBar(
                 IconButton(onClick = onStartEdit) {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit"
+                        contentDescription = AppConstants.ContentDescriptions.EDIT
                     )
                 }
                 // Delete

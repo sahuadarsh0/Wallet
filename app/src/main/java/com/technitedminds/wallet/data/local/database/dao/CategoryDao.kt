@@ -76,8 +76,8 @@ interface CategoryDao {
     /** Delete a category */
     @Delete suspend fun deleteCategory(category: CategoryEntity)
 
-    /** Delete a category by ID (only if it's not a predefined category) */
-    @Query("DELETE FROM categories WHERE id = :categoryId AND id NOT IN ('default', 'personal', 'business', 'travel', 'shopping', 'health', 'entertainment')")
+    /** Delete a category by ID (only if it's not the default category) */
+    @Query("DELETE FROM categories WHERE id = :categoryId AND id != 'default'")
     suspend fun deleteCategoryById(categoryId: String): Int
 
     /** Delete all user-created categories */
@@ -117,6 +117,7 @@ interface CategoryDao {
     data class CategoryWithCardCount(
             val id: String,
             val name: String,
+            val description: String?,
             @ColumnInfo(name = "color_hex") val colorHex: String,
             @ColumnInfo(name = "icon_name") val iconName: String,
             @ColumnInfo(name = "sort_order") val sortOrder: Int,

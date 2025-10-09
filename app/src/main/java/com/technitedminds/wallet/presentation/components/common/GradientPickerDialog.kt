@@ -157,7 +157,7 @@ fun GradientPickerDialog(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Preview",
+                        text = AppConstants.UIText.PREVIEW_TEXT,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Medium
                     )

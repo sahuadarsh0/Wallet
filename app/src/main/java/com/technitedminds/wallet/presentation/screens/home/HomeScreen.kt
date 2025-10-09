@@ -236,7 +236,7 @@ private fun SearchTextField(
                     IconButton(onClick = { onQueryChange("") }) {
                         Icon(
                             imageVector = Icons.Default.Clear,
-                            contentDescription = "Clear"
+                            contentDescription = AppConstants.ContentDescriptions.CLEAR
                         )
                     }
                 }

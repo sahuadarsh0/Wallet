@@ -168,7 +168,7 @@ class SettingsViewModel @Inject constructor(
     fun resetDefaultCategories() {
         viewModelScope.launch {
             try {
-                manageCategoryUseCase.createDefaultCategories()
+                manageCategoryUseCase.resetDefaultCategories()
                 hideResetDialog()
                 loadStatistics() // Refresh statistics
             } catch (e: Exception) {

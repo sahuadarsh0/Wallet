@@ -381,7 +381,7 @@ private fun ImagePreviewStep(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Confirm")
+                Text(AppConstants.DialogText.CONFIRM_BUTTON)
             }
         }
     }

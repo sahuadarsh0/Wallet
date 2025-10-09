@@ -299,7 +299,7 @@ private fun CustomCardTypeDialog(
                 // Preview
                 if (typeName.isNotBlank()) {
                     Text(
-                        text = "Preview",
+                        text = AppConstants.UIText.PREVIEW_TEXT,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Medium
                     )
@@ -572,7 +572,7 @@ private fun GradientPreview(
                     }
                     
                     Text(
-                        text = "Preview",
+                        text = AppConstants.UIText.PREVIEW_TEXT,
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White.copy(alpha = 0.7f)
                     )

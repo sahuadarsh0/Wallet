@@ -19,7 +19,7 @@ import com.technitedminds.wallet.data.local.database.entities.CategoryEntity
  * Room database for the CardVault wallet application. Manages local storage of cards and categories
  * with proper configuration and migrations.
  */
-@Database(entities = [CardEntity::class, CategoryEntity::class], version = 2, exportSchema = false)
+@Database(entities = [CardEntity::class, CategoryEntity::class], version = 3, exportSchema = false)
 @TypeConverters(CardTypeConverter::class, MapConverter::class, CardGradientConverter::class)
 abstract class WalletDatabase : RoomDatabase() {
 
@@ -41,7 +41,8 @@ abstract class WalletDatabase : RoomDatabase() {
                                                 DATABASE_NAME
                                         )
                                         .addMigrations(
-                                                MIGRATION_1_2
+                                                MIGRATION_1_2,
+                                                MIGRATION_2_3
                                                 )
                                         .addCallback(DatabaseCallback())
                                         .build()
@@ -100,6 +101,15 @@ abstract class WalletDatabase : RoomDatabase() {
                         database.execSQL("CREATE UNIQUE INDEX index_categories_name ON categories(name)")
                         database.execSQL("CREATE INDEX index_categories_sort_order ON categories(sort_order)")
                         database.execSQL("CREATE INDEX index_categories_created_at ON categories(created_at)")
+                    }
+                }
+
+        /** Migration from version 2 to 3 - Add description column to categories */
+        val MIGRATION_2_3 =
+                object : Migration(2, 3) {
+                    override fun migrate(database: SupportSQLiteDatabase) {
+                        // Add description column to categories table
+                        database.execSQL("ALTER TABLE categories ADD COLUMN description TEXT")
                     }
                 }
 

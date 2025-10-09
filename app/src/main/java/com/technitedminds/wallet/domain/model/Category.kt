@@ -35,7 +35,7 @@ data class Category(
             name = "General",
             description = "Default category for cards",
             colorHex = "#1976D2",
-            iconName = "category"
+            iconName = "Category"
         )
         
         /** Predefined categories */
@@ -45,42 +45,42 @@ data class Category(
                 name = "Personal",
                 description = "Personal cards and documents",
                 colorHex = "#1976D2",
-                iconName = "person"
+                iconName = "Person"
             ),
             Category(
                 id = "business",
                 name = "Business",
                 description = "Work and business related cards",
                 colorHex = "#37474F",
-                iconName = "business"
+                iconName = "Business"
             ),
             Category(
                 id = "travel",
                 name = "Travel",
                 description = "Travel and transportation cards",
                 colorHex = "#00BCD4",
-                iconName = "flight"
+                iconName = "Flight"
             ),
             Category(
                 id = "shopping",
                 name = "Shopping",
                 description = "Retail and shopping cards",
                 colorHex = "#FF9800",
-                iconName = "shopping_cart"
+                iconName = "ShoppingCart"
             ),
             Category(
                 id = "health",
                 name = "Health",
                 description = "Medical and health insurance cards",
                 colorHex = "#4CAF50",
-                iconName = "local_hospital"
+                iconName = "LocalHospital"
             ),
             Category(
                 id = "entertainment",
                 name = "Entertainment",
                 description = "Entertainment and leisure cards",
                 colorHex = "#E91E63",
-                iconName = "movie"
+                iconName = "Movie"
             )
         )
     }
