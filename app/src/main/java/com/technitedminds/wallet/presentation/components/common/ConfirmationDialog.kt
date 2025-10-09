@@ -40,7 +40,7 @@ fun ConfirmationDialog(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     type: ConfirmationType = ConfirmationType.INFO,
-    confirmText: String = "Confirm",
+    confirmText: String = AppConstants.DialogText.CONFIRM_BUTTON,
     dismissText: String = AppConstants.DialogText.CANCEL_BUTTON,
     icon: ImageVector? = null
 ) {

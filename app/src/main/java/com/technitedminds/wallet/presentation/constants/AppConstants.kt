@@ -168,6 +168,9 @@ object AppConstants {
         const val CLEAN_UP_BUTTON = "Clean Up"
         const val CLEANING_BUTTON = "Cleaning..."
         const val DISMISS_BUTTON = "Dismiss"
+        const val CONFIRM_BUTTON = "Confirm"
+        const val SAVE_BUTTON = "Save"
+        const val EDIT_BUTTON = "Edit"
         
         // Privacy policy content
         const val PRIVACY_POLICY_CONTENT = """CardVault Privacy Policy
@@ -245,6 +248,9 @@ This action cannot be undone."""
         const val CARD_THUMBNAIL = "Card thumbnail"
         const val WARNING_ICON = "Warning"
         const val CARD_OPTIONS = "Card options"
+        const val SAVE = "Save"
+        const val EDIT = "Edit"
+        const val CLEAR = "Clear"
     }
     
     // UI Text Constants
@@ -258,6 +264,7 @@ This action cannot be undone."""
         const val OPEN_SOURCE_LICENSES_SUBTITLE = "View third-party licenses"
         const val PREVIEW_TEXT = "Preview"
         const val CARD_NUMBER_MASKED = "•••• %s"
+        const val ERROR_ICON = "Error"
     }
     
     // Default Values
