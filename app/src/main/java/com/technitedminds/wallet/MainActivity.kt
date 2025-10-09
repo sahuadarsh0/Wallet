@@ -16,7 +16,7 @@ import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.technitedminds.wallet.ui.theme.WalletTheme
-import com.technitedminds.wallet.presentation.navigation.WalletNavigation
+import com.technitedminds.wallet.presentation.navigation.WalletAppScaffold
 import com.technitedminds.wallet.presentation.screens.home.HomeScreen
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             WalletTheme {
-                WalletNavigation(
+                WalletAppScaffold(
                     modifier = Modifier.fillMaxSize()
                 )
             }

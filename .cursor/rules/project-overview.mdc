@@ -1,0 +1,58 @@
+---
+alwaysApply: true
+---
+# CardVault - Android Wallet App Overview
+
+## Project Identity
+CardVault is an **offline-first Android application** for managing digital cards (credit, debit, gift cards, vouchers, memberships). The app serves as a secure digital repository for physical cards with complete data locality.
+
+## Core Principles (CRITICAL - NEVER VIOLATE)
+- **100% Offline Operation**: NEVER add network permissions, cloud APIs, or remote dependencies
+- **Privacy First**: No analytics, tracking, or data collection - reject any third-party telemetry
+- **Premium Experience**: All animations must target 60fps with smooth Material Design 3 transitions
+- **Local Storage Only**: All data stays on device in Room database and app's private storage
+- **Security**: Use Google Tink for encryption, sandboxed storage for all files
+
+## Technology Stack
+- **Language**: Kotlin 100% (No Java code)
+- **UI Framework**: Jetpack Compose with Material Design 3
+- **Architecture**: MVVM + Unidirectional Data Flow (UDF)
+- **DI**: Hilt (`@HiltAndroidApp`, `@AndroidEntryPoint`, `@HiltViewModel`)
+- **Navigation**: Compose Navigation with kotlinx.serialization for type-safe arguments
+- **Database**: Room with KSP annotation processing
+- **Camera**: CameraX for lifecycle-aware camera implementation
+- **ML**: Google ML Kit Text Recognition for offline OCR
+- **Images**: Coil for loading, caching, and transformations
+
+## Build Configuration
+- **Target SDK**: API 36 (Android 15)
+- **Min SDK**: API 29 (Android 10)
+- **Java Version**: 11
+- **Build System**: Gradle Kotlin DSL (`build.gradle.kts`)
+
+## Card Workflows
+
+### Textual Cards (Credit/Debit ONLY)
+1. User selects Credit or Debit card type
+2. Camera captures front and back images
+3. ML Kit OCR extracts: card number, expiry date, CVV, cardholder name
+4. User reviews and edits extracted data
+5. System generates gradient card design for sharing
+6. Images stored, card saved to database
+
+### Image-Only Cards (All Other Types)
+1. User selects card type (Gift, Voucher, Membership, Transport, etc.)
+2. Camera captures front and back images
+3. **NO OCR processing** - pure image storage
+4. User adds custom fields if needed
+5. Images stored as-is for sharing
+6. Card saved to database
+
+## Common Pitfalls to Avoid
+- ❌ Don't add network permissions or cloud APIs
+- ❌ Don't use SharedPreferences - use Proto DataStore
+- ❌ Don't block main thread - always use coroutines for I/O
+- ❌ Don't expose mutable state from ViewModels
+- ❌ Don't run OCR on non-Credit/Debit cards
+- ❌ Don't forget to clean up images when deleting cards
+- ❌ Don't put business logic in composables or repositories

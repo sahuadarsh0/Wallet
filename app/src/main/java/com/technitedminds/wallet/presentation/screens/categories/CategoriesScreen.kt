@@ -17,6 +17,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.domain.model.Category
 import com.technitedminds.wallet.presentation.components.common.getIconFromName
+import com.technitedminds.wallet.presentation.constants.AppConstants
 import com.technitedminds.wallet.ui.theme.WalletTheme
 import androidx.core.graphics.toColorInt
 
@@ -26,7 +27,6 @@ import androidx.core.graphics.toColorInt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoriesScreen(
-    onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CategoriesViewModel = hiltViewModel()
 ) {
@@ -55,20 +55,12 @@ fun CategoriesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Categories") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
+                title = { Text(AppConstants.NavigationLabels.CATEGORIES) },
                 actions = {
                     IconButton(onClick = viewModel::createDefaultCategories) {
                         Icon(
                             imageVector = Icons.Default.Restore,
-                            contentDescription = "Restore defaults"
+                            contentDescription = AppConstants.ContentDescriptions.RESTORE_DEFAULTS
                         )
                     }
                 }
@@ -330,12 +322,12 @@ private fun DeleteConfirmationDialog(
                     contentColor = MaterialTheme.colorScheme.error
                 )
             ) {
-                Text("Delete")
+                Text(AppConstants.DialogText.DELETE_BUTTON)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(AppConstants.DialogText.CANCEL_BUTTON)
             }
         }
     )

@@ -1,0 +1,68 @@
+---
+alwaysApply: true
+---
+# Architecture & Project Structure
+
+## Package Structure
+```
+com.technitedminds.wallet/
+├── MainActivity.kt              # @AndroidEntryPoint entry point
+├── WalletApplication.kt         # @HiltAndroidApp application class
+├── data/                        # Data layer implementations
+│   ├── local/database/         # Room entities, DAOs, converters
+│   ├── local/files/            # ImageFileManager
+│   ├── local/preferences/      # Proto DataStore
+│   ├── repository/             # Repository implementations
+│   ├── mapper/                 # Entity ↔ Domain mapping
+│   └── ocr/                    # ML Kit text recognition
+├── domain/                      # Business logic layer
+│   ├── model/                  # Domain models
+│   ├── repository/             # Repository interfaces
+│   ├── usecase/                # Business logic use cases
+│   └── util/                   # Domain utilities
+├── presentation/                # UI layer
+│   ├── screens/                # Feature screens
+│   ├── components/             # Reusable composables
+│   └── navigation/             # Navigation setup
+├── di/                          # Hilt modules
+├── ui/theme/                    # M3 theming
+└── utils/                       # Extensions
+```
+
+## Layer Responsibilities
+
+### Data Layer
+- Implements repository interfaces from domain layer
+- Handles data persistence (Room database, file storage)
+- Maps data entities to domain models
+- **ZERO business logic** - only data operations
+
+### Domain Layer
+- Contains business logic and rules
+- Defines repository interfaces
+- Contains domain models (pure Kotlin classes)
+- Implements use cases/interactors
+- **ZERO Android dependencies** - pure Kotlin only
+
+### Presentation Layer
+- Jetpack Compose UI components
+- ViewModels with state management
+- Navigation setup
+- UI-specific logic only
+- Observes ViewModels via `StateFlow`
+
+## Data Flow Pattern (UDF)
+```
+User Action → ViewModel → Use Case → Repository → Data Source
+     ↑                                                   ↓
+UI ← StateFlow ← ViewModel ← Domain Model ← Repository ←┘
+```
+
+## When Implementing New Features
+1. Start with domain layer (models, repository interface, use case)
+2. Implement data layer (entity, DAO, repository impl)
+3. Create ViewModel with state management
+4. Build composable UI with proper state hoisting
+5. Wire up navigation if needed
+6. Add Hilt modules for DI
+7. Test and optimize

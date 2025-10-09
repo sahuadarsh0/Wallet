@@ -7,6 +7,7 @@ import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.domain.usecase.ocr.ImageSide
+import com.technitedminds.wallet.presentation.constants.AppConstants
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -186,17 +187,17 @@ data class OCRResult(
     fun isConfidenceAcceptable(threshold: Float = 0.7f): Boolean = confidence >= threshold
 
     /** Gets the card number if extracted */
-    fun getCardNumber(): String? = extractedData["cardNumber"]
+    fun getCardNumber(): String? = extractedData[AppConstants.CardProcessing.FIELD_CARD_NUMBER]
 
     /** Gets the expiry date if extracted */
-    fun getExpiryDate(): String? = extractedData["expiryDate"]
+    fun getExpiryDate(): String? = extractedData[AppConstants.CardProcessing.FIELD_EXPIRY_DATE]
 
     /** Gets the cardholder name if extracted */
-    fun getCardholderName(): String? = extractedData["cardholderName"]
+    fun getCardholderName(): String? = extractedData[AppConstants.CardProcessing.FIELD_CARDHOLDER_NAME]
 
     /** Gets the CVV if extracted */
-    fun getCVV(): String? = extractedData["cvv"]
+    fun getCVV(): String? = extractedData[AppConstants.CardProcessing.FIELD_CVV]
 
     /** Gets the bank name if extracted */
-    fun getBankName(): String? = extractedData["bankName"]
+    fun getBankName(): String? = extractedData[AppConstants.CardProcessing.FIELD_BANK_NAME]
 }

@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
+import com.technitedminds.wallet.presentation.constants.AppConstants
 
 /**
  * Flippable card component with 3D rotation animation and sharing integration.
@@ -48,7 +49,7 @@ fun FlippableCard(
     // Animation for card scale on press
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
+        targetValue = if (isPressed) AppConstants.AnimationValues.SCALE_PRESSED else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -58,7 +59,7 @@ fun FlippableCard(
     
     Box(
         modifier = modifier
-            .aspectRatio(1.586f) // Standard credit card ratio
+            .aspectRatio(AppConstants.Defaults.CREDIT_CARD_ASPECT_RATIO) // Standard credit card ratio
             .graphicsLayer {
                 rotationY = rotation
                 scaleX = scale
@@ -172,10 +173,10 @@ private fun FlipIndicator(
 ) {
     Surface(
         modifier = modifier
-            .size(32.dp)
+            .size(AppConstants.Dimensions.ICON_SIZE_EXTRA_LARGE)
             .clickable { onFlip() },
         shape = androidx.compose.foundation.shape.CircleShape,
-        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f)
+        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = AppConstants.AnimationValues.ALPHA_HIGH)
     ) {
         Box(
             contentAlignment = Alignment.Center,

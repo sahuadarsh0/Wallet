@@ -1,0 +1,48 @@
+---
+globs: *.kt
+---
+# Kotlin Code Style Guide
+
+## Naming Conventions
+- **Activities**: `*Activity.kt` (e.g., `MainActivity.kt`)
+- **ViewModels**: `*ViewModel.kt` with `@HiltViewModel` annotation
+- **Repositories**: `*Repository.kt` (interface) + `*RepositoryImpl.kt` (implementation)
+- **Use Cases**: `*UseCase.kt` (e.g., `AddCardUseCase`, `GetCardsUseCase`)
+- **Entities**: `*Entity.kt` with `@Entity` annotation
+- **DAOs**: `*Dao.kt` with `@Dao` annotation
+- **Composables**: PascalCase (e.g., `CardFlipAnimation`, `CameraPreview`)
+- **Screens**: `*Screen.kt` with corresponding `*ViewModel.kt`
+- **Mappers**: `*Mapper.kt` (e.g., `CardMapper`, `CategoryMapper`)
+
+## Kotlin Style Rules
+- Prefer `val` over `var` for immutability
+- Use trailing commas in multi-line constructs
+- Maximum line length: 120 characters
+- Use meaningful, descriptive names - avoid abbreviations
+- Add KDoc for public APIs and complex functions
+- Use sealed classes/interfaces for type-safe state management
+- Prefer data classes for models
+- Use extension functions for utility operations
+
+## ViewModel Patterns
+- Annotate with `@HiltViewModel` and inject via constructor
+- Use `StateFlow` for UI state, `SharedFlow` for events
+- Expose immutable state (`StateFlow<T>`) to UI
+- Use `viewModelScope` for coroutines
+- Handle errors gracefully with sealed result classes
+- Update state immutably using `copy()` on data classes
+
+## Repository Implementation
+- Interfaces in `domain/repository/`, implementations in `data/repository/`
+- Use `suspend` functions for async operations
+- Return `Flow<T>` for streams, `Result<T>` or domain models for one-shot operations
+- Map data layer models to domain models in repository layer
+- Handle exceptions and wrap in domain-appropriate error types
+
+## Use Case Guidelines
+- Single responsibility - one use case per business operation
+- Inject repositories via constructor
+- Keep business logic in use cases, not ViewModels
+- Return domain models or `Result<T>` wrapper
+- Use `suspend` for async operations
+- Add input validation and error handling

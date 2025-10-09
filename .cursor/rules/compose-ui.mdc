@@ -1,0 +1,55 @@
+---
+globs: app/src/main/java/com/technitedminds/wallet/presentation/**/*.kt
+---
+# Jetpack Compose UI Guidelines
+
+## State Management
+- Use `remember` for state that survives recomposition
+- Use `derivedStateOf` for computed state
+- Use `LaunchedEffect` for side effects with proper keys
+- Keep composables stateless - hoist state up
+- Pass state down, events up
+- Use `collectAsStateWithLifecycle()` for Flow → State conversion
+
+## Composable Structure
+- Keep composables small and focused
+- Extract reusable pieces into separate composables
+- Use `Modifier` parameter last
+- Add `@Composable` preview functions
+- Leverage composition over inheritance
+
+## Material Design 3
+- Follow M3 guidelines strictly
+- Use M3 components: Card, Button, FAB, TextField, Dialog
+- Implement proper elevation and shadows
+- Add ripple effects on interactive elements
+- Support both light and dark themes
+- Ensure minimum touch targets (48dp)
+
+## Animation Standards
+- **Card flip**: 300ms with `FastOutSlowInEasing`
+- **List animations**: Spring physics for natural motion
+- **Transitions**: Fade, slide, scale with Material Motion
+- **3D effects**: Use `graphicsLayer` for rotationY
+- **Target**: 60fps on mid-range devices
+
+## Performance
+- Use `key` parameter in LazyColumn items
+- Use `remember` for expensive calculations
+- Avoid heavy computations during composition
+- Use Coil for image loading with proper placeholders
+- Optimize image sizes to avoid memory issues
+
+## Common Patterns
+- Always use `collectAsStateWithLifecycle()` not `collectAsState()`
+- Handle loading/error/success states properly
+- Provide meaningful content descriptions for accessibility
+- Use `AnimatedVisibility` for enter/exit animations
+- Use `Crossfade` for content switching
+
+## Avoid Common Mistakes
+- ❌ Don't create side effects in composition
+- ❌ Don't use `LaunchedEffect(true)` - provide proper keys
+- ❌ Don't forget configuration change handling
+- ❌ Don't perform heavy operations during composition
+- ❌ Don't expose mutable state to composables

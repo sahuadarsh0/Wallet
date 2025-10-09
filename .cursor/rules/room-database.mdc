@@ -1,0 +1,106 @@
+---
+description: Room database setup, entities, DAOs, and type converters
+---
+# Room Database Guide
+
+## Database Setup
+```kotlin
+@Database(
+    entities = [CardEntity::class, CategoryEntity::class],
+    version = 1,
+    exportSchema = true
+)
+@TypeConverters(
+    CardTypeConverter::class,
+    MapConverter::class,
+    ListConverter::class
+)
+abstract class WalletDatabase : RoomDatabase() {
+    abstract fun cardDao(): CardDao
+    abstract fun categoryDao(): CategoryDao
+}
+```
+
+## Entity Best Practices
+- Use `@Entity` with proper table name
+- Define `@PrimaryKey(autoGenerate = true)` for auto-increment
+- Add `@ColumnInfo(name = "...")` for column names
+- Create `@Index` for frequently queried columns
+- Use `@ForeignKey` for relationships
+- **Store file paths, NOT binary data**
+
+## Type Converters
+Required for complex types:
+- CardType sealed class → String
+- Map<String, String> → JSON String
+- List<String> → JSON String
+
+```kotlin
+class MapConverter {
+    private val json = Json { ignoreUnknownKeys = true }
+    
+    @TypeConverter
+    fun fromMap(value: Map<String, String>): String {
+        return json.encodeToString(value)
+    }
+    
+    @TypeConverter
+    fun toMap(value: String): Map<String, String> {
+        return if (value.isEmpty()) emptyMap()
+        else json.decodeFromString(value)
+    }
+}
+```
+
+## DAO Patterns
+- Return `Flow<T>` for reactive queries
+- Use `suspend` for one-shot operations
+- Add `@Transaction` for complex operations
+- Create specific queries, avoid `SELECT *` when possible
+- Use proper indexes for search queries
+
+```kotlin
+@Dao
+interface CardDao {
+    @Query("SELECT * FROM cards ORDER BY updated_at DESC")
+    fun getAllCards(): Flow<List<CardEntity>>
+    
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(card: CardEntity): Long
+    
+    @Update
+    suspend fun update(card: CardEntity)
+    
+    @Delete
+    suspend fun delete(card: CardEntity)
+    
+    @Query("SELECT * FROM cards WHERE name LIKE '%' || :query || '%'")
+    fun searchCards(query: String): Flow<List<CardEntity>>
+}
+```
+
+## Data Mapping
+Always map between Entity (data layer) and Domain Model (domain layer):
+
+```kotlin
+class CardMapper @Inject constructor() {
+    fun toDomain(entity: CardEntity): Card {
+        // Map entity to domain model
+    }
+    
+    fun toEntity(domain: Card): CardEntity {
+        // Map domain model to entity
+    }
+}
+```
+
+## Best Practices
+- ✅ Use indexes on frequently queried columns
+- ✅ Return Flow for reactive queries
+- ✅ Store file paths, not BLOBs
+- ✅ Map entities to domain models in repository
+- ✅ Handle migrations properly
+- ❌ Don't perform operations on main thread
+- ❌ Don't expose entities outside data layer
+- ❌ Don't use BLOBs for large files
+- ❌ Don't skip type converters for complex types

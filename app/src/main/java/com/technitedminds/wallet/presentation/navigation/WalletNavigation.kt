@@ -1,10 +1,6 @@
 package com.technitedminds.wallet.presentation.navigation
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -16,6 +12,8 @@ import com.technitedminds.wallet.presentation.screens.camera.CameraScreen
 import com.technitedminds.wallet.presentation.screens.carddetail.CardDetailScreen
 import com.technitedminds.wallet.presentation.screens.categories.CategoriesScreen
 import com.technitedminds.wallet.presentation.screens.home.HomeScreen
+import com.technitedminds.wallet.presentation.screens.settings.SettingsScreen
+import com.technitedminds.wallet.presentation.constants.AppConstants
 
 /**
  * Main navigation component for the CardVault app
@@ -35,20 +33,20 @@ fun WalletNavigation(
         composable(NavigationDestinations.Home.route) {
             HomeScreen(
                 onCardClick = { card ->
-                    navController.navigate(NavigationDestinations.CardDetail.createRoute(card.id))
+                    navController.navigateToDetail(NavigationDestinations.CardDetail.createRoute(card.id))
                 },
                 onAddCardClick = {
-                    navController.navigate(NavigationDestinations.AddCard.route)
+                    navController.navigateToDetail(NavigationDestinations.AddCard.route)
                 }
             )
         }
         
         // Add card screen
-        composable(NavigationDestinations.AddCard.route) { backStackEntry ->
+        composable(NavigationDestinations.AddCard.route) { _ ->
             // Check for camera capture results
-            val frontImagePath = navController.currentBackStackEntry?.savedStateHandle?.get<String>("frontImagePath")
-            val backImagePath = navController.currentBackStackEntry?.savedStateHandle?.get<String>("backImagePath")
-            val extractedData = navController.currentBackStackEntry?.savedStateHandle?.get<Map<String, String>>("extractedData")
+            val frontImagePath = navController.getNavigationResult<String>(NavigationResultKeys.FRONT_IMAGE_PATH)
+            val backImagePath = navController.getNavigationResult<String>(NavigationResultKeys.BACK_IMAGE_PATH)
+            val extractedData = navController.getNavigationResult<Map<String, String>>(NavigationResultKeys.EXTRACTED_DATA)
             
             AddCardScreen(
                 onNavigateBack = {
@@ -61,7 +59,7 @@ fun WalletNavigation(
                     }
                 },
                 onCameraCapture = { cardType ->
-                    navController.navigate(NavigationDestinations.Camera.createRoute(cardType))
+                    navController.navigateToDetail(NavigationDestinations.Camera.createRoute(cardType))
                 },
                 capturedFrontImagePath = frontImagePath,
                 capturedBackImagePath = backImagePath,
@@ -74,7 +72,7 @@ fun WalletNavigation(
             route = NavigationDestinations.Camera.route,
             arguments = NavigationDestinations.Camera.arguments
         ) { backStackEntry ->
-            val cardTypeArg = backStackEntry.arguments?.getString("cardType") ?: "Credit"
+            val cardTypeArg = backStackEntry.arguments?.getString(NavigationParams.CARD_TYPE) ?: AppConstants.Defaults.DEFAULT_CARD_TYPE
             val cardType = parseCardTypeFromString(cardTypeArg)
             
             CameraScreen(
@@ -85,9 +83,9 @@ fun WalletNavigation(
                 onImagesConfirmed = { frontImagePath, backImagePath, extractedData ->
                     // Navigate back to add card with captured data
                     navController.previousBackStackEntry?.savedStateHandle?.apply {
-                        set("frontImagePath", frontImagePath)
-                        set("backImagePath", backImagePath)
-                        set("extractedData", extractedData)
+                        set(NavigationResultKeys.FRONT_IMAGE_PATH, frontImagePath)
+                        set(NavigationResultKeys.BACK_IMAGE_PATH, backImagePath)
+                        set(NavigationResultKeys.EXTRACTED_DATA, extractedData)
                     }
                     navController.popBackStack()
                 }
@@ -99,15 +97,15 @@ fun WalletNavigation(
             route = NavigationDestinations.CardDetail.route,
             arguments = NavigationDestinations.CardDetail.arguments
         ) { backStackEntry ->
-            val cardId = backStackEntry.arguments?.getString("cardId") ?: ""
+            val cardId = backStackEntry.arguments?.getString(NavigationParams.CARD_ID) ?: ""
             
             CardDetailScreen(
                 cardId = cardId,
                 onNavigateBack = {
                     navController.popBackStack()
                 },
-                onNavigateToEdit = { cardId ->
-                    navController.navigate(NavigationDestinations.EditCard.createRoute(cardId))
+                onNavigateToEdit = { editCardId ->
+                    navController.navigateToEdit(NavigationDestinations.EditCard.createRoute(editCardId))
                 }
             )
         }
@@ -117,7 +115,7 @@ fun WalletNavigation(
             route = NavigationDestinations.EditCard.route,
             arguments = NavigationDestinations.EditCard.arguments
         ) { backStackEntry ->
-            val cardId = backStackEntry.arguments?.getString("cardId") ?: ""
+            val editCardId = backStackEntry.arguments?.getString(NavigationParams.CARD_ID) ?: ""
             
             AddCardScreen(
                 onNavigateBack = {
@@ -126,35 +124,25 @@ fun WalletNavigation(
                 onCardSaved = { card ->
                     // Navigate back to card detail after editing
                     navController.navigate(NavigationDestinations.CardDetail.createRoute(card.id)) {
-                        popUpTo(NavigationDestinations.CardDetail.createRoute(cardId)) {
+                        popUpTo(NavigationDestinations.CardDetail.createRoute(editCardId)) {
                             inclusive = true
                         }
                     }
                 },
                 onCameraCapture = { cardType ->
-                    navController.navigate(NavigationDestinations.Camera.createRoute(cardType))
+                    navController.navigateToDetail(NavigationDestinations.Camera.createRoute(cardType))
                 }
             )
         }
         
         // Categories screen
         composable(NavigationDestinations.Categories.route) {
-            CategoriesScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
-            )
+            CategoriesScreen()
         }
         
-        // Settings screen (placeholder)
+        // Settings screen
         composable(NavigationDestinations.Settings.route) {
-            // TODO: Implement SettingsScreen
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Settings Screen - Coming Soon")
-            }
+            SettingsScreen()
         }
     }
 }

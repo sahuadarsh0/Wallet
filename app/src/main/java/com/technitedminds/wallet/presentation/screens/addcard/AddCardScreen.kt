@@ -186,7 +186,7 @@ fun AddCardScreen(
     uiState.error?.let { error ->
         LaunchedEffect(error) {
             // Show error snackbar
-            viewModel.clearError()
+            // Clear error - method doesn't exist, remove this
         }
     }
 
@@ -579,7 +579,7 @@ private fun FormDetailsStep(
             CategoryDropdown(
                 categories = categories,
                 selectedCategoryId = selectedCategory,
-                onCategorySelected = { id -> id?.let(viewModel::selectCategory) },
+                onCategorySelected = { id -> id?.let(viewModel::updateCategory) },
                 modifier = Modifier.fillMaxWidth()
             )
         }
