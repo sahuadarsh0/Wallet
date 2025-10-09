@@ -20,6 +20,7 @@ import androidx.room.PrimaryKey
 data class CategoryEntity(
     @PrimaryKey @ColumnInfo(name = "id") val id: String,
     @ColumnInfo(name = "name") val name: String,
+    @ColumnInfo(name = "description") val description: String? = null,
     @ColumnInfo(name = "color_hex") val colorHex: String,
     @ColumnInfo(name = "icon_name") val iconName: String,
     @ColumnInfo(name = "sort_order") val sortOrder: Int,

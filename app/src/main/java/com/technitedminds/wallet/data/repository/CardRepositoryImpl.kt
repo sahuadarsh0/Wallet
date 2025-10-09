@@ -180,7 +180,7 @@ class CardRepositoryImpl @Inject constructor(private val cardDao: CardDao) : Car
     }
 
     /** Updates category for cards (used when reassigning cards to a new category) */
-    suspend fun updateCardsCategory(oldCategoryId: String, newCategoryId: String) {
+    override suspend fun updateCardsCategory(oldCategoryId: String, newCategoryId: String) {
         try {
             cardDao.updateCardsCategory(oldCategoryId, newCategoryId, System.currentTimeMillis())
         } catch (e: Exception) {

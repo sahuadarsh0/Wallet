@@ -216,7 +216,7 @@ class CategoriesViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             
-            val result = manageCategoryUseCase.createDefaultCategories()
+            val result = manageCategoryUseCase.resetDefaultCategories()
             
             result.fold(
                 onSuccess = {

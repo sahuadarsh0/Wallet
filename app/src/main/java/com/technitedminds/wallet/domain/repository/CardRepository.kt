@@ -112,6 +112,14 @@ interface CardRepository {
      * @return True if the card exists, false otherwise
      */
     suspend fun cardExists(id: String): Boolean
+
+    /**
+     * Updates the category for all cards in a specific category
+     * Used when reassigning cards to a new category (e.g., when deleting a category)
+     * @param oldCategoryId The current category ID of the cards
+     * @param newCategoryId The new category ID to assign to the cards
+     */
+    suspend fun updateCardsCategory(oldCategoryId: String, newCategoryId: String)
 }
 
 /** Enum for card sorting options */
