@@ -28,6 +28,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.domain.model.CardType
+import com.technitedminds.wallet.presentation.constants.AppConstants
 import java.io.File
 import androidx.core.graphics.toColorInt
 
@@ -124,7 +125,7 @@ fun CardListItem(
                 Text(
                     text = card.type.getDisplayName(),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = contentColor.copy(alpha = 0.7f),
+                    color = contentColor.copy(alpha = AppConstants.AnimationValues.ALPHA_VERY_HIGH),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -143,9 +144,9 @@ fun CardListItem(
                     val cardNumber = card.customFields["cardNumber"]
                     if (!cardNumber.isNullOrEmpty() && card.type.supportsOCR()) {
                         Text(
-                            text = "•••• ${cardNumber.takeLast(4)}",
+                            text = String.format(AppConstants.UIText.CARD_NUMBER_MASKED, cardNumber.takeLast(4)),
                             style = MaterialTheme.typography.bodySmall,
-                            color = contentColor.copy(alpha = 0.6f),
+                            color = contentColor.copy(alpha = AppConstants.AnimationValues.ALPHA_HIGH),
                             modifier = Modifier.padding(top = 2.dp)
                         )
                     }
@@ -160,8 +161,8 @@ fun CardListItem(
                 ) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Card options",
-                        tint = contentColor.copy(alpha = 0.7f)
+                        contentDescription = AppConstants.ContentDescriptions.CARD_OPTIONS,
+                        tint = contentColor.copy(alpha = AppConstants.AnimationValues.ALPHA_VERY_HIGH)
                     )
                 }
             }
@@ -209,7 +210,7 @@ private fun CardThumbnail(
             imageVector = Icons.Default.CreditCard,
             contentDescription = card.type.getDisplayName(),
             tint = Color.White,
-            modifier = Modifier.size(size * 0.5f)
+            modifier = Modifier.size(size * AppConstants.Defaults.CARD_ICON_SIZE_RATIO)
         )
     }
 }
@@ -247,7 +248,7 @@ fun GridCardItem(
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
     isSelected: Boolean = false,
-    aspectRatio: Float = 1.586f // Credit card ratio
+    aspectRatio: Float = AppConstants.Defaults.CREDIT_CARD_ASPECT_RATIO // Credit card ratio
 ) {
     val hapticFeedback = LocalHapticFeedback.current
     val context = LocalContext.current
@@ -326,7 +327,7 @@ fun GridCardItem(
             ) {
                 // Card type
                 Surface(
-                    color = Color.White.copy(alpha = 0.9f),
+                    color = Color.White.copy(alpha = AppConstants.AnimationValues.ALPHA_ALMOST_OPAQUE),
                     shape = RoundedCornerShape(4.dp)
                 ) {
                     Text(

@@ -67,6 +67,9 @@ constructor(
                             backImagePath = backImagePath,
                             extractedData = request.extractedData,
                             customFields = request.customFields,
+                            expiryDate = request.expiryDate,
+                            notes = request.notes,
+                            customGradient = request.customGradient,
                             createdAt = System.currentTimeMillis(),
                             updatedAt = System.currentTimeMillis()
                     )
@@ -185,7 +188,10 @@ data class AddCardRequest(
         val frontImageData: ByteArray,
         val backImageData: ByteArray,
         val extractedData: Map<String, String> = emptyMap(),
-        val customFields: Map<String, String> = emptyMap()
+        val customFields: Map<String, String> = emptyMap(),
+        val expiryDate: String? = null,
+        val notes: String? = null,
+        val customGradient: com.technitedminds.wallet.domain.model.CardGradient? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -201,6 +207,9 @@ data class AddCardRequest(
         if (!backImageData.contentEquals(other.backImageData)) return false
         if (extractedData != other.extractedData) return false
         if (customFields != other.customFields) return false
+        if (expiryDate != other.expiryDate) return false
+        if (notes != other.notes) return false
+        if (customGradient != other.customGradient) return false
 
         return true
     }
@@ -214,6 +223,9 @@ data class AddCardRequest(
         result = 31 * result + backImageData.contentHashCode()
         result = 31 * result + extractedData.hashCode()
         result = 31 * result + customFields.hashCode()
+        result = 31 * result + (expiryDate?.hashCode() ?: 0)
+        result = 31 * result + (notes?.hashCode() ?: 0)
+        result = 31 * result + (customGradient?.hashCode() ?: 0)
         return result
     }
 }

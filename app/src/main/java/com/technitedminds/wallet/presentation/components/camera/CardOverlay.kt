@@ -34,7 +34,7 @@ fun CardOverlay(
     aspectRatio: CardAspectRatio = CardAspectRatio.CREDIT_CARD,
     isCapturing: Boolean = false,
     showCrosshair: Boolean = true,
-    overlayAlpha: Float = 0.5f
+    overlayAlpha: Float = 0.4f
 ) {
     val density = LocalDensity.current
     val primaryColor = MaterialTheme.colorScheme.primary
@@ -57,20 +57,35 @@ fun CardOverlay(
         val cardLeft = (canvasWidth - cardWidth) / 2
         val cardTop = (canvasHeight - cardHeight) / 2
         
-        // Draw semi-transparent background
+        // Draw semi-transparent overlay areas (top, bottom, left, right of card)
+        val cornerRadius = with(density) { 12.dp.toPx() }
+        
+        // Top area
         drawRect(
             color = Color.Black.copy(alpha = overlayAlpha),
-            size = Size(canvasWidth, canvasHeight)
+            topLeft = Offset(0f, 0f),
+            size = Size(canvasWidth, cardTop)
         )
         
-        // Create card cutout (transparent area)
-        val cornerRadius = with(density) { 12.dp.toPx() }
-        drawRoundRect(
-            color = Color.Transparent,
-            topLeft = Offset(cardLeft, cardTop),
-            size = Size(cardWidth, cardHeight),
-            cornerRadius = CornerRadius(cornerRadius),
-            blendMode = BlendMode.Clear
+        // Bottom area
+        drawRect(
+            color = Color.Black.copy(alpha = overlayAlpha),
+            topLeft = Offset(0f, cardTop + cardHeight),
+            size = Size(canvasWidth, canvasHeight - (cardTop + cardHeight))
+        )
+        
+        // Left area
+        drawRect(
+            color = Color.Black.copy(alpha = overlayAlpha),
+            topLeft = Offset(0f, cardTop),
+            size = Size(cardLeft, cardHeight)
+        )
+        
+        // Right area
+        drawRect(
+            color = Color.Black.copy(alpha = overlayAlpha),
+            topLeft = Offset(cardLeft + cardWidth, cardTop),
+            size = Size(canvasWidth - (cardLeft + cardWidth), cardHeight)
         )
         
         // Draw card border

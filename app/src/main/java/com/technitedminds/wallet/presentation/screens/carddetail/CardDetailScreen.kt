@@ -18,7 +18,10 @@ import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.presentation.components.animation.FlippableCard
 import com.technitedminds.wallet.presentation.components.common.*
 import com.technitedminds.wallet.presentation.utils.resolveCategoryName
+import com.technitedminds.wallet.presentation.constants.AppConstants
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Notes
 
 /**
  * Card detail screen with full-screen card display, editing, and management options.
@@ -26,8 +29,9 @@ import androidx.compose.foundation.layout.ColumnScope
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardDetailScreen(
+    cardId: String,
     onNavigateBack: () -> Unit,
-    onCardDeleted: () -> Unit,
+    onNavigateToEdit: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: CardDetailViewModel = hiltViewModel()
 ) {
@@ -35,13 +39,13 @@ fun CardDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isEditing by viewModel.isEditing.collectAsStateWithLifecycle()
     val editedCard by viewModel.editedCard.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+
 
     // Handle events
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                is CardDetailEvent.CardDeleted -> onCardDeleted()
+                is CardDetailEvent.CardDeleted -> onNavigateBack()
                 is CardDetailEvent.CardSaved -> {
                     // Show success message or handle as needed
                 }
@@ -156,15 +160,15 @@ private fun CardDetailTopBar(
     TopAppBar(
         title = {
             Text(
-                text = if (isEditing) "Edit Card" else card.name,
+                text = if (isEditing) AppConstants.NavigationLabels.EDIT_CARD else card.name,
                 maxLines = 1
             )
         },
         navigationIcon = {
             IconButton(onClick = onNavigateBack) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back"
+                    imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                    contentDescription = AppConstants.ContentDescriptions.BACK
                 )
             }
         },
@@ -174,7 +178,7 @@ private fun CardDetailTopBar(
                 IconButton(onClick = onCancelEdit) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Cancel"
+                        contentDescription = AppConstants.DialogText.CANCEL_BUTTON
                     )
                 }
                 // Save edit
@@ -203,7 +207,7 @@ private fun CardDetailTopBar(
                 IconButton(onClick = onDeleteCard) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete"
+                        contentDescription = AppConstants.DialogText.DELETE_BUTTON
                     )
                 }
             }
@@ -229,12 +233,13 @@ private fun CardDisplaySection(
         // Card with flip animation
         FlippableCard(
             card = card,
-            isFlipped = isFlipped,
-            onFlip = onFlip,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp),
-            enableClick = true
+            showShareButtons = true,
+            onShare = { sharingOption ->
+                // Handle card sharing
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -295,7 +300,7 @@ private fun CardInfoSection(
         if (card.customFields.isNotEmpty()) {
             InfoCard(
                 title = "Additional Information",
-                icon = Icons.Default.Notes
+                icon = Icons.AutoMirrored.Default.Notes
             ) {
                 card.customFields.forEach { (key, value) ->
                     if (key != "customColor") { // Don't show internal fields
@@ -358,7 +363,7 @@ private fun EditCardSection(
         // Custom fields editing
         InfoCard(
             title = "Additional Information",
-            icon = Icons.Default.Notes
+            icon = Icons.AutoMirrored.Default.Notes
         ) {
             // Show existing custom fields for editing
             card.customFields.forEach { (key, value) ->

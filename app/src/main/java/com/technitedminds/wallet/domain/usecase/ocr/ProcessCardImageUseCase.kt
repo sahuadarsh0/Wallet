@@ -1,13 +1,16 @@
 package com.technitedminds.wallet.domain.usecase.ocr
 
+import com.technitedminds.wallet.data.ocr.MLKitTextRecognizer
 import com.technitedminds.wallet.domain.model.CardType
 import javax.inject.Inject
 
 /**
  * Use case for processing card images with OCR for textual cards only. Extracts text information
- * from credit, debit, and ATM cards.
+ * from credit, debit cards using ML Kit.
  */
-class ProcessCardImageUseCase @Inject constructor() {
+class ProcessCardImageUseCase @Inject constructor(
+    private val mlKitTextRecognizer: MLKitTextRecognizer
+) {
 
     /**
      * Processes a card image to extract text data
@@ -26,19 +29,18 @@ class ProcessCardImageUseCase @Inject constructor() {
                 return Result.failure(IllegalArgumentException("Invalid image data"))
             }
 
-            // Process the image based on card type and side
-            val extractedData =
-                    when (request.cardType) {
-                        is CardType.Credit ->
-                                processTextualCard(request.imageData, request.imageSide)
-                        is CardType.Debit ->
-                                processTextualCard(request.imageData, request.imageSide)
-                        is CardType.ATM -> processTextualCard(request.imageData, request.imageSide)
-                        else ->
-                                emptyMap() // Non-OCR card types don't need text processing
-                    }
-
-            Result.success(extractedData)
+            // Process the image using ML Kit with side information
+            val ocrResult = mlKitTextRecognizer.processImageSide(
+                request.imageData, 
+                request.cardType, 
+                request.imageSide
+            )
+            
+            if (ocrResult.success) {
+                Result.success(ocrResult.extractedData)
+            } else {
+                Result.failure(Exception(ocrResult.errorMessage ?: "OCR processing failed"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -62,22 +64,40 @@ class ProcessCardImageUseCase @Inject constructor() {
             }
 
             // Process front side
-            val frontResult =
-                    invoke(ProcessCardImageRequest(frontImageData, cardType, ImageSide.FRONT))
-
+            val frontResult = mlKitTextRecognizer.processImageSide(frontImageData, cardType, ImageSide.FRONT)
+            
             // Process back side
-            val backResult =
-                    invoke(ProcessCardImageRequest(backImageData, cardType, ImageSide.BACK))
+            val backResult = mlKitTextRecognizer.processImageSide(backImageData, cardType, ImageSide.BACK)
 
             // Combine results
-            val frontData = frontResult.getOrElse { emptyMap() }
-            val backData = backResult.getOrElse { emptyMap() }
-
             val combinedData = mutableMapOf<String, String>()
-            combinedData.putAll(frontData)
-            combinedData.putAll(backData)
+            
+            if (frontResult.success) {
+                combinedData.putAll(frontResult.extractedData)
+            }
+            
+            if (backResult.success) {
+                combinedData.putAll(backResult.extractedData)
+            }
 
-            Result.success(combinedData.toMap())
+            // Filter to only extract the 4 required fields: cardNumber, expiryDate, cardholderName, cvv
+            val filteredData = mutableMapOf<String, String>()
+            combinedData["cardNumber"]?.let { filteredData["cardNumber"] = it }
+            combinedData["expiryDate"]?.let { filteredData["expiryDate"] = it }
+            combinedData["cardholderName"]?.let { filteredData["cardholderName"] = it }
+            combinedData["cvv"]?.let { filteredData["cvv"] = it }
+
+            // Return success if we got any data, even if one side failed
+            if (filteredData.isNotEmpty()) {
+                Result.success(filteredData.toMap())
+            } else {
+                val errorMessage = listOfNotNull(
+                    frontResult.errorMessage?.let { "Front: $it" },
+                    backResult.errorMessage?.let { "Back: $it" }
+                ).joinToString("; ").ifEmpty { "OCR processing failed for both sides" }
+                
+                Result.failure(Exception(errorMessage))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }

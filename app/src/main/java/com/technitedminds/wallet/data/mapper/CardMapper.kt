@@ -16,6 +16,9 @@ fun CardEntity.toDomainModel(): Card {
             backImagePath = backImagePath,
             extractedData = extractedData,
             customFields = customFields,
+            expiryDate = expiryDate,
+            notes = notes,
+            customGradient = customGradient,
             createdAt = createdAt,
             updatedAt = updatedAt
     )
@@ -32,6 +35,9 @@ fun Card.toEntity(): CardEntity {
             backImagePath = backImagePath,
             extractedData = extractedData,
             customFields = customFields,
+            expiryDate = expiryDate,
+            notes = notes,
+            customGradient = customGradient,
             createdAt = createdAt,
             updatedAt = updatedAt
     )

@@ -1,0 +1,124 @@
+---
+description: Camera integration and OCR processing guidelines
+---
+# Camera & OCR Integration
+
+## Camera Setup (CameraX)
+- Use `AndroidView` for CameraX Preview in Compose
+- Handle lifecycle properly with `LocalLifecycleOwner`
+- Request `CAMERA` permission before access
+- Provide proper error handling and fallbacks
+
+```kotlin
+@Composable
+fun CameraPreview(
+    onImageCaptured: (Bitmap) -> Unit,
+    onError: (Exception) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    
+    AndroidView(
+        factory = { ctx ->
+            PreviewView(ctx).apply {
+                // CameraX setup
+            }
+        },
+        modifier = modifier
+    )
+}
+```
+
+## Camera Configuration
+- Optimize image quality for OCR (good lighting, focus)
+- Support flash, focus, and exposure controls
+- Provide card overlay guides (16:9, 4:3, 3:4 aspect ratios)
+- Allow preview and retake before confirming
+- Capture both front and back images
+
+## OCR Processing (ML Kit)
+**CRITICAL**: OCR is ONLY for Credit/Debit cards - never for other card types!
+
+### When to Use OCR
+- ✅ Credit card selected → Run OCR
+- ✅ Debit card selected → Run OCR
+- ❌ Transport, Gift, Voucher, Membership, etc. → NO OCR
+
+### OCR Implementation
+```kotlin
+class MLKitTextRecognizer @Inject constructor() {
+    private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    
+    suspend fun extractCardData(bitmap: Bitmap): CardData = suspendCoroutine { continuation ->
+        val image = InputImage.fromBitmap(bitmap, 0)
+        recognizer.process(image)
+            .addOnSuccessListener { visionText ->
+                val data = parseCardText(visionText.text)
+                continuation.resume(data)
+            }
+            .addOnFailureListener { exception ->
+                continuation.resumeWithException(exception)
+            }
+    }
+    
+    private fun parseCardText(text: String): CardData {
+        return CardData(
+            cardNumber = extractCardNumber(text),
+            expiryDate = extractExpiryDate(text),
+            cardholderName = extractCardholderName(text),
+            cvv = extractCVV(text)
+        )
+    }
+}
+```
+
+### Extraction Patterns
+- **Card Number**: 15-16 digits (Visa, Mastercard, Amex)
+- **Expiry Date**: MM/YY or MM/YYYY format
+- **CVV**: 3-4 digits
+- **Name**: Text in UPPERCASE
+
+### Validation
+- Validate card numbers with Luhn algorithm
+- Check expiry date format and validity
+- Provide confidence scores for each field
+- Allow manual correction if OCR fails
+
+## Image Storage
+- Store captured images in app's private storage
+- Compress images before saving (JPEG quality 85)
+- Naming convention: `{cardId}_front.jpg`, `{cardId}_back.jpg`
+- Clean up orphaned images when cards are deleted
+- Use Coil for efficient image loading
+
+## Permission Handling
+```kotlin
+val cameraPermissionState = rememberPermissionState(
+    android.Manifest.permission.CAMERA
+)
+
+LaunchedEffect(Unit) {
+    if (!cameraPermissionState.status.isGranted) {
+        cameraPermissionState.launchPermissionRequest()
+    }
+}
+```
+
+## Error Handling
+- Handle camera initialization failures
+- Handle OCR processing failures gracefully
+- Provide user-friendly error messages
+- Offer retry mechanisms
+- Never crash on permission denial
+
+## Best Practices
+- ✅ Run OCR on background thread
+- ✅ Show processing indicator during OCR
+- ✅ Provide manual input option
+- ✅ Validate extracted data
+- ✅ Clean up camera resources properly
+- ❌ Don't run OCR on non-Credit/Debit cards
+- ❌ Don't block UI during processing
+- ❌ Don't save raw bitmaps - compress first
+- ❌ Don't forget to handle camera lifecycle

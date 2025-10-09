@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
     alias(libs.plugins.kotlin.android)
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.0"
 }
 
 android {
@@ -37,7 +38,12 @@ android {
     }
     buildFeatures { compose = true }
     kotlin {
-        compilerOptions { jvmTarget.set(JvmTarget.JVM_11)
+        compilerOptions { 
+            jvmTarget.set(JvmTarget.JVM_11)
+            freeCompilerArgs.set(listOf(
+                "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+                "-opt-in=androidx.camera.core.ExperimentalGetImage"
+            ))
         }
     }
 }
@@ -62,6 +68,7 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.ui.tooling)
+    implementation(libs.androidx.compose.ui.text.google.fonts)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // Room
@@ -94,6 +101,9 @@ dependencies {
     // Datastore
     implementation(libs.androidx.datastore)
     implementation(libs.androidx.datastore.preferences)
+
+    // Kotlinx Serialization
+    implementation(libs.kotlinx.serialization.json)
 
     // Security
     implementation(libs.androidx.biometric)

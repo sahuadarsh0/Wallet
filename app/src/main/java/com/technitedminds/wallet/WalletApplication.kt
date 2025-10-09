@@ -9,9 +9,17 @@ import dagger.hilt.android.HiltAndroidApp
  */
 @HiltAndroidApp
 class WalletApplication : Application() {
+    companion object {
+        @JvmStatic
+        lateinit var instance: WalletApplication
+            private set
+    }
     
     override fun onCreate() {
         super.onCreate()
+        instance = this
         // Application initialization code will go here
     }
+    
+    fun getContext() = applicationContext
 }

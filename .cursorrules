@@ -1,0 +1,415 @@
+# CardVault - Android Wallet App - Cursor Rules
+
+## Project Overview
+CardVault is an **offline-first Android application** for managing digital cards (credit, debit, gift cards, vouchers, memberships). The app prioritizes complete data locality, premium UI/UX with 60fps animations, and handles two distinct card workflows: textual cards with OCR capabilities and image-only cards for visual storage.
+
+## Core Principles
+- **100% Offline Operation**: NEVER add network permissions, cloud APIs, or remote dependencies
+- **Privacy First**: No analytics, tracking, or data collection - reject any third-party telemetry
+- **Premium Experience**: All animations must target 60fps with smooth Material Design 3 transitions
+- **Local Storage Only**: All data stays on device in Room database and app's private storage
+- **Security**: Use Google Tink for encryption, sandboxed storage for all files
+
+## Technology Stack
+
+### Language & Framework
+- **Kotlin 100%**: No Java code - use Kotlin idioms and modern syntax
+- **Jetpack Compose**: All UI in Compose, no XML layouts except resources
+- **Material Design 3**: Follow M3 guidelines strictly for colors, typography, shapes
+
+### Architecture
+- **Pattern**: MVVM + Unidirectional Data Flow (UDF)
+- **Layers**: Strict separation - Data → Domain → Presentation
+- **DI**: Hilt with `@HiltAndroidApp`, `@AndroidEntryPoint`, `@HiltViewModel`
+- **Navigation**: Compose Navigation with kotlinx.serialization for type-safe arguments
+- **Async**: Kotlin Coroutines + Flow/StateFlow for reactive streams
+
+### Key Libraries
+- **Database**: Room with KSP annotation processing
+- **Preferences**: Proto DataStore (NOT SharedPreferences)
+- **Camera**: CameraX for lifecycle-aware camera implementation
+- **ML**: Google ML Kit Text Recognition for offline OCR
+- **Security**: Google Tink for backup encryption
+- **Images**: Coil for loading, caching, and transformations
+- **Serialization**: kotlinx.serialization for JSON and navigation args
+
+### Build Configuration
+- **Target SDK**: API 36 (Android 15)
+- **Min SDK**: API 29 (Android 10)
+- **Java Version**: 11
+- **Build System**: Gradle Kotlin DSL (`build.gradle.kts`)
+- **Dependencies**: Centralized in `gradle/libs.versions.toml`
+
+## Package Structure
+```
+com.technitedminds.wallet/
+├── MainActivity.kt              # @AndroidEntryPoint entry point
+├── WalletApplication.kt         # @HiltAndroidApp application class
+├── data/                        # Data layer implementations
+│   ├── local/
+│   │   ├── database/           # Room entities, DAOs, converters, WalletDatabase
+│   │   ├── files/              # ImageFileManager for file operations
+│   │   └── preferences/        # Proto DataStore managers
+│   ├── repository/             # Repository implementations (*RepositoryImpl.kt)
+│   ├── mapper/                 # Entity ↔ Domain model mapping
+│   └── ocr/                    # ML Kit text recognition
+├── domain/                      # Business logic layer
+│   ├── model/                  # Domain models (Card, CardType, Category)
+│   ├── repository/             # Repository interfaces
+│   ├── usecase/                # Business logic use cases
+│   └── util/                   # Domain utilities
+├── presentation/                # UI layer
+│   ├── screens/                # Feature screens (*Screen.kt, *ViewModel.kt)
+│   │   ├── home/
+│   │   ├── add_card/
+│   │   ├── card_detail/
+│   │   ├── categories/
+│   │   └── settings/
+│   ├── components/             # Reusable composables
+│   │   ├── common/
+│   │   ├── camera/
+│   │   └── animation/
+│   └── navigation/             # Navigation setup
+├── di/                          # Hilt modules (@Module, @InstallIn)
+├── ui/theme/                    # M3 theming (Color, Theme, Type)
+└── utils/                       # Extensions and utilities
+```
+
+## Code Style & Conventions
+
+### Naming Conventions
+- **Files**: 
+  - Activities: `*Activity.kt`
+  - ViewModels: `*ViewModel.kt` with `@HiltViewModel`
+  - Repositories: `*Repository.kt` (interface) + `*RepositoryImpl.kt` (impl)
+  - Use Cases: `*UseCase.kt` (e.g., `AddCardUseCase`, `GetCardsUseCase`)
+  - Entities: `*Entity.kt` with `@Entity` annotation
+  - DAOs: `*Dao.kt` with `@Dao` annotation
+  - Composables: PascalCase (e.g., `CardFlipAnimation`, `CameraPreview`)
+  - Screens: `*Screen.kt` with corresponding `*ViewModel.kt`
+  - Mappers: `*Mapper.kt` (e.g., `CardMapper`, `CategoryMapper`)
+
+### Kotlin Style
+- Prefer `val` over `var` for immutability
+- Use trailing commas in multi-line constructs
+- Maximum line length: 120 characters
+- Use meaningful, descriptive names - avoid abbreviations
+- Add KDoc for public APIs and complex functions
+- Use sealed classes/interfaces for type-safe state management
+- Prefer data classes for models
+- Use extension functions for utility operations
+- Import order: Android → Third-party → Project (with blank lines between groups)
+
+### Compose Best Practices
+- Use `remember`, `derivedStateOf`, `LaunchedEffect` appropriately
+- Keep composables small and focused - extract reusable pieces
+- Hoist state up - pass state down, events up
+- Use `collectAsStateWithLifecycle()` for Flow → State conversion
+- Add `@Composable` preview functions for visual components
+- Use `Modifier` parameter last in composable signatures
+- Leverage composition over inheritance
+- Avoid side effects in composition - use effect handlers
+
+### ViewModel Patterns
+- Annotate with `@HiltViewModel` and inject via constructor
+- Use `StateFlow` for UI state, `SharedFlow` for events
+- Expose immutable state (`StateFlow<T>`) to UI
+- Use `viewModelScope` for coroutines
+- Handle errors gracefully with sealed result classes
+- Update state immutably using copy() on data classes
+
+### Repository Implementation
+- Interfaces in `domain/repository/`, implementations in `data/repository/`
+- Use `suspend` functions for async operations
+- Return `Flow<T>` for streams, `Result<T>` or domain models for one-shot operations
+- Map data layer models to domain models in repository layer
+- Handle exceptions and wrap in domain-appropriate error types
+
+### Use Case Guidelines
+- Single responsibility - one use case per business operation
+- Inject repositories via constructor
+- Keep business logic in use cases, not ViewModels
+- Return domain models or `Result<T>` wrapper
+- Use `suspend` for async operations
+- Add input validation and error handling
+
+## Domain Models
+
+### Card Model
+```kotlin
+data class Card(
+    val id: Long = 0,
+    val name: String,
+    val type: CardType,
+    val categoryId: Long,
+    val imagePaths: List<String>, // Front and back image paths
+    val extractedData: Map<String, String>, // OCR results for textual cards
+    val customFields: Map<String, String>, // User-added fields
+    val gradient: CardGradient?, // For textual cards display
+    val createdAt: Long,
+    val updatedAt: Long
+)
+```
+
+### CardType Sealed Class
+```kotlin
+sealed class CardType {
+    object Credit : CardType()           // OCR-enabled textual card
+    object Debit : CardType()            // OCR-enabled textual card
+    object TransportCard : CardType()    // Image-only
+    object GiftCard : CardType()         // Image-only
+    object LoyaltyCard : CardType()      // Image-only
+    object MembershipCard : CardType()   // Image-only
+    object InsuranceCard : CardType()    // Image-only
+    object IdentificationCard : CardType()// Image-only
+    object Voucher : CardType()          // Image-only
+    object Event : CardType()            // Image-only
+    object BusinessCard : CardType()     // Image-only
+    object LibraryCard : CardType()      // Image-only
+    object HotelCard : CardType()        // Image-only
+    object StudentCard : CardType()      // Image-only
+    object AccessCard : CardType()       // Image-only
+    data class Custom(val name: String) : CardType() // Image-only
+}
+```
+
+### Category Model
+```kotlin
+data class Category(
+    val id: Long = 0,
+    val name: String,
+    val iconResId: Int,
+    val colorHex: String,
+    val isDefault: Boolean
+)
+```
+
+## Card Workflows
+
+### Textual Cards (Credit/Debit)
+1. User selects Credit or Debit card type
+2. Camera captures front and back images
+3. ML Kit OCR extracts: card number, expiry date, CVV, cardholder name
+4. User reviews and edits extracted data
+5. System generates gradient card design for sharing
+6. Images stored, card saved to database
+
+### Image-Only Cards (All Other Types)
+1. User selects card type (Gift, Voucher, Membership, etc.)
+2. Camera captures front and back images
+3. No OCR processing - pure image storage
+4. User adds custom fields if needed
+5. Images stored as-is for sharing
+6. Card saved to database
+
+## UI/UX Requirements
+
+### Performance Targets
+- **60fps animations** on mid-range devices - optimize all transitions
+- **Cold start < 3 seconds** - minimize startup work
+- **Smooth scrolling** with LazyColumn - use keys and item animations
+- **Efficient image loading** - use Coil with proper placeholders and error handling
+- **Memory-conscious bitmaps** - compress and sample down images appropriately
+
+### Animation Standards
+- **Card flip**: 300ms duration with `FastOutSlowInEasing`
+- **List animations**: Spring physics for natural motion
+- **Transitions**: Fade, slide, scale with Material Motion
+- **3D effects**: Use `graphicsLayer` for rotationY transformations
+- **Gesture support**: Swipe, pinch-to-zoom with proper feedback
+
+### Material Design 3
+- Follow M3 color system with dynamic color support
+- Use M3 components: Card, Button, FAB, TextField, Dialog
+- Implement proper elevation and shadows
+- Add ripple effects on interactive elements
+- Support both light and dark themes
+- Ensure minimum touch targets (48dp)
+
+## Camera & OCR
+
+### Camera Implementation
+- Use CameraX for lifecycle-aware camera management
+- Request `CAMERA` permission with proper rationale
+- Provide card overlay guides (16:9, 4:3, 3:4 aspect ratios)
+- Support flash, focus, and exposure controls
+- Optimize image quality for OCR (good lighting, focus)
+- Allow preview and retake before confirming
+
+### OCR Processing
+- **Only for Credit/Debit cards** - do not run OCR on other types
+- Use ML Kit Text Recognition API (offline model)
+- Extract: card number (15-16 digits), expiry (MM/YY), CVV (3-4 digits), name
+- Validate extracted data with regex patterns
+- Provide confidence scores for each field
+- Allow manual correction if OCR fails
+- Show processing indicator during recognition
+
+## Data Management
+
+### Room Database
+- Create entities with proper `@Entity`, `@PrimaryKey` annotations
+- Use type converters for complex types (CardType, Map<String, String>)
+- Define indexes for frequently queried columns
+- Write efficient DAOs with `@Query`, `@Insert`, `@Update`, `@Delete`
+- Return `Flow<T>` for reactive queries
+- Handle migrations properly when schema changes
+
+### Image Storage
+- Store images in app's private storage: `context.filesDir/images/`
+- Use consistent naming: `{cardId}_front.jpg`, `{cardId}_back.jpg`
+- Compress images before saving (JPEG quality 85)
+- Clean up orphaned images when cards are deleted
+- Validate image files exist before loading
+- Use Coil for loading with proper error placeholders
+
+### Proto DataStore
+- Define `.proto` schema for user preferences
+- Store: theme preference, default categories, app settings
+- Use coroutines for async read/write operations
+- Handle data migration when proto schema changes
+- Never block UI thread for DataStore operations
+
+## Dependency Injection (Hilt)
+
+### Module Structure
+- `DatabaseModule`: Provides `WalletDatabase`, DAOs, `@Singleton`
+- `RepositoryModule`: Binds repository interfaces to implementations
+- `CameraModule`: Provides CameraX and ML Kit dependencies
+- NO `NetworkModule` - app is completely offline
+
+### Common Annotations
+- `@HiltAndroidApp` on `WalletApplication`
+- `@AndroidEntryPoint` on `MainActivity` and other Android components
+- `@HiltViewModel` on ViewModels
+- `@Inject constructor()` for constructor injection
+- `@Module` + `@InstallIn(SingletonComponent::class)` for singleton modules
+- `@Provides` for external dependencies
+- `@Binds` for interface → implementation mapping
+
+## Navigation
+
+### Navigation Structure
+- Bottom navigation: Home, Categories, Settings
+- Floating destinations: AddCard, CardDetail, Camera
+- Use `NavController` and `NavHost` for routing
+- Define routes as `@Serializable` data classes/objects
+- Pass arguments via kotlinx.serialization
+- Handle back stack properly - pop to home on bottom nav clicks
+- Restore state across configuration changes
+
+### Navigation Destinations
+```kotlin
+sealed interface NavigationDestination {
+    @Serializable object Home
+    @Serializable object Categories
+    @Serializable object Settings
+    @Serializable data class AddCard(val cardType: CardType? = null)
+    @Serializable data class CardDetail(val cardId: Long)
+    @Serializable data class Camera(val captureMode: CaptureMode)
+}
+```
+
+## Testing Guidelines
+
+### Unit Tests
+- Test ViewModels with fake/mock repositories
+- Test use cases with mock dependencies
+- Test mappers for correct data transformation
+- Test utilities and extensions
+- Use MockK for mocking
+- Assert on state changes and side effects
+- Test error handling paths
+
+### Integration Tests
+- Test Room database operations end-to-end
+- Test repository implementations with real database
+- Verify data layer to domain layer mapping
+- Test file operations with temporary directories
+
+### UI Tests
+- Use Compose testing APIs (`@Test`, `composeTestRule`)
+- Test user interactions and navigation flows
+- Verify UI state updates correctly
+- Test accessibility with semantics
+
+## Common Pitfalls to Avoid
+- ❌ Don't add network permissions or cloud APIs
+- ❌ Don't use SharedPreferences - use Proto DataStore
+- ❌ Don't block main thread - always use coroutines for I/O
+- ❌ Don't expose mutable state from ViewModels
+- ❌ Don't run OCR on non-Credit/Debit cards
+- ❌ Don't forget to clean up images when deleting cards
+- ❌ Don't skip type converters for complex Room types
+- ❌ Don't put business logic in composables or repositories
+- ❌ Don't forget to handle camera/storage permissions
+- ❌ Don't skip error handling in async operations
+
+## Security Requirements
+- Never log sensitive card data (numbers, CVV, names)
+- Encrypt backup files with Google Tink
+- Store all files in sandboxed private storage
+- Don't use external storage or public directories
+- Validate all user inputs before saving
+- Handle exceptions without exposing stack traces to users
+
+## Debugging Commands
+```bash
+# Build debug APK
+./gradlew assembleDebug
+
+# Install and run
+./gradlew installDebug
+
+# Run unit tests
+./gradlew test
+
+# Run instrumented tests
+./gradlew connectedAndroidTest
+
+# Generate KSP sources (for Room, Hilt)
+./gradlew kspDebugKotlin
+
+# Clean build
+./gradlew clean
+```
+
+## When Implementing New Features
+1. Start with domain layer (models, repository interface, use case)
+2. Implement data layer (entity, DAO, repository impl)
+3. Create ViewModel with state management
+4. Build composable UI with proper state hoisting
+5. Wire up navigation if needed
+6. Add Hilt modules for DI
+7. Test business logic and UI interactions
+8. Optimize performance and animations
+
+## Code Review Checklist
+- [ ] Follows package structure and naming conventions
+- [ ] Uses Hilt for dependency injection
+- [ ] No network or tracking code added
+- [ ] All I/O operations are async with coroutines
+- [ ] State management follows UDF pattern
+- [ ] Animations target 60fps performance
+- [ ] Images compressed and optimized
+- [ ] Proper error handling and user feedback
+- [ ] Material Design 3 compliance
+- [ ] No sensitive data logged
+- [ ] Type converters for complex Room types
+- [ ] Clean architecture layer separation
+- [ ] Kotlin idioms and best practices followed
+
+## Resources & References
+- **Project Docs**: `/docs/` - product.md, tech.md, structure.md, tasks.md
+- **Material Design 3**: https://m3.material.io/
+- **Jetpack Compose**: https://developer.android.com/jetpack/compose
+- **CameraX**: https://developer.android.com/training/camerax
+- **ML Kit**: https://developers.google.com/ml-kit/vision/text-recognition
+- **Room**: https://developer.android.com/training/data-storage/room
+- **Hilt**: https://developer.android.com/training/dependency-injection/hilt-android
+- **Proto DataStore**: https://developer.android.com/topic/libraries/architecture/datastore
+
+---
+
+**Remember**: This is a privacy-focused, offline-first wallet app. Every decision should prioritize user privacy, data locality, and premium user experience with smooth 60fps animations.
+

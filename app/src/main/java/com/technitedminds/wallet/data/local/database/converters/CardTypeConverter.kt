@@ -14,12 +14,13 @@ class CardTypeConverter {
         return when (cardType) {
             is CardType.Credit -> "Credit"
             is CardType.Debit -> "Debit"
-            is CardType.ATM -> "ATM"
             is CardType.GiftCard -> "GiftCard"
             is CardType.LoyaltyCard -> "LoyaltyCard"
             is CardType.MembershipCard -> "MembershipCard"
             is CardType.InsuranceCard -> "InsuranceCard"
             is CardType.IdentificationCard -> "IdentificationCard"
+            is CardType.Voucher -> "Voucher"
+            is CardType.Event -> "Event"
             is CardType.TransportCard -> "TransportCard"
             is CardType.BusinessCard -> "BusinessCard"
             is CardType.LibraryCard -> "LibraryCard"
@@ -35,12 +36,13 @@ class CardTypeConverter {
         return when {
             cardTypeString == "Credit" -> CardType.Credit
             cardTypeString == "Debit" -> CardType.Debit
-            cardTypeString == "ATM" -> CardType.ATM
             cardTypeString == "GiftCard" -> CardType.GiftCard
             cardTypeString == "LoyaltyCard" -> CardType.LoyaltyCard
             cardTypeString == "MembershipCard" -> CardType.MembershipCard
             cardTypeString == "InsuranceCard" -> CardType.InsuranceCard
             cardTypeString == "IdentificationCard" -> CardType.IdentificationCard
+            cardTypeString == "Voucher" -> CardType.Voucher
+            cardTypeString == "Event" -> CardType.Event
             cardTypeString == "TransportCard" -> CardType.TransportCard
             cardTypeString == "BusinessCard" -> CardType.BusinessCard
             cardTypeString == "LibraryCard" -> CardType.LibraryCard

@@ -20,7 +20,11 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.technitedminds.wallet.domain.model.Card
+import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
 import java.io.File
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 
 /**
  * Back side of the card display with security information and additional details.
@@ -30,7 +34,9 @@ import java.io.File
 fun CardBack(
     card: Card,
     modifier: Modifier = Modifier,
-    isCompact: Boolean = false
+    isCompact: Boolean = false,
+    showShareButton: Boolean = false,
+    onShare: ((CardSharingOption) -> Unit)? = null
 ) {
     val context = LocalContext.current
     
@@ -215,6 +221,28 @@ fun CardBack(
                     .align(Alignment.Center)
                     .padding(16.dp)
             )
+        }
+        
+        // Share button (top right)
+        if (showShareButton && onShare != null && !isCompact) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(12.dp)
+                    .size(32.dp)
+                    .clickable { onShare(CardSharingOption.BackOnly) },
+                shape = CircleShape,
+                color = Color.White.copy(alpha = 0.2f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = "Share back",
+                    tint = Color.White,
+                    modifier = Modifier
+                        .padding(6.dp)
+                        .size(20.dp)
+                )
+            }
         }
     }
 }

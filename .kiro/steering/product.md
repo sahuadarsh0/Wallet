@@ -14,7 +14,7 @@ CardVault is an **offline-first Android application** that serves as a digital r
 
 ### Key Features
 - **Dual Card Types**: 
-  - Textual cards (Credit/Debit/ATM) with OCR text extraction
+  - Textual cards (Credit/Debit) with OCR text extraction
   - Image-only cards (Gym/Voucher/Gift) for visual storage
 - **Camera Integration**: CameraX with card overlay and automatic capture
 - **3D Card Animations**: Realistic flip animations with smooth transitions

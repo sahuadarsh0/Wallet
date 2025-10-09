@@ -8,6 +8,7 @@ import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import com.technitedminds.wallet.data.local.database.converters.CardTypeConverter
 import com.technitedminds.wallet.data.local.database.converters.MapConverter
+import com.technitedminds.wallet.data.local.database.converters.CardGradientConverter
 import com.technitedminds.wallet.domain.model.CardType
 
 /**
@@ -31,7 +32,7 @@ import com.technitedminds.wallet.domain.model.CardType
                         Index(value = ["created_at"]),
                         Index(value = ["updated_at"])]
 )
-@TypeConverters(CardTypeConverter::class, MapConverter::class)
+@TypeConverters(CardTypeConverter::class, MapConverter::class, CardGradientConverter::class)
 data class CardEntity(
         @PrimaryKey @ColumnInfo(name = "id") val id: String,
         @ColumnInfo(name = "name") val name: String,
@@ -41,6 +42,9 @@ data class CardEntity(
         @ColumnInfo(name = "back_image_path") val backImagePath: String,
         @ColumnInfo(name = "extracted_data") val extractedData: Map<String, String>,
         @ColumnInfo(name = "custom_fields") val customFields: Map<String, String>,
+        @ColumnInfo(name = "expiry_date") val expiryDate: String?,
+        @ColumnInfo(name = "notes") val notes: String?,
+        @ColumnInfo(name = "custom_gradient") val customGradient: com.technitedminds.wallet.domain.model.CardGradient?,
         @ColumnInfo(name = "created_at") val createdAt: Long,
         @ColumnInfo(name = "updated_at") val updatedAt: Long
 )

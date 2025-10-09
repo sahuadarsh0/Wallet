@@ -1,0 +1,82 @@
+---
+globs: *.gradle.kts,gradle/libs.versions.toml
+---
+# Gradle Build Configuration
+
+## Dependency Management
+All dependencies MUST be defined in `gradle/libs.versions.toml`
+
+## Build Configuration
+- **Target SDK**: API 36 (Android 15)
+- **Min SDK**: API 29 (Android 10)
+- **Java Version**: 11
+- **Kotlin**: Latest stable
+- **Compose Compiler**: Match Kotlin version
+
+## KSP Configuration
+KSP must be used for annotation processing (Room, Hilt):
+```kotlin
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.incremental", "true")
+}
+```
+
+## Required Dependencies
+### Core
+- androidx.core:core-ktx
+- androidx.lifecycle:lifecycle-runtime-ktx
+- androidx.activity:activity-compose
+- androidx.compose.material3:material3
+
+### Navigation
+- androidx.navigation:navigation-compose
+- kotlinx-serialization-json
+
+### DI (Hilt)
+- hilt-android
+- hilt-compiler (ksp)
+- hilt-navigation-compose
+
+### Database (Room)
+- room-runtime
+- room-ktx
+- room-compiler (ksp)
+
+### Camera & ML
+- camera-camera2
+- camera-lifecycle
+- camera-view
+- mlkit-text-recognition
+
+### Image Loading
+- coil-compose
+
+### Security
+- tink-android
+
+## Build Commands
+```bash
+./gradlew clean
+./gradlew assembleDebug
+./gradlew installDebug
+./gradlew kspDebugKotlin  # Generate KSP sources
+```
+
+## NEVER Add
+- ❌ Network libraries (Retrofit, OkHttp, Ktor)
+- ❌ Analytics (Firebase Analytics, Crashlytics)
+- ❌ Cloud dependencies (Firebase, AWS)
+- ❌ Tracking SDKs
+- ❌ Ad libraries
+
+## Android Manifest
+**CRITICAL**: Never add internet permission
+```xml
+<!-- Explicitly block network access -->
+<uses-permission android:name="android.permission.INTERNET" 
+    tools:node="remove" />
+
+<!-- Required permissions ONLY -->
+<uses-permission android:name="android.permission.CAMERA" />
+```
