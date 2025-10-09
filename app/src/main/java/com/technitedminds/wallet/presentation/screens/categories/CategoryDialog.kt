@@ -57,10 +57,12 @@ fun CategoryDialog(
     onDismiss: () -> Unit,
     onConfirm: (name: String, description: String, colorHex: String, iconName: String?) -> Unit
 ) {
-    var name by remember { mutableStateOf(category?.name ?: "") }
-    var description by remember { mutableStateOf(category?.description ?: "") }
-    var selectedColor by remember { mutableStateOf(category?.colorHex ?: "#1976D2") }
-    var selectedIcon by remember { mutableStateOf(category?.iconName) }
+    var name by remember(category) { mutableStateOf(category?.name ?: "") }
+    var description by remember(category) { mutableStateOf(category?.description ?: "") }
+    var selectedColor by remember(category) { mutableStateOf(category?.colorHex ?: "#1976D2") }
+    var selectedIcon by remember(category) { 
+        mutableStateOf(category?.iconName ?: "Category") 
+    }
     
     val isValid = name.isNotBlank()
 
@@ -116,7 +118,9 @@ fun CategoryDialog(
                 // Icon picker
                 com.technitedminds.wallet.presentation.components.common.IconPicker(
                     selectedIcon = getIconFromName(selectedIcon) ?: Icons.Default.Category,
-                    onIconSelected = { selectedIcon = getIconName(it) }
+                    onIconSelected = { icon -> 
+                        selectedIcon = getIconName(icon)
+                    }
                 )
                 
                 // Buttons
