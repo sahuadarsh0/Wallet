@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Internal storage for card images -->
-    <files-path name="card_images" path="images/" />
+    <files-path name="card_images" path="card_images/" />
     
     <!-- Cache directory for temporary sharing files -->
     <cache-path name="shared_cards" path="shared_cards/" />

@@ -157,7 +157,7 @@
   - Create gradient preview functionality with real-time updates
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [x] 7.3 Enhance FlippableCard with sharing integration
+- [ ] 7.3 Enhance FlippableCard with sharing integration
   - Add share buttons to CardFront and CardBack components
   - Implement onShare callbacks for different sharing options (FrontOnly, BackOnly, BothSides)
   - Create CardSharingManager with dual sharing strategy:

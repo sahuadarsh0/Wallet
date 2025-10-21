@@ -1,15 +1,36 @@
 package com.technitedminds.wallet.presentation.components.animation
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import com.technitedminds.wallet.domain.model.CardType
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Hotel
+import androidx.compose.material.icons.filled.Payment
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Redeem
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Train
+import androidx.compose.material.icons.filled.VpnKey
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,16 +42,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.technitedminds.wallet.domain.model.Card
-import com.technitedminds.wallet.presentation.utils.resolveCategoryName
+import com.technitedminds.wallet.domain.model.CardType
+import com.technitedminds.wallet.presentation.components.common.resolveCategoryName
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
 import java.io.File
-import androidx.core.graphics.toColorInt
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.CircleShape
 
 /**
  * Front side of the card display with proper image loading and card information.

@@ -8,6 +8,10 @@ import com.technitedminds.wallet.domain.usecase.card.DeleteCardUseCase
 import com.technitedminds.wallet.domain.usecase.card.GetCardsUseCase
 import com.technitedminds.wallet.domain.usecase.card.UpdateCardUseCase
 import com.technitedminds.wallet.domain.usecase.card.UpdateCardRequest
+import com.technitedminds.wallet.presentation.components.sharing.CardSharingManager
+import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
+import com.technitedminds.wallet.presentation.components.sharing.CardSharingConfig
+import com.technitedminds.wallet.presentation.components.sharing.CardSharingResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -21,6 +25,7 @@ class CardDetailViewModel @Inject constructor(
     private val getCardsUseCase: GetCardsUseCase,
     private val updateCardUseCase: UpdateCardUseCase,
     private val deleteCardUseCase: DeleteCardUseCase,
+    private val cardSharingManager: CardSharingManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -38,6 +43,10 @@ class CardDetailViewModel @Inject constructor(
     // UI state
     private val _uiState = MutableStateFlow(CardDetailUiState())
     val uiState = _uiState.asStateFlow()
+    
+    // Sharing dialog state
+    private val _showSharingDialog = MutableStateFlow(false)
+    val showSharingDialog = _showSharingDialog.asStateFlow()
 
     // Edit state
     private val _isEditing = MutableStateFlow(false)
@@ -190,28 +199,90 @@ class CardDetailViewModel @Inject constructor(
     }
 
     /**
-     * Share card information (without sensitive data)
+     * Show sharing dialog for advanced options
      */
-    fun shareCard() {
+    fun showSharingDialog() {
+        _showSharingDialog.value = true
+    }
+    
+    /**
+     * Hide sharing dialog
+     */
+    fun hideSharingDialog() {
+        _showSharingDialog.value = false
+    }
+    
+    /**
+     * Quick share with default settings (for button clicks)
+     */
+    fun quickShare(sharingOption: CardSharingOption) {
+        shareCardWithConfig(
+            sharingOption = sharingOption,
+            config = CardSharingConfig(
+                includeSensitiveInfo = false,
+                imageQuality = 0.8f,
+                maxImageWidth = 1200,
+                maxImageHeight = 800,
+                addWatermark = true,
+                watermarkText = "CardVault"
+            )
+        )
+    }
+    
+    /**
+     * Share card with custom configuration (from dialog)
+     */
+    fun shareCardWithConfig(sharingOption: CardSharingOption, config: CardSharingConfig) {
         viewModelScope.launch {
             val currentCard = card.value
             if (currentCard != null) {
-                val shareText = buildString {
-                    appendLine("Card: ${currentCard.name}")
-                    appendLine("Type: ${currentCard.type.getDisplayName()}")
+                try {
+                    _uiState.value = _uiState.value.copy(isLoading = true)
                     
-                    // Only include non-sensitive information
-                    currentCard.customFields.forEach { (key, value) ->
-                        if (key !in listOf("cardNumber", "cvv", "pin", "password")) {
-                            appendLine("$key: $value")
+                    val result = cardSharingManager.shareCard(currentCard, sharingOption, config)
+                    
+                    when (result) {
+                        is CardSharingResult.Success -> {
+                            _events.emit(CardDetailEvent.ShareSuccess)
+                        }
+                        is CardSharingResult.Cancelled -> {
+                            // User cancelled, no action needed
+                        }
+                        is CardSharingResult.Error -> {
+                            _uiState.value = _uiState.value.copy(
+                                error = "Failed to share card: ${result.message}"
+                            )
                         }
                     }
+                } catch (e: Exception) {
+                    _uiState.value = _uiState.value.copy(
+                        error = "Failed to share card: ${e.message}"
+                    )
+                } finally {
+                    _uiState.value = _uiState.value.copy(isLoading = false)
                 }
-                
-                _events.emit(CardDetailEvent.ShareCard(shareText))
             }
         }
     }
+    
+    /**
+     * Share card with sensitive information (legacy method - now uses config)
+     */
+    fun shareCardWithSensitiveInfo(sharingOption: CardSharingOption = CardSharingOption.FrontOnly) {
+        shareCardWithConfig(
+            sharingOption = sharingOption,
+            config = CardSharingConfig(
+                includeSensitiveInfo = true,
+                imageQuality = 0.9f,
+                maxImageWidth = 1200,
+                maxImageHeight = 800,
+                addWatermark = false,
+                watermarkText = ""
+            )
+        )
+    }
+
+
 }
 
 /**
@@ -230,5 +301,5 @@ data class CardDetailUiState(
 sealed class CardDetailEvent {
     object CardSaved : CardDetailEvent()
     object CardDeleted : CardDetailEvent()
-    data class ShareCard(val text: String) : CardDetailEvent()
+    object ShareSuccess : CardDetailEvent()
 }

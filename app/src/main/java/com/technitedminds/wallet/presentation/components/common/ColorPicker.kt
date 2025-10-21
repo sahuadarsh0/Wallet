@@ -52,10 +52,10 @@ fun ColorPicker(
         
         // Predefined colors grid
         LazyVerticalGrid(
-            columns = GridCells.Fixed(6),
+            columns = GridCells.Fixed(8),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.height(120.dp)
+            modifier = Modifier.height(80.dp)
         ) {
             items(predefinedColors) { colorHex ->
                 ColorOption(
@@ -123,7 +123,7 @@ private fun ColorOption(
     
     Box(
         modifier = modifier
-            .size(40.dp)
+            .size(32.dp)
             .clip(CircleShape)
             .border(
                 width = if (isSelected) 3.dp else 0.dp,
@@ -135,7 +135,7 @@ private fun ColorOption(
     ) {
         Box(
             modifier = Modifier
-                .size(if (isSelected) 32.dp else 36.dp)
+                .size(if (isSelected) 26.dp else 30.dp)
                 .clip(CircleShape)
                 .background(color),
             contentAlignment = Alignment.Center
@@ -145,7 +145,7 @@ private fun ColorOption(
                     imageVector = Icons.Default.Check,
                     contentDescription = "Selected",
                     tint = if (isLightColor(color)) Color.Black else Color.White,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(14.dp)
                 )
             }
         }
