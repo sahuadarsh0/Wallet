@@ -87,20 +87,20 @@ fun CardListItem(
             containerColor = backgroundColor
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 8.dp else 2.dp
+            defaultElevation = if (isSelected) AppConstants.Dimensions.CARD_ELEVATION_SELECTED else AppConstants.Dimensions.CARD_ELEVATION_DEFAULT
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(if (isCompact) 12.dp else 16.dp),
+                .padding(if (isCompact) AppConstants.Dimensions.PADDING_MEDIUM else AppConstants.Dimensions.PADDING_LARGE),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Card thumbnail
             CardThumbnail(
                 card = card,
-                size = if (isCompact) 48.dp else 56.dp,
-                modifier = Modifier.padding(end = 16.dp)
+                size = if (isCompact) AppConstants.Dimensions.CARD_THUMBNAIL_COMPACT else AppConstants.Dimensions.CARD_THUMBNAIL_NORMAL,
+                modifier = Modifier.padding(end = AppConstants.Dimensions.PADDING_LARGE)
             )
             
             // Card information
@@ -132,7 +132,7 @@ fun CardListItem(
                 
                 // Category (if enabled and not compact)
                 if (showCategory && !isCompact && card.categoryId.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_EXTRA_SMALL))
                     CategoryChip(
                         category = resolveCategoryName(card.categoryId),
                         isCompact = true
@@ -147,7 +147,7 @@ fun CardListItem(
                             text = String.format(AppConstants.UIText.CARD_NUMBER_MASKED, cardNumber.takeLast(4)),
                             style = MaterialTheme.typography.bodySmall,
                             color = contentColor.copy(alpha = AppConstants.AnimationValues.ALPHA_HIGH),
-                            modifier = Modifier.padding(top = 2.dp)
+                            modifier = Modifier.padding(top = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
                         )
                     }
                 }
@@ -157,7 +157,7 @@ fun CardListItem(
             if (showMenu && onMenuClick != null) {
                 IconButton(
                     onClick = onMenuClick,
-                    modifier = Modifier.size(if (isCompact) 40.dp else 48.dp)
+                    modifier = Modifier.size(if (isCompact) AppConstants.Dimensions.CARD_LIST_ITEM_MENU_SIZE_COMPACT else AppConstants.Dimensions.CARD_LIST_ITEM_MENU_SIZE_NORMAL)
                 ) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
@@ -184,7 +184,7 @@ private fun CardThumbnail(
     Box(
         modifier = modifier
             .size(size)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_COMPACT))
             .background(getCardTypeColor(card)),
         contentAlignment = Alignment.Center
     ) {
@@ -197,7 +197,7 @@ private fun CardThumbnail(
                         .data(imageFile)
                         .crossfade(true)
                         .build(),
-                    contentDescription = "Card thumbnail",
+                    contentDescription = AppConstants.ContentDescriptions.CARD_THUMBNAIL,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
@@ -277,7 +277,7 @@ fun GridCardItem(
             containerColor = backgroundColor
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 8.dp else 4.dp
+            defaultElevation = if (isSelected) AppConstants.Dimensions.CARD_ELEVATION_SELECTED else AppConstants.Dimensions.SPACING_EXTRA_SMALL
         )
     ) {
         Box(
@@ -292,7 +292,7 @@ fun GridCardItem(
                             .data(imageFile)
                             .crossfade(true)
                             .build(),
-                        contentDescription = "Card image",
+                        contentDescription = AppConstants.UIText.CARD_IMAGE,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
@@ -322,13 +322,13 @@ fun GridCardItem(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(12.dp),
+                    .padding(AppConstants.Dimensions.PADDING_MEDIUM),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 // Card type
                 Surface(
                     color = Color.White.copy(alpha = AppConstants.AnimationValues.ALPHA_ALMOST_OPAQUE),
-                    shape = RoundedCornerShape(4.dp)
+                    shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_COMPACT)
                 ) {
                     Text(
                         text = card.type.getDisplayName(),

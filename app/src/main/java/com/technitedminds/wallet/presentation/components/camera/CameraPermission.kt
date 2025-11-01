@@ -101,7 +101,7 @@ private fun CameraPermissionRationale(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Camera Permission Required",
+                    text = AppConstants.UIText.CAMERA_PERMISSION_REQUIRED_TITLE,
                     style = MaterialTheme.typography.headlineSmall,
                     textAlign = TextAlign.Center
                 )
@@ -109,7 +109,7 @@ private fun CameraPermissionRationale(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "CardVault needs camera access to scan your cards. Your photos are stored locally and never shared.",
+                    text = AppConstants.UIText.CAMERA_PERMISSION_MESSAGE,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -118,7 +118,7 @@ private fun CameraPermissionRationale(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(onClick = onRequestPermission) {
-                    Text("Grant Camera Permission")
+                    Text(AppConstants.UIText.GRANT_CAMERA_PERMISSION_BUTTON)
                 }
             }
         }
@@ -154,7 +154,7 @@ private fun DefaultPermissionDeniedContent() {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Camera Access Denied",
+                    text = AppConstants.UIText.CAMERA_ACCESS_DENIED_TITLE,
                     style = MaterialTheme.typography.headlineSmall,
                     textAlign = TextAlign.Center
                 )
@@ -162,7 +162,7 @@ private fun DefaultPermissionDeniedContent() {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Camera permission is required to scan cards. Please enable camera access in your device settings to continue.",
+                    text = AppConstants.UIText.CAMERA_ACCESS_DENIED_MESSAGE,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -175,7 +175,7 @@ private fun DefaultPermissionDeniedContent() {
                         CameraPermissionUtils.openAppSettings(context)
                     }
                 ) {
-                    Text("Open Settings")
+                    Text(AppConstants.UIText.OPEN_SETTINGS_BUTTON)
                 }
             }
         }

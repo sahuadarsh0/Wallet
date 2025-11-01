@@ -2,6 +2,8 @@ package com.technitedminds.wallet.presentation.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,6 +32,7 @@ fun WalletAppScaffold(
     val categoryCount = homeUiState.categories.size
     
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0), // Remove default window insets
         bottomBar = {
             if (shouldShowBottomNavigation(currentRoute)) {
                 WalletBottomNavigation(

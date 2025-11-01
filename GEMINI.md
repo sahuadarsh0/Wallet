@@ -69,6 +69,7 @@ com.technitedminds.wallet/
 - **Performance First**: Be mindful of performance, especially regarding UI rendering (Compose), image handling (Coil), and database queries (Room).
 - **Leverage Existing Components**: Before creating new components or utilities, check the `presentation/components` and `utils` packages for reusable code.
 - **Follow Conventions**: Adhere to standard Android and Kotlin development best practices.
+- **Constants**: When adding new hardcoded values, always add them to `app/src/main/java/com/technitedminds/wallet/presentation/constants/AppConstants.kt` and use existing functions where required. Do not create new hardcoded values directly in the code.
 
 ## Common Tasks
 - **Implement Jetpack Compose UI**: Create and modify `@Composable` functions for UI elements and screens in the `presentation` layer.
@@ -80,3 +81,9 @@ com.technitedminds.wallet/
 
 
 After Every AutoCompletion Run the Gradle build to check if everything working fine
+
+This project is CardVault, a secure, offline-first Android application for storing and managing physical cards. It's built with a modern tech stack: 100% Kotlin, Jetpack Compose with Material Design 3 for the UI, and a Clean Architecture (MVVM with UDF).
+
+Key features include completely offline functionality, smart card scanning using on-device ML Kit for OCR, support for both text-based (credit/debit) and image-only cards, and a strong focus on a premium, visually appealing user experience with smooth 60fps animations.
+
+The project is well-structured into data, domain, and presentation layers, with the data and domain layers being complete. My role will be to work primarily on the presentation layer, implementing UI, ViewModels, and integrating features, while strictly adhering to the established architecture, performance standards, and coding conventions. I will also be responsible for writing tests and managing dependencies.

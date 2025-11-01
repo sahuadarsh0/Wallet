@@ -1,29 +1,70 @@
 package com.technitedminds.wallet.presentation.screens.carddetail
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Notes
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Scanner
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.domain.model.Card
+import com.technitedminds.wallet.presentation.components.animation.EnhancedSlideInItem
 import com.technitedminds.wallet.presentation.components.animation.FlippableCard
-import com.technitedminds.wallet.presentation.components.common.*
-import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
-import com.technitedminds.wallet.presentation.components.sharing.CardSharingDialog
+import com.technitedminds.wallet.presentation.components.common.AnimatedSectionHeader
+import com.technitedminds.wallet.presentation.components.common.CardDeleteConfirmationDialog
+import com.technitedminds.wallet.presentation.components.common.CardTypeDropdown
+import com.technitedminds.wallet.presentation.components.common.CategoryDropdown
+import com.technitedminds.wallet.presentation.components.common.CustomFieldsEditor
+import com.technitedminds.wallet.presentation.components.common.EnhancedColorPicker
+import com.technitedminds.wallet.presentation.components.common.ExtractedDataEditor
+import com.technitedminds.wallet.presentation.components.common.LoadingIndicatorWithText
+import com.technitedminds.wallet.presentation.components.common.LoadingOverlay
+import com.technitedminds.wallet.presentation.components.common.PremiumCard
+import com.technitedminds.wallet.presentation.components.common.PremiumTextField
 import com.technitedminds.wallet.presentation.components.common.resolveCategoryName
+import com.technitedminds.wallet.presentation.components.sharing.CardSharingDialog
+import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
 import com.technitedminds.wallet.presentation.constants.AppConstants
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Notes
 
 /**
  * Card detail screen with full-screen card display, editing, and management options.
@@ -42,6 +83,7 @@ fun CardDetailScreen(
     val isEditing by viewModel.isEditing.collectAsStateWithLifecycle()
     val editedCard by viewModel.editedCard.collectAsStateWithLifecycle()
     val showSharingDialog by viewModel.showSharingDialog.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
 
 
     // Handle events
@@ -65,12 +107,13 @@ fun CardDetailScreen(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            LoadingIndicatorWithText("Loading card...")
+            LoadingIndicatorWithText(AppConstants.UIText.LOADING_CARD_DETAIL)
         }
         return
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             CardDetailTopBar(
                 card = card!!,
@@ -100,22 +143,28 @@ fun CardDetailScreen(
                     viewModel.quickShare(sharingOption)
                 },
                 onShowSharingDialog = viewModel::showSharingDialog,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(AppConstants.Dimensions.PADDING_LARGE)
             )
 
             // Card information
             if (isEditing) {
                 EditCardSection(
                     card = editedCard ?: card!!,
+                    categories = categories,
                     onUpdateName = viewModel::updateCardName,
+                    onUpdateCategory = viewModel::updateCardCategory,
+                    onUpdateCardType = viewModel::updateCardType,
+                    onUpdateExtractedData = viewModel::updateExtractedData,
                     onUpdateCustomField = viewModel::updateCustomField,
+                    onAddCustomField = viewModel::addCustomField,
+                    onRemoveCustomField = viewModel::removeCustomField,
                     onUpdateColor = viewModel::updateCardColor,
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(AppConstants.Dimensions.PADDING_LARGE)
                 )
             } else {
                 CardInfoSection(
                     card = card!!,
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(AppConstants.Dimensions.PADDING_LARGE)
                 )
             }
         }
@@ -143,7 +192,7 @@ fun CardDetailScreen(
     // Loading overlay
     LoadingOverlay(
         isVisible = uiState.isLoading,
-        text = "Processing..."
+        text = AppConstants.UIText.PROCESSING
     )
     
     // Sharing dialog
@@ -209,7 +258,7 @@ private fun CardDetailTopBar(
                 IconButton(onClick = onShowSharingDialog) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Share options"
+                        contentDescription = AppConstants.UIText.SHARE_OPTIONS
                     )
                 }
                 // Edit
@@ -248,33 +297,35 @@ private fun CardDisplaySection(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Card with flip animation
+        // Card with flip animation - shows actual images for non-OCR cards
+        // Let FlippableCard manage its own flip state for better UX
         FlippableCard(
             card = card,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
             showShareButtons = true,
             onShare = onShare,
-            onCardLongPress = onShowSharingDialog
+            onCardClick = null, // Let FlippableCard handle its own flipping
+            onCardLongPress = onShowSharingDialog,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_LARGE))
 
         // Instructions
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_EXTRA_SMALL)
         ) {
             Text(
-                text = "Tap card to flip • Long press for share options",
+                text = AppConstants.UIText.FLIP_INSTRUCTION,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "Use share buttons for quick sharing",
+                text = AppConstants.UIText.QUICK_SHARE_INSTRUCTION,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = AppConstants.AnimationValues.ALPHA_VERY_HIGH)
             )
         }
     }
@@ -290,24 +341,24 @@ private fun CardInfoSection(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
     ) {
         // Basic information
         InfoCard(
-            title = "Card Information",
+            title = AppConstants.UIText.CARD_INFORMATION,
             icon = Icons.Default.Info
         ) {
-            InfoRow("Name", card.name)
-            InfoRow("Type", card.type.getDisplayName())
-            InfoRow("Category", resolveCategoryName(card.categoryId))
-            InfoRow("Created", formatDate(card.createdAt))
-            InfoRow("Updated", formatDate(card.updatedAt))
+            InfoRow(AppConstants.UIText.NAME_LABEL, card.name)
+            InfoRow(AppConstants.UIText.TYPE_LABEL, card.type.getDisplayName())
+            InfoRow(AppConstants.UIText.CATEGORY_LABEL, resolveCategoryName(card.categoryId))
+            InfoRow(AppConstants.UIText.CREATED_LABEL, formatDate(card.createdAt))
+            InfoRow(AppConstants.UIText.UPDATED_LABEL, formatDate(card.updatedAt))
         }
 
         // Extracted data (OCR results)
         if (card.extractedData.isNotEmpty()) {
             InfoCard(
-                title = "Extracted Information",
+                title = AppConstants.UIText.EXTRACTED_INFORMATION,
                 icon = Icons.Default.Scanner
             ) {
                 card.extractedData.forEach { (key, value) ->
@@ -326,14 +377,14 @@ private fun CardInfoSection(
         // Custom fields
         if (card.customFields.isNotEmpty()) {
             InfoCard(
-                title = "Additional Information",
+                title = AppConstants.UIText.ADDITIONAL_INFORMATION,
                 icon = Icons.AutoMirrored.Default.Notes
             ) {
                 card.customFields.forEach { (key, value) ->
-                    if (key != "customColor") { // Don't show internal fields
+                    if (key != AppConstants.UIText.CUSTOM_COLOR_FIELD) { // Don't show internal fields
                         InfoRow(
                             label = formatFieldName(key),
-                            value = if (key in listOf("pin", "password")) {
+                            value = if (key in listOf(AppConstants.UIText.PIN_FIELD, AppConstants.UIText.PASSWORD_FIELD)) {
                                 maskSensitiveData(value)
                             } else {
                                 value
@@ -347,80 +398,183 @@ private fun CardInfoSection(
 }
 
 /**
- * Edit card section
+ * Enhanced edit card section with comprehensive editing options
  */
 @Composable
 private fun EditCardSection(
     card: Card,
+    categories: List<com.technitedminds.wallet.domain.model.Category>,
     onUpdateName: (String) -> Unit,
+    onUpdateCategory: (String) -> Unit,
+    onUpdateCardType: (com.technitedminds.wallet.domain.model.CardType) -> Unit,
+    onUpdateExtractedData: (String, String) -> Unit,
     onUpdateCustomField: (String, String) -> Unit,
+    onAddCustomField: (String) -> Unit,
+    onRemoveCustomField: (String) -> Unit,
     onUpdateColor: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
     ) {
-        // Basic information editing
-        InfoCard(
-            title = "Edit Card Information",
-            icon = Icons.Default.Edit
-        ) {
-            // Card name
-            OutlinedTextField(
-                value = card.name,
-                onValueChange = onUpdateName,
-                label = { Text("Card Name") },
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
-        // Color picker
-        InfoCard(
-            title = "Card Color",
-            icon = Icons.Default.Palette
-        ) {
-            ColorPicker(
-                selectedColor = card.getDisplayColor(),
-                onColorSelected = onUpdateColor,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
-        // Custom fields editing
-        InfoCard(
-            title = "Additional Information",
-            icon = Icons.AutoMirrored.Default.Notes
-        ) {
-            // Show existing custom fields for editing
-            card.customFields.forEach { (key, value) ->
-                if (key != "customColor") {
-                    OutlinedTextField(
-                        value = value,
-                        onValueChange = { onUpdateCustomField(key, it) },
-                        label = { Text(formatFieldName(key)) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
+        // Enhanced basic information editing
+        EnhancedSlideInItem(visible = true, index = 0) {
+            PremiumCard(
+                elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
+                ) {
+                    AnimatedSectionHeader(
+                        title = AppConstants.UIText.BASIC_INFORMATION,
+                        icon = Icons.Default.Edit,
+                        subtitle = AppConstants.UIText.UPDATE_CARD_DETAILS_SUBTITLE
+                    )
+                    
+                    // Card name with enhanced styling
+                    PremiumTextField(
+                        value = card.name,
+                        onValueChange = onUpdateName,
+                        label = AppConstants.UIText.CARD_NAME_LABEL,
+                        leadingIcon = Icons.Default.CreditCard,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    
+                    // Card type dropdown
+                    CardTypeDropdown(
+                        selectedCardType = card.type,
+                        onCardTypeSelected = onUpdateCardType,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    
+                    // Category dropdown
+                    CategoryDropdown(
+                        categories = categories,
+                        selectedCategoryId = card.categoryId,
+                        onCategorySelected = onUpdateCategory,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
-            
-            // Add new field button
-            OutlinedButton(
-                onClick = { 
-                    // For now, add a generic "notes" field
-                    onUpdateCustomField("notes", "")
-                },
+        }
+
+        // Enhanced extracted data editing (for OCR cards)
+        if (card.type.supportsOCR() && (card.extractedData.isNotEmpty() || card.type.supportsOCR())) {
+            EnhancedSlideInItem(visible = true, index = 1) {
+                PremiumCard(
+                    elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
+                    ) {
+                        AnimatedSectionHeader(
+                            title = AppConstants.UIText.CARD_INFORMATION,
+                            icon = Icons.Default.Scanner,
+                            subtitle = AppConstants.UIText.CARD_DETAILS_SUBTITLE
+                        )
+                        
+                        ExtractedDataEditor(
+                            card = card,
+                            onUpdateExtractedData = onUpdateExtractedData,
+                            onAddField = { fieldKey ->
+                                onUpdateExtractedData(fieldKey, "")
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Enhanced custom fields editing
+        EnhancedSlideInItem(visible = true, index = 2) {
+            PremiumCard(
+                elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
+                ) {
+                    AnimatedSectionHeader(
+                        title = AppConstants.UIText.ADDITIONAL_INFORMATION,
+                        icon = Icons.AutoMirrored.Default.Notes,
+                        subtitle = AppConstants.UIText.CUSTOM_FIELDS_SUBTITLE
+                    )
+                    
+                    CustomFieldsEditor(
+                        card = card,
+                        onUpdateCustomField = onUpdateCustomField,
+                        onRemoveCustomField = onRemoveCustomField,
+                        onAddCustomField = onAddCustomField
+                    )
+                }
+            }
+        }
+
+        // Enhanced appearance settings
+        EnhancedSlideInItem(visible = true, index = 3) {
+            PremiumCard(
+                elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
+                ) {
+                    AnimatedSectionHeader(
+                        title = AppConstants.UIText.APPEARANCE_TITLE,
+                        icon = Icons.Default.Palette,
+                        subtitle = AppConstants.UIText.APPEARANCE_SUBTITLE
+                    )
+                    
+                    EnhancedColorPicker(
+                        selectedColor = card.getDisplayColor(),
+                        onColorSelected = onUpdateColor,
+                        title = AppConstants.UIText.CARD_COLOR_LABEL,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+        
+        // Enhanced save reminder
+        EnhancedSlideInItem(visible = true, index = 4) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = AppConstants.AnimationValues.ALPHA_NEAR_OPAQUE)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT),
+                shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_LARGE),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Add Field")
+                Row(
+                    modifier = Modifier.padding(20.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = AppConstants.AnimationValues.ALPHA_DISABLED),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Text(
+                        text = AppConstants.UIText.SAVE_CHANGES_REMINDER,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
             }
         }
     }
@@ -438,15 +592,15 @@ private fun InfoCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(AppConstants.Dimensions.PADDING_LARGE)
         ) {
             // Header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 12.dp)
+                modifier = Modifier.padding(bottom = AppConstants.Dimensions.SPACING_MEDIUM)
             ) {
                 Icon(
                     imageVector = icon,
@@ -454,7 +608,7 @@ private fun InfoCard(
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
@@ -480,7 +634,7 @@ private fun InfoRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = AppConstants.Dimensions.SPACING_EXTRA_SMALL),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(

@@ -106,6 +106,27 @@ sealed class CardType {
                 is Custom -> colorHex
             }
 
+    /** Returns the icon for this card type (requires Material Icons import in UI layer) */
+    fun getIconName(): String =
+            when (this) {
+                is Credit -> "CreditCard"
+                is Debit -> "AccountBalance"
+                is TransportCard -> "DirectionsBus"
+                is GiftCard -> "CardGiftcard"
+                is LoyaltyCard -> "Stars"
+                is MembershipCard -> "Badge"
+                is InsuranceCard -> "Security"
+                is IdentificationCard -> "Badge"
+                is Voucher -> "LocalOffer"
+                is Event -> "Event"
+                is BusinessCard -> "Business"
+                is LibraryCard -> "MenuBook"
+                is HotelCard -> "Hotel"
+                is StudentCard -> "School"
+                is AccessCard -> "Key"
+                is Custom -> "CreditCard"
+            }
+
     /** Returns true if this card type requires a back image */
     fun requiresBackImage(): Boolean =
             when (this) {

@@ -42,10 +42,10 @@ fun ColorPicker(
     
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM)
     ) {
         Text(
-            text = "Card Color",
+            text = AppConstants.UIText.CARD_COLOR_LABEL,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Medium
         )
@@ -53,9 +53,9 @@ fun ColorPicker(
         // Predefined colors grid
         LazyVerticalGrid(
             columns = GridCells.Fixed(8),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.height(80.dp)
+            horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL),
+            verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL),
+            modifier = Modifier.height(AppConstants.Dimensions.CARD_TYPE_OPTION_HEIGHT)
         ) {
             items(predefinedColors) { colorHex ->
                 ColorOption(
@@ -78,10 +78,10 @@ fun ColorPicker(
                 Icon(
                     imageVector = Icons.Default.Palette,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_BUTTON_ICON_SIZE)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Custom Color")
+                Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
+                Text(AppConstants.UIText.CUSTOM_COLOR)
             }
         }
     }
@@ -123,10 +123,10 @@ private fun ColorOption(
     
     Box(
         modifier = modifier
-            .size(32.dp)
+            .size(AppConstants.Dimensions.COLOR_PICKER_ITEM_SIZE_LARGE)
             .clip(CircleShape)
             .border(
-                width = if (isSelected) 3.dp else 0.dp,
+                width = if (isSelected) AppConstants.Dimensions.COLOR_PICKER_BORDER_WIDTH else 0.dp,
                 color = borderColor,
                 shape = CircleShape
             )
@@ -135,7 +135,7 @@ private fun ColorOption(
     ) {
         Box(
             modifier = Modifier
-                .size(if (isSelected) 26.dp else 30.dp)
+                .size(if (isSelected) AppConstants.Dimensions.COLOR_PICKER_ITEM_SIZE_SMALL else AppConstants.Dimensions.COLOR_PICKER_ITEM_SIZE_SELECTED)
                 .clip(CircleShape)
                 .background(color),
             contentAlignment = Alignment.Center
@@ -143,7 +143,7 @@ private fun ColorOption(
             if (isSelected) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Selected",
+                    contentDescription = AppConstants.ContentDescriptions.SELECTED,
                     tint = if (isLightColor(color)) Color.Black else Color.White,
                     modifier = Modifier.size(14.dp)
                 )
@@ -183,15 +183,15 @@ private fun CustomColorDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp)
+                .padding(AppConstants.Dimensions.PADDING_LARGE),
+            shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_LARGE)
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.padding(AppConstants.Dimensions.PADDING_EXTRA_LARGE),
+                verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
             ) {
                 Text(
-                    text = "Custom Color",
+                    text = AppConstants.UIText.CUSTOM_COLOR,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -200,13 +200,13 @@ private fun CustomColorDialog(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(80.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .height(AppConstants.Dimensions.CUSTOM_COLOR_PREVIEW_HEIGHT)
+                        .clip(RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_COMPACT))
                         .background(previewColor)
                         .border(
-                            1.dp,
+                            AppConstants.Dimensions.CARD_TYPE_OPTION_BORDER_WIDTH,
                             MaterialTheme.colorScheme.outline,
-                            RoundedCornerShape(8.dp)
+                            RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_COMPACT)
                         )
                 )
                 
@@ -219,15 +219,15 @@ private fun CustomColorDialog(
                             .take(6)
                         colorInput = filtered
                     },
-                    label = { Text("Hex Color Code") },
-                    placeholder = { Text("FF5722") },
+                    label = { Text(AppConstants.UIText.HEX_COLOR_CODE) },
+                    placeholder = { Text(AppConstants.UIText.HEX_COLOR_CODE_PLACEHOLDER) },
                     prefix = { Text("#") },
                     isError = !isValidColor && colorInput.isNotEmpty(),
                     supportingText = {
                         if (!isValidColor && colorInput.isNotEmpty()) {
-                            Text("Invalid hex color code")
+                            Text(AppConstants.UIText.INVALID_HEX_COLOR)
                         } else {
-                            Text("Enter 6-digit hex code (e.g., FF5722)")
+                            Text(AppConstants.UIText.HEX_CODE_INSTRUCTION)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -237,7 +237,7 @@ private fun CustomColorDialog(
                 // Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                    horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL, Alignment.End)
                 ) {
                     TextButton(onClick = onDismiss) {
                         Text(AppConstants.DialogText.CANCEL_BUTTON)
@@ -251,7 +251,7 @@ private fun CustomColorDialog(
                         },
                         enabled = isValidColor && colorInput.length == 6
                     ) {
-                        Text("Apply")
+                        Text(AppConstants.UIText.APPLY)
                     }
                 }
             }

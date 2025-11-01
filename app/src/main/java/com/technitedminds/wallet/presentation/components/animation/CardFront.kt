@@ -49,6 +49,7 @@ import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.presentation.components.common.resolveCategoryName
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
+import com.technitedminds.wallet.presentation.constants.AppConstants
 import java.io.File
 
 /**
@@ -193,7 +194,7 @@ fun CardFront(
                     val expiryDate = card.extractedData["expiryDate"]
                     if (!expiryDate.isNullOrEmpty()) {
                         Text(
-                            text = "Valid thru $expiryDate",
+                            text = String.format(AppConstants.UIText.VALID_THRU_LABEL, expiryDate),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.8f),
                             modifier = Modifier.padding(top = 2.dp)

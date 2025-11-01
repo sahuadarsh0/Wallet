@@ -33,20 +33,20 @@ sealed class CameraError {
 
     fun getMessage(): String =
             when (this) {
-                is CameraNotAvailable -> "Camera is not available on this device"
-                is CameraInUse -> "Camera is currently being used by another app"
-                is CameraDisabled -> "Camera has been disabled"
-                is ImageCaptureError -> "Failed to capture image: ${exception.message}"
-                is UnknownError -> "An unexpected error occurred: ${exception.message}"
+                is CameraNotAvailable -> AppConstants.UIText.CAMERA_UNAVAILABLE
+                is CameraInUse -> AppConstants.UIText.CAMERA_IN_USE
+                is CameraDisabled -> AppConstants.UIText.CAMERA_DISABLED
+                is ImageCaptureError -> String.format(AppConstants.UIText.IMAGE_CAPTURE_ERROR, exception.message)
+                is UnknownError -> String.format(AppConstants.UIText.UNKNOWN_CAMERA_ERROR, exception.message)
             }
 
     fun getTitle(): String =
             when (this) {
-                is CameraNotAvailable -> "Camera Unavailable"
-                is CameraInUse -> "Camera In Use"
-                is CameraDisabled -> "Camera Disabled"
-                is ImageCaptureError -> "Capture Failed"
-                is UnknownError -> "Camera Error"
+                is CameraNotAvailable -> AppConstants.UIText.CAMERA_UNAVAILABLE_TITLE
+                is CameraInUse -> AppConstants.UIText.CAMERA_IN_USE_TITLE
+                is CameraDisabled -> AppConstants.UIText.CAMERA_DISABLED_TITLE
+                is ImageCaptureError -> AppConstants.UIText.CAPTURE_FAILED_TITLE
+                is UnknownError -> AppConstants.UIText.CAMERA_ERROR_TITLE
             }
 }
 
@@ -75,7 +75,7 @@ fun CameraErrorContent(
             ) {
                 Icon(
                         painter = painterResource(id = android.R.drawable.ic_dialog_alert),
-                        contentDescription = AppConstants.UIText.ERROR_ICON,
+                        contentDescription = "Error",
                         tint = MaterialTheme.colorScheme.error
                 )
 
@@ -101,10 +101,10 @@ fun CameraErrorContent(
 
                 when (error) {
                     is CameraError.CameraNotAvailable, is CameraError.CameraDisabled -> {
-                        Button(onClick = onDismiss) { Text("Go Back") }
+                        Button(onClick = onDismiss) { Text(AppConstants.UIText.GO_BACK) }
                     }
                     else -> {
-                        Button(onClick = onRetry) { Text("Try Again") }
+                        Button(onClick = onRetry) { Text(AppConstants.UIText.TRY_AGAIN) }
                     }
                 }
             }
@@ -156,19 +156,19 @@ object CameraErrorHandler {
         val suggestion =
                 when (error) {
                     is CameraError.CameraInUse -> {
-                        "\n\nTry closing other camera apps and try again."
+                        AppConstants.UIText.CAMERA_IN_USE_SUGGESTION
                     }
                     is CameraError.CameraNotAvailable -> {
-                        "\n\nThis device may not have a camera or it's not accessible."
+                        AppConstants.UIText.CAMERA_UNAVAILABLE_SUGGESTION
                     }
                     is CameraError.CameraDisabled -> {
-                        "\n\nCheck your device settings to enable camera access."
+                        AppConstants.UIText.CAMERA_DISABLED_SUGGESTION
                     }
                     is CameraError.ImageCaptureError -> {
-                        "\n\nMake sure you have enough storage space and try again."
+                        AppConstants.UIText.IMAGE_CAPTURE_ERROR_SUGGESTION
                     }
                     is CameraError.UnknownError -> {
-                        "\n\nRestart the app or try again later."
+                        AppConstants.UIText.UNKNOWN_CAMERA_ERROR_SUGGESTION
                     }
                 }
         return baseMessage + suggestion

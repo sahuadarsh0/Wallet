@@ -3,6 +3,7 @@ package com.technitedminds.wallet.presentation.components.animation
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -41,10 +42,10 @@ fun FlippableCard(
     val rotation by animateFloatAsState(
         targetValue = if (isFlipped) 180f else 0f,
         animationSpec = tween(
-            durationMillis = 600,
+            durationMillis = AppConstants.Animation.FLIP_ANIMATION_DURATION,
             easing = FastOutSlowInEasing
         ),
-        label = "card_flip"
+        label = AppConstants.AnimationValues.LABEL_FLIP
     )
     
     // Animation for card scale on press
@@ -55,7 +56,7 @@ fun FlippableCard(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
         ),
-        label = "card_scale"
+        label = AppConstants.AnimationValues.LABEL_SCALE
     )
     
     Box(
@@ -65,7 +66,7 @@ fun FlippableCard(
                 rotationY = rotation
                 scaleX = scale
                 scaleY = scale
-                cameraDistance = 12f * density
+                cameraDistance = AppConstants.Animation.CAMERA_DISTANCE * density
             }
     ) {
         if (rotation <= 90f) {
@@ -73,20 +74,25 @@ fun FlippableCard(
             Card(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clickable(
-                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                        if (onCardClick != null) {
-                            onCardClick()
-                        } else {
-                            isFlipped = !isFlipped
-                        }
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                if (onCardClick != null) {
+                                    onCardClick()
+                                } else {
+                                    isFlipped = !isFlipped
+                                }
+                            },
+                            onLongPress = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onCardLongPress?.invoke()
+                            }
+                        )
                     },
-                shape = RoundedCornerShape(if (isCompact) 8.dp else 12.dp),
+                shape = RoundedCornerShape(if (isCompact) AppConstants.Dimensions.CORNER_RADIUS_COMPACT else AppConstants.Dimensions.CORNER_RADIUS_NORMAL),
                 elevation = CardDefaults.cardElevation(
-                    defaultElevation = if (isCompact) 4.dp else 8.dp
+                    defaultElevation = if (isCompact) AppConstants.Dimensions.SPACING_EXTRA_SMALL else AppConstants.Dimensions.SPACING_SMALL
                 )
             ) {
                 CardFront(
@@ -103,20 +109,25 @@ fun FlippableCard(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer { rotationY = 180f }
-                    .clickable(
-                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                        if (onCardClick != null) {
-                            onCardClick()
-                        } else {
-                            isFlipped = !isFlipped
-                        }
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                if (onCardClick != null) {
+                                    onCardClick()
+                                } else {
+                                    isFlipped = !isFlipped
+                                }
+                            },
+                            onLongPress = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onCardLongPress?.invoke()
+                            }
+                        )
                     },
-                shape = RoundedCornerShape(if (isCompact) 8.dp else 12.dp),
+                shape = RoundedCornerShape(if (isCompact) AppConstants.Dimensions.CORNER_RADIUS_COMPACT else AppConstants.Dimensions.CORNER_RADIUS_NORMAL),
                 elevation = CardDefaults.cardElevation(
-                    defaultElevation = if (isCompact) 4.dp else 8.dp
+                    defaultElevation = if (isCompact) AppConstants.Dimensions.SPACING_EXTRA_SMALL else AppConstants.Dimensions.SPACING_SMALL
                 )
             ) {
                 CardBack(
@@ -139,7 +150,7 @@ fun FlippableCard(
                 },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(8.dp)
+                    .padding(AppConstants.Dimensions.SPACING_SMALL)
             )
         }
         
@@ -149,14 +160,14 @@ fun FlippableCard(
                 onShare = { onShare(CardSharingOption.BothSides) },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(8.dp)
+                    .padding(AppConstants.Dimensions.SPACING_SMALL)
             )
         }
         
         // Press effect handler
         LaunchedEffect(isPressed) {
             if (isPressed) {
-                kotlinx.coroutines.delay(100)
+                kotlinx.coroutines.delay(AppConstants.Animation.PRESS_DELAY)
                 isPressed = false
             }
         }
@@ -203,22 +214,22 @@ private fun ShareBothSidesButton(
     Surface(
         modifier = modifier
             .clickable { onShare() },
-        shape = RoundedCornerShape(16.dp),
-        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f)
+        shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_LARGE),
+        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = AppConstants.AnimationValues.ALPHA_HIGH)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = AppConstants.Dimensions.SPACING_MEDIUM, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_EXTRA_SMALL)
         ) {
             Icon(
                 imageVector = Icons.Default.Share,
-                contentDescription = null,
+                contentDescription = AppConstants.ContentDescriptions.SHARE_BOTH_SIDES,
                 tint = androidx.compose.ui.graphics.Color.White,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_SMALL)
             )
             Text(
-                text = "Both",
+                text = AppConstants.UIText.BOTH_SIDES,
                 style = MaterialTheme.typography.labelSmall,
                 color = androidx.compose.ui.graphics.Color.White
             )
@@ -247,20 +258,20 @@ fun EnhancedFlippableCard(
     val rotation by animateFloatAsState(
         targetValue = if (isFlipped) 180f else 0f,
         animationSpec = tween(
-            durationMillis = 600,
+            durationMillis = AppConstants.Animation.FLIP_ANIMATION_DURATION,
             easing = FastOutSlowInEasing
         ),
-        label = "enhanced_card_flip"
+        label = AppConstants.AnimationValues.LABEL_ENHANCED_FLIP
     )
     
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
+        targetValue = if (isPressed) AppConstants.AnimationValues.SCALE_PRESSED else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
         ),
-        label = "enhanced_card_scale"
+        label = AppConstants.AnimationValues.LABEL_ENHANCED_SCALE
     )
     
     // Gesture handling
@@ -280,13 +291,13 @@ fun EnhancedFlippableCard(
     
     Box(
         modifier = modifier
-            .aspectRatio(1.586f)
+            .aspectRatio(AppConstants.Defaults.CREDIT_CARD_ASPECT_RATIO)
             .then(gestureModifier)
             .graphicsLayer {
                 rotationY = rotation
                 scaleX = scale
                 scaleY = scale
-                cameraDistance = 12f * density
+                cameraDistance = AppConstants.Animation.CAMERA_DISTANCE * density
             }
     ) {
         if (rotation <= 90f) {
@@ -301,9 +312,9 @@ fun EnhancedFlippableCard(
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                         onCardClick?.invoke() ?: run { isFlipped = !isFlipped }
                     },
-                shape = RoundedCornerShape(if (isCompact) 8.dp else 12.dp),
+                shape = RoundedCornerShape(if (isCompact) AppConstants.Dimensions.CORNER_RADIUS_COMPACT else AppConstants.Dimensions.CORNER_RADIUS_NORMAL),
                 elevation = CardDefaults.cardElevation(
-                    defaultElevation = if (isCompact) 4.dp else 8.dp
+                    defaultElevation = if (isCompact) AppConstants.Dimensions.SPACING_EXTRA_SMALL else AppConstants.Dimensions.SPACING_SMALL
                 )
             ) {
                 CardFront(
@@ -327,9 +338,9 @@ fun EnhancedFlippableCard(
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                         onCardClick?.invoke() ?: run { isFlipped = !isFlipped }
                     },
-                shape = RoundedCornerShape(if (isCompact) 8.dp else 12.dp),
+                shape = RoundedCornerShape(if (isCompact) AppConstants.Dimensions.CORNER_RADIUS_COMPACT else AppConstants.Dimensions.CORNER_RADIUS_NORMAL),
                 elevation = CardDefaults.cardElevation(
-                    defaultElevation = if (isCompact) 4.dp else 8.dp
+                    defaultElevation = if (isCompact) AppConstants.Dimensions.SPACING_EXTRA_SMALL else AppConstants.Dimensions.SPACING_SMALL
                 )
             ) {
                 CardBack(
@@ -379,7 +390,7 @@ private fun CardControls(
                 onFlip = onFlip,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(8.dp)
+                    .padding(AppConstants.Dimensions.SPACING_SMALL)
             )
         }
         
@@ -389,7 +400,7 @@ private fun CardControls(
                 onShare = { onShare(CardSharingOption.BothSides) },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(8.dp)
+                    .padding(AppConstants.Dimensions.SPACING_SMALL)
             )
         }
     }

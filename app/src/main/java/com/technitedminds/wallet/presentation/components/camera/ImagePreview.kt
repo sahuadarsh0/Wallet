@@ -148,7 +148,7 @@ private fun CardSideSelector(
         SegmentedButton(
             selected = currentSide == CardSide.FRONT,
             onClick = { onSideChange(CardSide.FRONT) },
-            label = "Front",
+            label = AppConstants.UIText.FRONT_SIDE_LABEL,
             icon = Icons.Default.CreditCard
         )
         
@@ -157,7 +157,7 @@ private fun CardSideSelector(
         SegmentedButton(
             selected = currentSide == CardSide.BACK,
             onClick = { onSideChange(CardSide.BACK) },
-            label = "Back",
+            label = AppConstants.UIText.BACK_SIDE_LABEL,
             icon = Icons.Default.CreditCard
         )
     }
@@ -265,7 +265,7 @@ private fun ZoomableImagePlaceholder(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "Image Preview",
+                text = AppConstants.UIText.IMAGE_PREVIEW_TITLE,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -311,7 +311,7 @@ private fun ImagePlaceholder(
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
-                text = "No ${side.displayName} Image",
+                text = String.format(AppConstants.UIText.NO_IMAGE_LABEL, side.displayName),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -319,7 +319,7 @@ private fun ImagePlaceholder(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "Tap to capture ${side.displayName.lowercase()} of card",
+                text = String.format(AppConstants.UIText.TAP_TO_CAPTURE_PROMPT, side.displayName.lowercase()),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

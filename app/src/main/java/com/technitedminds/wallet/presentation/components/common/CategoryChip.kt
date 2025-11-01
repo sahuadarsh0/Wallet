@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.technitedminds.wallet.presentation.constants.AppConstants
 
 /**
  * Category chip component with icon and color customization.
@@ -67,13 +68,13 @@ fun CategoryChip(
                     Modifier
                 }
             ),
-        shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
+        shape = RoundedCornerShape(if (isCompact) AppConstants.Dimensions.CORNER_RADIUS_NORMAL else AppConstants.Dimensions.CORNER_RADIUS_LARGE),
         color = backgroundColor
     ) {
         Row(
             modifier = Modifier.padding(
-                horizontal = if (isCompact) 8.dp else 12.dp,
-                vertical = if (isCompact) 4.dp else 6.dp
+                horizontal = if (isCompact) AppConstants.Dimensions.PADDING_SMALL else AppConstants.Dimensions.PADDING_MEDIUM,
+                vertical = if (isCompact) AppConstants.Dimensions.SPACING_EXTRA_SMALL else 6.dp
             ),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -83,9 +84,9 @@ fun CategoryChip(
                     imageVector = icon,
                     contentDescription = null,
                     tint = contentColor,
-                    modifier = Modifier.size(if (isCompact) 14.dp else 16.dp)
+                    modifier = Modifier.size(if (isCompact) 14.dp else AppConstants.Dimensions.ICON_SIZE_SMALL)
                 )
-                Spacer(modifier = Modifier.width(if (isCompact) 4.dp else 6.dp))
+                Spacer(modifier = Modifier.width(if (isCompact) AppConstants.Dimensions.SPACING_EXTRA_SMALL else 6.dp))
             }
             
             // Category text
@@ -104,16 +105,16 @@ fun CategoryChip(
             
             // Close button
             if (onClose != null) {
-                Spacer(modifier = Modifier.width(if (isCompact) 4.dp else 6.dp))
+                Spacer(modifier = Modifier.width(if (isCompact) AppConstants.Dimensions.SPACING_EXTRA_SMALL else 6.dp))
                 IconButton(
                     onClick = onClose,
-                    modifier = Modifier.size(if (isCompact) 16.dp else 20.dp)
+                    modifier = Modifier.size(if (isCompact) AppConstants.Dimensions.ICON_SIZE_SMALL else AppConstants.Dimensions.ICON_SIZE_MEDIUM)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Remove category",
+                        contentDescription = AppConstants.UIText.REMOVE_CATEGORY,
                         tint = contentColor,
-                        modifier = Modifier.size(if (isCompact) 12.dp else 14.dp)
+                        modifier = Modifier.size(if (isCompact) AppConstants.Dimensions.SPACING_MEDIUM else 14.dp)
                     )
                 }
             }
@@ -187,11 +188,11 @@ fun CategoryChipWithCount(
                     Modifier
                 }
             ),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_LARGE),
         color = backgroundColor
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = AppConstants.Dimensions.PADDING_MEDIUM, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Icon
@@ -200,7 +201,7 @@ fun CategoryChipWithCount(
                     imageVector = icon,
                     contentDescription = null,
                     tint = contentColor,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_SMALL)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
             }
@@ -214,13 +215,13 @@ fun CategoryChipWithCount(
             )
             
             // Count badge
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
             Surface(
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_COMPACT),
                 color = if (isSelected) {
-                    Color.White.copy(alpha = 0.3f)
+                    Color.White.copy(alpha = AppConstants.AnimationValues.ALPHA_SECONDARY)
                 } else {
-                    chipColor.copy(alpha = 0.3f)
+                    chipColor.copy(alpha = AppConstants.AnimationValues.ALPHA_SECONDARY)
                 }
             ) {
                 Text(
@@ -228,7 +229,7 @@ fun CategoryChipWithCount(
                     style = MaterialTheme.typography.labelSmall,
                     color = contentColor,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
                 )
             }
         }
@@ -248,8 +249,8 @@ fun CategoryChipRow(
 ) {
     LazyRow(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp)
+        horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL),
+        contentPadding = PaddingValues(horizontal = AppConstants.Dimensions.PADDING_LARGE)
     ) {
         items(categories) { category ->
             SelectableCategoryChip(
@@ -275,13 +276,13 @@ fun CategoryFilterChips(
 ) {
     LazyRow(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp)
+        horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL),
+        contentPadding = PaddingValues(horizontal = AppConstants.Dimensions.PADDING_LARGE)
     ) {
         // "All" chip
         item {
             SelectableCategoryChip(
-                category = "All",
+                category = AppConstants.UIText.ALL,
                 isSelected = selectedCategory == null,
                 onClick = { onCategorySelected(null) },
                 icon = Icons.Default.Apps,
