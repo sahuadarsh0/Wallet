@@ -170,146 +170,146 @@ fun resolveCategoryName(categoryId: String?): String {
 /**
  * Helper function to get ImageVector from icon name
  */
+private val iconMap = mapOf(
+    // General
+    "Category" to Icons.Default.Category,
+    "Folder" to Icons.Default.Folder,
+    "Label" to Icons.AutoMirrored.Filled.Label,
+    "Bookmark" to Icons.Default.Bookmark,
+    "Tag" to Icons.Default.Tag,
+    "Apps" to Icons.Default.Apps,
+
+    // Personal & Identity
+    "Person" to Icons.Default.Person,
+    "PersonOutline" to Icons.Default.PersonOutline,
+    "AccountCircle" to Icons.Default.AccountCircle,
+    "Badge" to Icons.Default.Badge,
+    "ContactPage" to Icons.Default.ContactPage,
+    "Fingerprint" to Icons.Default.Fingerprint,
+
+    // Business & Work
+    "Business" to Icons.Default.Business,
+    "Work" to Icons.Default.Work,
+    "BusinessCenter" to Icons.Default.BusinessCenter,
+    "CorporateFare" to Icons.Default.CorporateFare,
+    "Domain" to Icons.Default.Domain,
+    "Apartment" to Icons.Default.Apartment,
+
+    // Finance & Banking
+    "AccountBalance" to Icons.Default.AccountBalance,
+    "AttachMoney" to Icons.Default.AttachMoney,
+    "CreditCard" to Icons.Default.CreditCard,
+    "Payment" to Icons.Default.Payment,
+    "AccountBalanceWallet" to Icons.Default.AccountBalanceWallet,
+    "MonetizationOn" to Icons.Default.MonetizationOn,
+
+    // Shopping & Retail
+    "ShoppingCart" to Icons.Default.ShoppingCart,
+    "ShoppingBag" to Icons.Default.ShoppingBag,
+    "Store" to Icons.Default.Store,
+    "Storefront" to Icons.Default.Storefront,
+    "LocalMall" to Icons.Default.LocalMall,
+    "Receipt" to Icons.Default.Receipt,
+
+    // Food & Dining
+    "Restaurant" to Icons.Default.Restaurant,
+    "LocalDining" to Icons.Default.LocalDining,
+    "LocalCafe" to Icons.Default.LocalCafe,
+    "LocalBar" to Icons.Default.LocalBar,
+    "LocalPizza" to Icons.Default.LocalPizza,
+    "Fastfood" to Icons.Default.Fastfood,
+
+    // Transportation
+    "DirectionsCar" to Icons.Default.DirectionsCar,
+    "DirectionsBus" to Icons.Default.DirectionsBus,
+    "DirectionsTransit" to Icons.Default.DirectionsTransit,
+    "Flight" to Icons.Default.Flight,
+    "Train" to Icons.Default.Train,
+    "LocalTaxi" to Icons.Default.LocalTaxi,
+
+    // Health & Medical
+    "LocalHospital" to Icons.Default.LocalHospital,
+    "LocalPharmacy" to Icons.Default.LocalPharmacy,
+    "MedicalServices" to Icons.Default.MedicalServices,
+    "HealthAndSafety" to Icons.Default.HealthAndSafety,
+    "Healing" to Icons.Default.Healing,
+    "Vaccines" to Icons.Default.Vaccines,
+
+    // Entertainment & Leisure
+    "Movie" to Icons.Default.Movie,
+    "TheaterComedy" to Icons.Default.TheaterComedy,
+    "MusicNote" to Icons.Default.MusicNote,
+    "SportsEsports" to Icons.Default.SportsEsports,
+    "Casino" to Icons.Default.Casino,
+    "Celebration" to Icons.Default.Celebration,
+
+    // Education & Learning
+    "School" to Icons.Default.School,
+    "MenuBook" to Icons.AutoMirrored.Filled.MenuBook,
+    "LibraryBooks" to Icons.AutoMirrored.Filled.LibraryBooks,
+    "Science" to Icons.Default.Science,
+    "Psychology" to Icons.Default.Psychology,
+    "AutoStories" to Icons.Default.AutoStories,
+
+    // Sports & Fitness
+    "FitnessCenter" to Icons.Default.FitnessCenter,
+    "SportsBasketball" to Icons.Default.SportsBasketball,
+    "SportsFootball" to Icons.Default.SportsFootball,
+    "SportsTennis" to Icons.Default.SportsTennis,
+    "Pool" to Icons.Default.Pool,
+    "DirectionsRun" to Icons.AutoMirrored.Filled.DirectionsRun,
+
+    // Travel & Tourism
+    "TravelExplore" to Icons.Default.TravelExplore,
+    "Luggage" to Icons.Default.Luggage,
+    "Hotel" to Icons.Default.Hotel,
+    "BeachAccess" to Icons.Default.BeachAccess,
+    "Landscape" to Icons.Default.Landscape,
+    "Map" to Icons.Default.Map,
+
+    // Technology & Communication
+    "Computer" to Icons.Default.Computer,
+    "PhoneAndroid" to Icons.Default.PhoneAndroid,
+    "Wifi" to Icons.Default.Wifi,
+    "Router" to Icons.Default.Router,
+    "Cable" to Icons.Default.Cable,
+    "Bluetooth" to Icons.Default.Bluetooth,
+
+    // Home & Utilities
+    "Home" to Icons.Default.Home,
+    "ElectricalServices" to Icons.Default.ElectricalServices,
+    "Plumbing" to Icons.Default.Plumbing,
+    "Build" to Icons.Default.Build,
+    "Construction" to Icons.Default.Construction,
+    "CleaningServices" to Icons.Default.CleaningServices,
+
+    // Security & Safety
+    "Security" to Icons.Default.Security,
+    "Lock" to Icons.Default.Lock,
+    "Shield" to Icons.Default.Shield,
+    "VerifiedUser" to Icons.Default.VerifiedUser,
+    "AdminPanelSettings" to Icons.Default.AdminPanelSettings,
+    "GppGood" to Icons.Default.GppGood,
+
+    // Membership & Loyalty
+    "CardMembership" to Icons.Default.CardMembership,
+    "Stars" to Icons.Default.Stars,
+    "Grade" to Icons.Default.Grade,
+    "EmojiEvents" to Icons.Default.EmojiEvents,
+    "Loyalty" to Icons.Default.Loyalty,
+    "CardGiftcard" to Icons.Default.CardGiftcard,
+
+    // Miscellaneous
+    "Pets" to Icons.Default.Pets,
+    "LocalFlorist" to Icons.Default.LocalFlorist,
+    "Park" to Icons.Default.Park,
+    "Nature" to Icons.Default.Nature,
+    "WbSunny" to Icons.Default.WbSunny,
+    "Nightlight" to Icons.Default.Nightlight,
+)
+
 fun getIconFromName(iconName: String?): ImageVector? {
-    return when (iconName) {
-        // General
-        "Category" -> Icons.Default.Category
-        "Folder" -> Icons.Default.Folder
-        "Label" -> Icons.AutoMirrored.Filled.Label
-        "Bookmark" -> Icons.Default.Bookmark
-        "Tag" -> Icons.Default.Tag
-        "Apps" -> Icons.Default.Apps
-        
-        // Personal & Identity
-        "Person" -> Icons.Default.Person
-        "PersonOutline" -> Icons.Default.PersonOutline
-        "AccountCircle" -> Icons.Default.AccountCircle
-        "Badge" -> Icons.Default.Badge
-        "ContactPage" -> Icons.Default.ContactPage
-        "Fingerprint" -> Icons.Default.Fingerprint
-        
-        // Business & Work
-        "Business" -> Icons.Default.Business
-        "Work" -> Icons.Default.Work
-        "BusinessCenter" -> Icons.Default.BusinessCenter
-        "CorporateFare" -> Icons.Default.CorporateFare
-        "Domain" -> Icons.Default.Domain
-        "Apartment" -> Icons.Default.Apartment
-        
-        // Finance & Banking
-        "AccountBalance" -> Icons.Default.AccountBalance
-        "AttachMoney" -> Icons.Default.AttachMoney
-        "CreditCard" -> Icons.Default.CreditCard
-        "Payment" -> Icons.Default.Payment
-        "AccountBalanceWallet" -> Icons.Default.AccountBalanceWallet
-        "MonetizationOn" -> Icons.Default.MonetizationOn
-        
-        // Shopping & Retail
-        "ShoppingCart" -> Icons.Default.ShoppingCart
-        "ShoppingBag" -> Icons.Default.ShoppingBag
-        "Store" -> Icons.Default.Store
-        "Storefront" -> Icons.Default.Storefront
-        "LocalMall" -> Icons.Default.LocalMall
-        "Receipt" -> Icons.Default.Receipt
-        
-        // Food & Dining
-        "Restaurant" -> Icons.Default.Restaurant
-        "LocalDining" -> Icons.Default.LocalDining
-        "LocalCafe" -> Icons.Default.LocalCafe
-        "LocalBar" -> Icons.Default.LocalBar
-        "LocalPizza" -> Icons.Default.LocalPizza
-        "Fastfood" -> Icons.Default.Fastfood
-        
-        // Transportation
-        "DirectionsCar" -> Icons.Default.DirectionsCar
-        "DirectionsBus" -> Icons.Default.DirectionsBus
-        "DirectionsTransit" -> Icons.Default.DirectionsTransit
-        "Flight" -> Icons.Default.Flight
-        "Train" -> Icons.Default.Train
-        "LocalTaxi" -> Icons.Default.LocalTaxi
-        
-        // Health & Medical
-        "LocalHospital" -> Icons.Default.LocalHospital
-        "LocalPharmacy" -> Icons.Default.LocalPharmacy
-        "MedicalServices" -> Icons.Default.MedicalServices
-        "HealthAndSafety" -> Icons.Default.HealthAndSafety
-        "Healing" -> Icons.Default.Healing
-        "Vaccines" -> Icons.Default.Vaccines
-        
-        // Entertainment & Leisure
-        "Movie" -> Icons.Default.Movie
-        "TheaterComedy" -> Icons.Default.TheaterComedy
-        "MusicNote" -> Icons.Default.MusicNote
-        "SportsEsports" -> Icons.Default.SportsEsports
-        "Casino" -> Icons.Default.Casino
-        "Celebration" -> Icons.Default.Celebration
-        
-        // Education & Learning
-        "School" -> Icons.Default.School
-        "MenuBook" -> Icons.AutoMirrored.Filled.MenuBook
-        "LibraryBooks" -> Icons.AutoMirrored.Filled.LibraryBooks
-        "Science" -> Icons.Default.Science
-        "Psychology" -> Icons.Default.Psychology
-        "AutoStories" -> Icons.Default.AutoStories
-        
-        // Sports & Fitness
-        "FitnessCenter" -> Icons.Default.FitnessCenter
-        "SportsBasketball" -> Icons.Default.SportsBasketball
-        "SportsFootball" -> Icons.Default.SportsFootball
-        "SportsTennis" -> Icons.Default.SportsTennis
-        "Pool" -> Icons.Default.Pool
-        "DirectionsRun" -> Icons.AutoMirrored.Filled.DirectionsRun
-        
-        // Travel & Tourism
-        "TravelExplore" -> Icons.Default.TravelExplore
-        "Luggage" -> Icons.Default.Luggage
-        "Hotel" -> Icons.Default.Hotel
-        "BeachAccess" -> Icons.Default.BeachAccess
-        "Landscape" -> Icons.Default.Landscape
-        "Map" -> Icons.Default.Map
-        
-        // Technology & Communication
-        "Computer" -> Icons.Default.Computer
-        "PhoneAndroid" -> Icons.Default.PhoneAndroid
-        "Wifi" -> Icons.Default.Wifi
-        "Router" -> Icons.Default.Router
-        "Cable" -> Icons.Default.Cable
-        "Bluetooth" -> Icons.Default.Bluetooth
-        
-        // Home & Utilities
-        "Home" -> Icons.Default.Home
-        "ElectricalServices" -> Icons.Default.ElectricalServices
-        "Plumbing" -> Icons.Default.Plumbing
-        "Build" -> Icons.Default.Build
-        "Construction" -> Icons.Default.Construction
-        "CleaningServices" -> Icons.Default.CleaningServices
-        
-        // Security & Safety
-        "Security" -> Icons.Default.Security
-        "Lock" -> Icons.Default.Lock
-        "Shield" -> Icons.Default.Shield
-        "VerifiedUser" -> Icons.Default.VerifiedUser
-        "AdminPanelSettings" -> Icons.Default.AdminPanelSettings
-        "GppGood" -> Icons.Default.GppGood
-        
-        // Membership & Loyalty
-        "CardMembership" -> Icons.Default.CardMembership
-        "Stars" -> Icons.Default.Stars
-        "Grade" -> Icons.Default.Grade
-        "EmojiEvents" -> Icons.Default.EmojiEvents
-        "Loyalty" -> Icons.Default.Loyalty
-        "CardGiftcard" -> Icons.Default.CardGiftcard
-        
-        // Miscellaneous
-        "Pets" -> Icons.Default.Pets
-        "LocalFlorist" -> Icons.Default.LocalFlorist
-        "Park" -> Icons.Default.Park
-        "Nature" -> Icons.Default.Nature
-        "WbSunny" -> Icons.Default.WbSunny
-        "Nightlight" -> Icons.Default.Nightlight
-        
-        else -> null
-    }
+    return iconMap[iconName]
 }
 
 /**

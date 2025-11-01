@@ -77,3 +77,6 @@ com.technitedminds.wallet/
 - **Manage Dependencies**: Add or update libraries by editing the `gradle/libs.versions.toml` and `app/build.gradle.kts` files.
 - **Write Tests**: Add unit tests for ViewModels and Use Cases, and integration tests for the data layer.
 - **Integrate CameraX/ML Kit**: Work on features related to camera interaction and on-device text recognition.
+
+
+After Every AutoCompletion Run the Gradle build to check if everything working fine

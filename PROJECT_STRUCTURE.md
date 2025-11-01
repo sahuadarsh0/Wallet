@@ -17,6 +17,8 @@ com.technitedminds.wallet/
 │       └── Type.kt               # Typography definitions ✅
 ├── data/                         # Data Layer ✅ IMPLEMENTED
 │   ├── local/
+│   │   ├── cache/                # Image and data caching ✅
+│   │   │   └── CacheManager.kt   # Performance optimization caching
 │   │   ├── database/             # Room database components ✅
 │   │   │   ├── entities/         # Room entities ✅
 │   │   │   │   ├── CardEntity.kt # Card entity with type converters
@@ -26,18 +28,25 @@ com.technitedminds.wallet/
 │   │   │   │   └── CategoryDao.kt # Category management operations
 │   │   │   ├── converters/       # Room type converters ✅
 │   │   │   │   ├── CardTypeConverter.kt # CardType serialization
+│   │   │   │   ├── CardGradientConverter.kt # CardGradient serialization
 │   │   │   │   └── MapConverter.kt # Map<String,String> serialization
 │   │   │   └── WalletDatabase.kt # Room database configuration ✅
 │   │   ├── files/                # File system operations ✅
 │   │   │   └── ImageFileManager.kt # Image storage and optimization
-│   │   └── preferences/          # User preferences ✅
-│   │       └── SimplePreferencesManager.kt # Proto DataStore integration
-│   ├── repository/               # Repository implementations ✅
-│   │   ├── CardRepositoryImpl.kt # Card operations with Room
-│   │   ├── CategoryRepositoryImpl.kt # Category management
-│   │   └── ImageRepositoryImpl.kt # Image file operations
-│   └── mapper/                   # Data mapping utilities ✅
-│       └── CardMapper.kt         # Card entity ↔ domain mapping
+│   │   ├── preferences/          # User preferences ✅
+│   │   │   └── SimplePreferencesManager.kt # Proto DataStore integration
+│   │   └── storage/              # Storage management ✅
+│   │       └── StorageManager.kt # File operations and cleanup
+│   ├── mapper/                   # Data mapping utilities ✅
+│   │   ├── CardMapper.kt         # Card entity ↔ domain mapping
+│   │   └── CategoryMapper.kt     # Category entity ↔ domain mapping
+│   ├── ocr/                      # OCR processing ✅
+│   │   ├── CardTextParser.kt     # Text parsing and validation
+│   │   └── MLKitTextRecognizer.kt # ML Kit text recognition
+│   └── repository/               # Repository implementations ✅
+│       ├── CardRepositoryImpl.kt # Card operations with Room
+│       ├── CategoryRepositoryImpl.kt # Category management
+│       └── ImageRepositoryImpl.kt # Image file operations
 ├── domain/                       # Domain Layer ✅ IMPLEMENTED
 │   ├── model/                    # Domain models ✅
 │   │   ├── Card.kt               # Card data class with gradient support
@@ -57,14 +66,16 @@ com.technitedminds.wallet/
 │   │   │   ├── UpdateCardUseCase.kt # Card updates with validation
 │   │   │   ├── DeleteCardUseCase.kt # Card deletion with cleanup
 │   │   │   └── ShareCardUseCase.kt # Card sharing functionality
-│   │   ├── ocr/                  # OCR processing use cases ✅
-│   │   │   └── ProcessCardImageUseCase.kt # OCR for textual cards
 │   │   ├── category/             # Category management use cases ✅
 │   │   │   ├── GetCategoriesUseCase.kt # Get all categories
 │   │   │   ├── GetCategoryNameUseCase.kt # Resolve category names
 │   │   │   └── ManageCategoryUseCase.kt # CRUD operations for categories
-
-│   └── util/                     # Domain utilities
+│   │   ├── ocr/                  # OCR processing use cases ✅
+│   │   │   └── ProcessCardImageUseCase.kt # OCR for textual cards
+│   │   ├── storage/              # Storage management use cases ✅
+│   │   │   └── StorageManagementUseCase.kt # Storage operations
+│   │   └── util/                 # Domain utilities ✅
+│   │       └── CardGradientGenerator.kt # Gradient generation
 ├── presentation/                 # Presentation Layer ✅ IMPLEMENTED
 │   ├── screens/                  # Feature screens ✅
 │   │   ├── home/                 # Home screen components ✅
@@ -73,13 +84,16 @@ com.technitedminds.wallet/
 │   │   ├── addcard/              # Add card flow ✅
 │   │   │   ├── AddCardScreen.kt  # Multi-step add card workflow
 │   │   │   └── AddCardViewModel.kt # State management for add card flow
+│   │   ├── camera/               # Camera screen ✅
+│   │   │   ├── CameraScreen.kt   # Dedicated camera capture screen
+│   │   │   └── CameraViewModel.kt # Camera state management
 │   │   ├── carddetail/           # Card detail view ✅
 │   │   │   ├── CardDetailScreen.kt # Full-screen card view with flip animation
 │   │   │   └── CardDetailViewModel.kt # State management for card details
 │   │   ├── categories/           # Category management ✅
 │   │   │   ├── CategoriesScreen.kt # List of categories with CRUD operations
 │   │   │   ├── CategoriesViewModel.kt # State management for categories
-│   │   │   └── AddEditCategoryDialog.kt # Dialog for category creation/editing
+│   │   │   └── CategoryDialog.kt # Dialog for category creation/editing
 │   │   └── settings/             # App settings ✅
 │   │       ├── SettingsScreen.kt # Settings UI with preferences
 │   │       └── SettingsViewModel.kt # State management for settings
@@ -88,31 +102,48 @@ com.technitedminds.wallet/
 │   │   │   ├── CardListItem.kt   # Card list item with thumbnail and details
 │   │   │   ├── CardTypeSelector.kt # Card type selection with gradients
 │   │   │   ├── CategoryChip.kt   # Category display with color and icon
+│   │   │   ├── CategoryPreview.kt # Category preview component
+│   │   │   ├── CategoryUtils.kt  # Category icon/color utilities
 │   │   │   ├── ColorPicker.kt    # Color selection component
 │   │   │   ├── ConfirmationDialog.kt # Generic confirmation dialog
 │   │   │   ├── ErrorMessage.kt   # Error message display component
+│   │   │   ├── GradientPicker.kt # Gradient selection component
+│   │   │   ├── GradientPickerDialog.kt # Gradient picker dialog
+│   │   │   ├── IconPicker.kt     # Icon selection component
 │   │   │   ├── LoadingIndicator.kt # Loading spinner component
 │   │   │   └── ValidatedTextField.kt # Text field with validation
 │   │   ├── animation/            # Animation components ✅
 │   │   │   ├── AnimatedList.kt   # Animate list item changes
 │   │   │   ├── AnimationUtils.kt # Common animation utilities
 │   │   │   ├── CardBack.kt       # Card back side with flip animation
-│   │   │   └── CardFront.kt      # Card front side with flip animation
-│   │   └── camera/               # Camera-related components ✅
-│   │       ├── CameraError.kt    # Camera error handling
-│   │       ├── CameraPermission.kt # Camera permission utilities
-│   │       ├── CameraPreview.kt  # CameraX implementation with live preview
-│   │       ├── CaptureButton.kt  # Custom capture button with states
-│   │       ├── CardOverlay.kt    # Multi-aspect ratio card positioning overlay
-│   │       └── ImagePreview.kt   # Image preview with zoom/pan capabilities
+│   │   │   ├── CardFront.kt      # Card front side with flip animation
+│   │   │   └── FlippableCard.kt  # Complete flip animation component
+│   │   ├── camera/               # Camera-related components ✅
+│   │   │   ├── CameraError.kt    # Camera error handling
+│   │   │   ├── CameraManager.kt  # Camera lifecycle management
+│   │   │   ├── CameraPermission.kt # Camera permission utilities
+│   │   │   ├── CameraPermissionComponent.kt # Permission UI component
+│   │   │   ├── CameraPreview.kt  # CameraX implementation with live preview
+│   │   │   ├── CaptureButton.kt  # Custom capture button with states
+│   │   │   ├── CardOverlay.kt    # Multi-aspect ratio card positioning overlay
+│   │   │   └── ImagePreview.kt   # Image preview with zoom/pan capabilities
+│   │   └── sharing/              # Card sharing components ✅
+│   │       ├── CardSharingManager.kt # Sharing functionality
+│   │       └── CardSharingOption.kt # Sharing options
 │   ├── navigation/               # Navigation setup ✅
-│   │   └── (navigation files present)
+│   │   ├── BottomNavigation.kt   # Bottom navigation bar
+│   │   ├── NavigationDestinations.kt # Navigation routes and arguments
+│   │   ├── NavigationExtensions.kt # Navigation utility functions
+│   │   ├── WalletAppScaffold.kt # Main app scaffold
+│   │   └── WalletNavigation.kt   # Navigation host
+│   ├── constants/                # App constants ✅
+│   │   └── AppConstants.kt       # App-wide constants
 │   └── utils/                    # Presentation layer utilities ✅
-│       └── (utility files present)
+│       └── PerformanceOptimizer.kt # Performance optimization utilities
 ├── di/                           # Dependency Injection modules ✅
+│   ├── CameraModule.kt           # CameraX and ML Kit dependencies
 │   ├── DatabaseModule.kt         # Room database Hilt module
-│   ├── RepositoryModule.kt       # Repository interface bindings
-│   └── AppModule.kt              # Additional Hilt bindings (fixed duplicate issue)
+│   └── RepositoryModule.kt       # Repository interface bindings
 └── utils/                        # Utility classes and extensions ✅
     └── Extensions.kt             # Kotlin extension functions
 ```
@@ -142,40 +173,60 @@ The application supports a comprehensive set of card types with unique visual id
 - **AccessCard**: Purple-cream gradient (building access cards)
 - **Custom**: User-defined types with customizable gradients
 
-## Key Dependencies (as used in module)
+## Key Dependencies
 
-### Core UI
-- **Jetpack Compose**: UI toolkit (BOM `2024.09.00`, Material3, Icons)
-- **SplashScreen**: AndroidX splash screen API
+### Core Android
+- **AndroidX Core KTX**: `1.17.0`
+- **Lifecycle Runtime**: `2.9.4`
+- **Activity Compose**: `1.11.0`
+- **Splash Screen**: `1.0.1`
 
-### Architecture
-- **Hilt**: Dependency injection (runtime + navigation-compose)
-- **Room**: Local database (runtime, ktx, compiler via KSP)
-- **Navigation Compose**: In-app navigation
+### UI Framework
+- **Jetpack Compose BOM**: `2025.09.01`
+- **Material Design 3**: `1.4.0`
+- **Material Icons**: Extended icon set
+- **Google Fonts**: UI text with custom fonts
 
-### Media/OCR
-- **CameraX Core**: `androidx.camera:camera-core` (foundation)
-- **Google Play Services ML Kit Text Recognition**: `play-services-mlkit-text-recognition(-common)`
+### Architecture & DI
+- **Hilt**: `2.57.1` (android, compiler, navigation-compose `1.3.0`)
+- **Navigation Compose**: `2.9.5` with kotlinx.serialization
+- **Room**: `2.8.1` (runtime, ktx, compiler via KSP)
 
-### Images
-- **Coil**: Image loading (`coil-compose`)
+### Camera & ML
+- **CameraX**: `1.5.0` (core, camera2, lifecycle, view, extensions)
+- **ML Kit Text Recognition**: `16.0.1` (bundled, offline)
+
+### Data & Storage
+- **Proto DataStore**: `1.1.7` (core + preferences)
+- **Coil Compose**: `2.7.0` (image loading)
+
+### Security
+- **Biometric**: `1.1.0`
+- **Google Tink**: `1.18.0` (encryption)
+
+### Serialization
+- **Kotlinx Serialization JSON**: `1.7.0`
 
 ### Testing
-- **JUnit 4**, **AndroidX Test**, **Compose UI Test**
-
-### Declared in version catalog but not yet added to app module
-- CameraX artifacts: `camera-camera2`, `camera-lifecycle`, `camera-view`, `camera-extensions`
-- ML Kit: `com.google.mlkit:text-recognition`
-- Security/Data: Proto DataStore, Biometric, Tink
+- **JUnit**: `4.13.2`
+- **AndroidX Test**: JUnit `1.3.0`, Espresso `3.7.0`
+- **Compose UI Test**: junit4, test-manifest
 
 ## Security Configuration
 
-The AndroidManifest.xml has been configured to explicitly block network permissions:
-- `android.permission.INTERNET` - Blocked
-- `android.permission.ACCESS_NETWORK_STATE` - Blocked  
-- `android.permission.ACCESS_WIFI_STATE` - Blocked
+### Network Permissions
+The AndroidManifest.xml explicitly blocks all network permissions for complete offline operation:
+- `android.permission.INTERNET` - Blocked (`tools:node="remove"`)
+- `android.permission.ACCESS_NETWORK_STATE` - Blocked (`tools:node="remove"`)
+- `android.permission.ACCESS_WIFI_STATE` - Blocked (`tools:node="remove"`)
 
-Only the camera permission is allowed for card scanning functionality.
+### Allowed Permissions
+- `android.permission.CAMERA` - Required for card scanning functionality
+
+### File Sharing
+- **FileProvider** configured for secure card image sharing
+- Authority: `${applicationId}.fileprovider`
+- Paths defined in `@xml/file_provider_paths`
 
 ## Build Configuration
 
@@ -275,13 +326,11 @@ com.technitedminds.wallet/
 │   │   ├── ocr/ ✅ (ProcessCardImageUseCase.kt)
 │   │   ├── storage/ ✅ (StorageManagementUseCase.kt)
 │   │   └── util/ ✅ (CardGradientGenerator.kt)
-│   └── util/ ✅
 ├── presentation/ ✅ COMPLETE
 │   ├── components/
-│   │   ├── camera/ ✅ (Complete camera system with CameraManager, CameraPreview, CardOverlay, etc.)
-│   │   ├── common/ ✅ (All UI components with gradient support, ColorPicker, GradientPicker, etc.)
-│   │   ├── animation/ ✅ (Card flip and list animations with FlippableCard.kt)
-│   │   ├── category/ ✅ (Category-specific components)
+│   │   ├── animation/ ✅ (AnimatedList.kt, AnimationUtils.kt, CardBack.kt, CardFront.kt, FlippableCard.kt)
+│   │   ├── camera/ ✅ (CameraError.kt, CameraManager.kt, CameraPermission.kt, CameraPermissionComponent.kt, CameraPreview.kt, CaptureButton.kt, CardOverlay.kt, ImagePreview.kt)
+│   │   ├── common/ ✅ (CardListItem.kt, CardTypeSelector.kt, CategoryChip.kt, CategoryPreview.kt, CategoryUtils.kt, ColorPicker.kt, ConfirmationDialog.kt, ErrorMessage.kt, GradientPicker.kt, GradientPickerDialog.kt, IconPicker.kt, LoadingIndicator.kt, ValidatedTextField.kt)
 │   │   └── sharing/ ✅ (CardSharingManager.kt, CardSharingOption.kt)
 │   ├── screens/ ✅ (All screens implemented with ViewModels)
 │   │   ├── home/ ✅ (HomeScreen.kt, HomeViewModel.kt)
@@ -297,7 +346,13 @@ com.technitedminds.wallet/
 │   │   ├── WalletAppScaffold.kt ✅
 │   │   └── WalletNavigation.kt ✅
 │   ├── constants/ ✅ (AppConstants.kt)
-│   └── utils/ ✅ (CategoryUtils.kt, PerformanceOptimizer.kt)
+│   └── utils/ ✅ (PerformanceOptimizer.kt)
 ├── di/ ✅ (CameraModule.kt, DatabaseModule.kt, RepositoryModule.kt)
 └── utils/ ✅ (Extensions.kt)
 ```
+
+**Notes**: 
+- Empty placeholder folders (`add_card/`, `card_detail/`, `presentation/camera/`, `components/category/`, `util/`) exist in the codebase but are not documented as they contain no implementation files.
+- Actual screen implementations are in `addcard/` and `carddetail/` (not the underscore variants).
+- Camera screen is located in `presentation/screens/camera/` (not in presentation root).
+- The `CategoryUtils.kt` file has been removed from `presentation/utils` as it was relocated to `presentation/components/common`.

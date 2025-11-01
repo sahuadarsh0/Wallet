@@ -1,5 +1,5 @@
 ---
-globs: app/src/main/java/com/technitedminds/wallet/presentation/**/*.kt
+globs: app/src/main/java/com/technitedminds/wallet/**/**/*.kt
 ---
 # Jetpack Compose UI Guidelines
 

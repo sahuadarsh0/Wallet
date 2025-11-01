@@ -12,6 +12,9 @@ import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.domain.util.CardGradientGenerator
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -237,36 +240,74 @@ class CardSharingManager @Inject constructor(
      * Share files using Android's sharing system
      */
     private fun shareFiles(files: List<File>, cardName: String) {
-        val uris = files.map { file ->
-            FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                file
-            )
-        }
-        
-        val shareIntent = Intent().apply {
-            if (uris.size == 1) {
-                action = Intent.ACTION_SEND
-                putExtra(Intent.EXTRA_STREAM, uris.first())
-            } else {
-                action = Intent.ACTION_SEND_MULTIPLE
-                putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+        try {
+            if (files.isEmpty()) {
+                shareTextOnly(cardName)
+                return
             }
-            type = "image/*"
-            putExtra(Intent.EXTRA_SUBJECT, cardName)
-            putExtra(Intent.EXTRA_TEXT, "Shared from CardVault")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            
+            val uris = files.map { file ->
+                FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    file
+                )
+            }
+            
+            val shareIntent = Intent().apply {
+                if (uris.size == 1) {
+                    action = Intent.ACTION_SEND
+                    putExtra(Intent.EXTRA_STREAM, uris.first())
+                } else {
+                    action = Intent.ACTION_SEND_MULTIPLE
+                    putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+                }
+                type = "image/*"
+                putExtra(Intent.EXTRA_SUBJECT, cardName)
+                putExtra(Intent.EXTRA_TEXT, "Shared from CardVault")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            
+            val chooserIntent = Intent.createChooser(shareIntent, "Share $cardName")
+            chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(chooserIntent)
+            
+            // Schedule cleanup after sharing
+            GlobalScope.launch(Dispatchers.IO) {
+                delay(5000) // Wait 5 seconds after sharing
+                cleanupTempFiles()
+            }
+            
+        } catch (e: Exception) {
+            // Fallback to text sharing
+            shareTextOnly(cardName)
         }
-        
-        val chooserIntent = Intent.createChooser(shareIntent, "Share $cardName")
-        chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(chooserIntent)
     }
     
     /**
-     * Clean up temporary sharing files
+     * Fallback method to share just text
+     */
+    private fun shareTextOnly(cardName: String) {
+        try {
+            val shareIntent = Intent().apply {
+                action = Intent.ACTION_SEND
+                type = "text/plain"
+                putExtra(Intent.EXTRA_SUBJECT, cardName)
+                putExtra(Intent.EXTRA_TEXT, "Card: $cardName\nShared from CardVault")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            
+            val chooserIntent = Intent.createChooser(shareIntent, "Share $cardName")
+            chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(chooserIntent)
+        } catch (e: Exception) {
+            // Silent fail - sharing is not critical functionality
+        }
+    }
+    
+    /**
+     * Clean up temporary sharing files (called automatically after sharing)
      */
     fun cleanupTempFiles() {
         try {
@@ -278,8 +319,65 @@ class CardSharingManager @Inject constructor(
                     }
                 }
             }
+            
+            // Also cleanup gradient generator temp files
+            val tempDir = File(System.getProperty("java.io.tmpdir"), "card_sharing")
+            if (tempDir.exists()) {
+                tempDir.listFiles()?.forEach { file ->
+                    if (file.isFile && System.currentTimeMillis() - file.lastModified() > 1800000) { // 30 minutes
+                        file.delete()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // Ignore cleanup errors
+        }
+    }
+    
+    /**
+     * Get sharing statistics
+     */
+    fun getSharingStats(): SharingStats {
+        val shareDir = File(context.cacheDir, "shared_cards")
+        val tempDir = File(System.getProperty("java.io.tmpdir"), "card_sharing")
+        
+        val sharedFiles = shareDir.listFiles()?.size ?: 0
+        val tempFiles = tempDir.listFiles()?.size ?: 0
+        val totalSize = (shareDir.listFiles()?.sumOf { it.length() } ?: 0L) + 
+                       (tempDir.listFiles()?.sumOf { it.length() } ?: 0L)
+        
+        return SharingStats(
+            totalSharedFiles = sharedFiles + tempFiles,
+            totalSizeBytes = totalSize,
+            lastCleanup = System.currentTimeMillis()
+        )
+    }
+    
+    /**
+     * Force cleanup of all temporary files
+     */
+    fun forceCleanupAllTempFiles() {
+        try {
+            val shareDir = File(context.cacheDir, "shared_cards")
+            if (shareDir.exists()) {
+                shareDir.listFiles()?.forEach { it.delete() }
+            }
+            
+            val tempDir = File(System.getProperty("java.io.tmpdir"), "card_sharing")
+            if (tempDir.exists()) {
+                tempDir.listFiles()?.forEach { it.delete() }
+            }
         } catch (e: Exception) {
             // Ignore cleanup errors
         }
     }
 }
+
+/**
+ * Statistics about sharing operations
+ */
+data class SharingStats(
+    val totalSharedFiles: Int,
+    val totalSizeBytes: Long,
+    val lastCleanup: Long
+)

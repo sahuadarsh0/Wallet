@@ -31,7 +31,8 @@ fun FlippableCard(
     isCompact: Boolean = false,
     showShareButtons: Boolean = true,
     onShare: ((CardSharingOption) -> Unit)? = null,
-    onCardClick: (() -> Unit)? = null
+    onCardClick: (() -> Unit)? = null,
+    onCardLongPress: (() -> Unit)? = null
 ) {
     var isFlipped by remember { mutableStateOf(false) }
     val hapticFeedback = LocalHapticFeedback.current

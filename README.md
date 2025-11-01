@@ -38,10 +38,12 @@ This project follows the official Android architecture recommendations, employin
   - [TOML Version Catalog](https://docs.gradle.org/current/userguide/platforms.html) (`gradle/libs.versions.toml`) for centralized dependency management
   - [KSP (Kotlin Symbol Processing)](https://kotlinlang.org/docs/ksp-overview.html) for annotation processing
 - **Camera & ML:**
-  - [CameraX](https://developer.android.com/training/camerax) (core, camera2, lifecycle, view) for modern camera implementation
-  - [Google ML Kit](https://developers.google.com/ml-kit) (Text Recognition) for on-device OCR processing
-- **Image Loading:** [Coil](https://coil-kt.github.io/coil/) for efficient image loading and caching
-- **Security:** [Google Tink](https://github.com/google/tink) for file encryption
+  - [CameraX](https://developer.android.com/training/camerax) v1.5.0 (core, camera2, lifecycle, view, extensions) for modern camera implementation
+  - [Google ML Kit](https://developers.google.com/ml-kit) Text Recognition v16.0.1 (bundled, offline) for on-device OCR processing
+- **Image Loading:** [Coil](https://coil-kt.github.io/coil/) v2.7.0 for efficient image loading and caching
+- **Security:** 
+  - [Google Tink](https://github.com/google/tink) v1.18.0 for file encryption
+  - AndroidX Biometric v1.1.0 for authentication
 
 ## 🏗️ Project Structure
 
@@ -164,8 +166,6 @@ com.technitedminds.wallet/
 │   │   │   ├── CaptureButton.kt  # Custom capture button with states
 │   │   │   ├── CardOverlay.kt    # Multi-aspect ratio card positioning overlay
 │   │   │   └── ImagePreview.kt   # Image preview with zoom/pan capabilities
-│   │   ├── category/             # Category-specific components ✅
-│   │   │   └── (category components)
 │   │   └── sharing/              # Card sharing components ✅
 │   │       ├── CardSharingManager.kt # Sharing functionality
 │   │       └── CardSharingOption.kt # Sharing options
@@ -187,6 +187,33 @@ com.technitedminds.wallet/
 └── utils/                        # Utility classes and extensions ✅
     └── Extensions.kt             # Kotlin extension functions
 ```
+
+> **Note**: Empty placeholder folders (`add_card/`, `card_detail/`, `presentation/camera/`, `components/category/`, `util/`) exist in the codebase but are not documented above as they contain no implementation files. Actual screen implementations use `addcard/` and `carddetail/` naming.
+
+## 📦 Build & Version Information
+
+### Build Configuration
+- **Target SDK**: 36 (Android 15)
+- **Min SDK**: 29 (Android 10)
+- **Compile SDK**: 36
+- **Java Version**: 11
+- **Kotlin**: 2.0.0
+- **Gradle Plugin**: 8.13.0
+- **KSP**: 2.0.0-1.0.21
+- **Compose BOM**: 2025.09.01
+
+### Key Dependencies Versions
+- **Hilt**: 2.57.1
+- **Room**: 2.8.1
+- **Navigation Compose**: 2.9.5
+- **CameraX**: 1.5.0
+- **ML Kit Text Recognition**: 16.0.1
+- **Coil**: 2.7.0
+- **Proto DataStore**: 1.1.7
+- **Google Tink**: 1.18.0
+- **Material3**: 1.4.0
+
+All dependencies are managed via TOML version catalog (`gradle/libs.versions.toml`).
 
 ## 🚀 Getting Started
 
@@ -257,9 +284,10 @@ CardVault supports 15+ card types with unique gradient designs:
 - **Camera Screens:** Dedicated CameraScreen with step-by-step capture flow
 - **Add Card Flow:** Multi-step AddCardScreen with card type selection and data entry
 - **Card Detail View:** Full-screen CardDetailScreen with flip animations and sharing
-- **Category Management:** CategoriesScreen with dialog-based CRUD operations
+- **Category Management:** CategoriesScreen with dialog-based CRUD operations (includes bug fixes for category editing)
 - **Settings Screen:** SettingsScreen with app preferences and configuration
 - **Performance Optimizations:** Image caching, memory management, and animation optimizations
+- **Bug Fixes:** Category edit functionality and related dialog operations
 
 ### 🚧 Next Steps
 - **Testing:** Unit tests for ViewModels, use cases, and repository implementations

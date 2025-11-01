@@ -17,7 +17,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.presentation.components.animation.FlippableCard
 import com.technitedminds.wallet.presentation.components.common.*
-import com.technitedminds.wallet.presentation.utils.resolveCategoryName
+import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
+import com.technitedminds.wallet.presentation.components.sharing.CardSharingDialog
+import com.technitedminds.wallet.presentation.components.common.resolveCategoryName
 import com.technitedminds.wallet.presentation.constants.AppConstants
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -39,6 +41,7 @@ fun CardDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isEditing by viewModel.isEditing.collectAsStateWithLifecycle()
     val editedCard by viewModel.editedCard.collectAsStateWithLifecycle()
+    val showSharingDialog by viewModel.showSharingDialog.collectAsStateWithLifecycle()
 
 
     // Handle events
@@ -49,9 +52,8 @@ fun CardDetailScreen(
                 is CardDetailEvent.CardSaved -> {
                     // Show success message or handle as needed
                 }
-                is CardDetailEvent.ShareCard -> {
-                    // Handle sharing - you can implement this based on your needs
-                    // For now, we'll just show a snackbar
+                is CardDetailEvent.ShareSuccess -> {
+                    // Card shared successfully
                 }
             }
         }
@@ -78,7 +80,7 @@ fun CardDetailScreen(
                 onSaveEdit = viewModel::saveCard,
                 onCancelEdit = viewModel::cancelEditing,
                 onDeleteCard = viewModel::showDeleteConfirmation,
-                onShareCard = viewModel::shareCard
+                onShowSharingDialog = viewModel::showSharingDialog
             )
         },
         modifier = modifier
@@ -94,6 +96,10 @@ fun CardDetailScreen(
                 card = if (isEditing) editedCard ?: card!! else card!!,
                 isFlipped = uiState.isCardFlipped,
                 onFlip = viewModel::toggleCardFlip,
+                onShare = { sharingOption ->
+                    viewModel.quickShare(sharingOption)
+                },
+                onShowSharingDialog = viewModel::showSharingDialog,
                 modifier = Modifier.padding(16.dp)
             )
 
@@ -139,6 +145,16 @@ fun CardDetailScreen(
         isVisible = uiState.isLoading,
         text = "Processing..."
     )
+    
+    // Sharing dialog
+    CardSharingDialog(
+        card = card!!,
+        isVisible = showSharingDialog,
+        onDismiss = viewModel::hideSharingDialog,
+        onShare = { option, config ->
+            viewModel.shareCardWithConfig(option, config)
+        }
+    )
 }
 
 /**
@@ -154,7 +170,7 @@ private fun CardDetailTopBar(
     onSaveEdit: () -> Unit,
     onCancelEdit: () -> Unit,
     onDeleteCard: () -> Unit,
-    onShareCard: () -> Unit,
+    onShowSharingDialog: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     TopAppBar(
@@ -189,11 +205,11 @@ private fun CardDetailTopBar(
                     )
                 }
             } else {
-                // Share
-                IconButton(onClick = onShareCard) {
+                // Share with options
+                IconButton(onClick = onShowSharingDialog) {
                     Icon(
-                        imageVector = Icons.Default.Share,
-                        contentDescription = "Share"
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Share options"
                     )
                 }
                 // Edit
@@ -224,6 +240,8 @@ private fun CardDisplaySection(
     card: Card,
     isFlipped: Boolean,
     onFlip: () -> Unit,
+    onShare: (CardSharingOption) -> Unit,
+    onShowSharingDialog: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -237,19 +255,28 @@ private fun CardDisplaySection(
                 .fillMaxWidth()
                 .height(200.dp),
             showShareButtons = true,
-            onShare = { sharingOption ->
-                // Handle card sharing
-            }
+            onShare = onShare,
+            onCardLongPress = onShowSharingDialog
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Flip instruction
-        Text(
-            text = "Tap card to flip",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        // Instructions
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = "Tap card to flip • Long press for share options",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "Use share buttons for quick sharing",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
+        }
     }
 }
 
