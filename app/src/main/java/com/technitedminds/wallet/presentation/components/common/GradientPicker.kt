@@ -313,7 +313,7 @@ private fun CustomGradientDialog(
                 OutlinedTextField(
                     value = gradientName,
                     onValueChange = { gradientName = it },
-                    label = { Text("Gradient Name (Optional)") },
+                    label = { Text(AppConstants.UIText.GRADIENT_NAME_OPTIONAL_LABEL) },
                     placeholder = { Text("My Custom Gradient") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
@@ -412,7 +412,7 @@ private fun ColorPickerRow(
                         onColorSelected(color)
                     }
                 },
-                label = { Text("Hex Color") },
+                label = { Text(AppConstants.UIText.HEX_COLOR_LABEL) },
                 placeholder = { Text("#667eea") },
                 modifier = Modifier.weight(1f),
                 singleLine = true

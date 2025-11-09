@@ -49,7 +49,7 @@ fun CardTypeSelector(
     
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -57,7 +57,7 @@ fun CardTypeSelector(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Card Type",
+                text = AppConstants.UIText.TYPE_LABEL,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium
             )
@@ -66,16 +66,16 @@ fun CardTypeSelector(
             if (showGradientPicker && onGradientSelected != null) {
                 OutlinedButton(
                     onClick = { showGradientDialog = true },
-                    modifier = Modifier.height(32.dp)
+                    modifier = Modifier.height(AppConstants.Dimensions.CARD_TYPE_SELECTOR_BUTTON_HEIGHT)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Palette,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_SMALL)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_EXTRA_SMALL))
                     Text(
-                        text = "Gradient",
+                        text = AppConstants.UIText.GRADIENT,
                         style = MaterialTheme.typography.labelSmall
                     )
                 }
@@ -94,8 +94,8 @@ fun CardTypeSelector(
         // Predefined card types grid
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL),
+            verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL),
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
@@ -122,10 +122,10 @@ fun CardTypeSelector(
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_BUTTON_ICON_SIZE)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Custom Card Type")
+                Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
+                Text(AppConstants.UIText.CUSTOM_CARD_TYPE)
             }
         }
     }
@@ -185,28 +185,28 @@ private fun CardTypeOption(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(80.dp)
+            .height(AppConstants.Dimensions.CARD_TYPE_OPTION_HEIGHT)
             .border(
-                width = if (isSelected) 2.dp else 1.dp,
+                width = if (isSelected) AppConstants.Dimensions.CARD_TYPE_OPTION_BORDER_WIDTH_SELECTED else AppConstants.Dimensions.CARD_TYPE_OPTION_BORDER_WIDTH,
                 color = borderColor,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_NORMAL)
             )
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_NORMAL)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(AppConstants.Dimensions.PADDING_MEDIUM),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM)
         ) {
             // Card type icon with color
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .size(AppConstants.Dimensions.CARD_TYPE_OPTION_ICON_CONTAINER_SIZE)
+                    .clip(RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_COMPACT))
                     .background(
                         Color(android.graphics.Color.parseColor(cardType.getDefaultColor()))
                     ),
@@ -216,14 +216,14 @@ private fun CardTypeOption(
                     imageVector = getCardTypeIcon(cardType),
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(AppConstants.Dimensions.DROPDOWN_ICON_SIZE)
                 )
             }
             
             // Card type name and description
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
             ) {
                 Text(
                     text = cardType.getDisplayName(),
@@ -266,15 +266,15 @@ private fun CustomCardTypeDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp)
+                .padding(AppConstants.Dimensions.PADDING_LARGE),
+            shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_LARGE)
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.padding(AppConstants.Dimensions.PADDING_EXTRA_LARGE),
+                verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
             ) {
                 Text(
-                    text = "Create Custom Card Type",
+                    text = AppConstants.UIText.CREATE_CUSTOM_CARD_TYPE,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -283,8 +283,8 @@ private fun CustomCardTypeDialog(
                 OutlinedTextField(
                     value = typeName,
                     onValueChange = { typeName = it },
-                    label = { Text("Card Type Name") },
-                    placeholder = { Text("e.g., Gym Card, Voucher") },
+                    label = { Text(AppConstants.UIText.CARD_TYPE_NAME) },
+                    placeholder = { Text(AppConstants.UIText.CARD_TYPE_NAME_PLACEHOLDER) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -313,13 +313,13 @@ private fun CustomCardTypeDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(12.dp),
+                                .padding(AppConstants.Dimensions.PADDING_MEDIUM),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM)
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(32.dp)
+                                    .size(AppConstants.Dimensions.CARD_TYPE_SELECTOR_BUTTON_HEIGHT)
                                     .clip(RoundedCornerShape(6.dp))
                                     .background(
                                         Color(android.graphics.Color.parseColor(selectedColor))
@@ -330,7 +330,7 @@ private fun CustomCardTypeDialog(
                                     imageVector = Icons.Default.CreditCard,
                                     contentDescription = null,
                                     tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_SMALL)
                                 )
                             }
                             
@@ -346,7 +346,7 @@ private fun CustomCardTypeDialog(
                 // Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                    horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL, Alignment.End)
                 ) {
                     TextButton(onClick = onDismiss) {
                         Text(AppConstants.DialogText.CANCEL_BUTTON)
@@ -360,7 +360,7 @@ private fun CustomCardTypeDialog(
                         },
                         enabled = typeName.isNotBlank()
                     ) {
-                        Text("Create")
+                        Text(AppConstants.UIText.CREATE)
                     }
                 }
             }
@@ -393,22 +393,22 @@ private fun getCardTypeIcon(cardType: CardType): ImageVector = when (cardType) {
  * Get description for card type
  */
 private fun getCardTypeDescription(cardType: CardType): String = when (cardType) {
-    is CardType.Credit -> "Credit and charge cards"
-    is CardType.Debit -> "Debit and bank cards"
-    is CardType.GiftCard -> "Gift cards and vouchers"
-    is CardType.LoyaltyCard -> "Loyalty and rewards cards"
-    is CardType.MembershipCard -> "Gym and club memberships"
-    is CardType.InsuranceCard -> "Health and insurance cards"
-    is CardType.IdentificationCard -> "ID cards and licenses"
-    is CardType.Voucher -> "Discount vouchers and coupons"
-    is CardType.Event -> "Event tickets and passes"
-    is CardType.TransportCard -> "Metro and transit cards"
-    is CardType.BusinessCard -> "Business and corporate cards"
-    is CardType.LibraryCard -> "Library and education cards"
-    is CardType.HotelCard -> "Hotel and travel cards"
-    is CardType.StudentCard -> "Student ID cards"
-    is CardType.AccessCard -> "Access and security cards"
-    is CardType.Custom -> "Custom card type"
+    is CardType.Credit -> AppConstants.UIText.CREDIT_CARD_DESC
+    is CardType.Debit -> AppConstants.UIText.DEBIT_CARD_DESC
+    is CardType.GiftCard -> AppConstants.UIText.GIFT_CARD_DESC
+    is CardType.LoyaltyCard -> AppConstants.UIText.LOYALTY_CARD_DESC
+    is CardType.MembershipCard -> AppConstants.UIText.MEMBERSHIP_CARD_DESC
+    is CardType.InsuranceCard -> AppConstants.UIText.INSURANCE_CARD_DESC
+    is CardType.IdentificationCard -> AppConstants.UIText.ID_CARD_DESC
+    is CardType.Voucher -> AppConstants.UIText.VOUCHER_DESC
+    is CardType.Event -> AppConstants.UIText.EVENT_TICKET_DESC
+    is CardType.TransportCard -> AppConstants.UIText.TRANSPORT_CARD_DESC
+    is CardType.BusinessCard -> AppConstants.UIText.BUSINESS_CARD_DESC
+    is CardType.LibraryCard -> AppConstants.UIText.LIBRARY_CARD_DESC
+    is CardType.HotelCard -> AppConstants.UIText.HOTEL_CARD_DESC
+    is CardType.StudentCard -> AppConstants.UIText.STUDENT_CARD_DESC
+    is CardType.AccessCard -> AppConstants.UIText.ACCESS_CARD_DESC
+    is CardType.Custom -> AppConstants.UIText.CUSTOM_CARD_DESC
 }
 
 /**
@@ -441,28 +441,28 @@ private fun CardTypeOptionWithGradient(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(80.dp)
+            .height(AppConstants.Dimensions.CARD_TYPE_OPTION_HEIGHT)
             .border(
-                width = if (isSelected) 2.dp else 1.dp,
+                width = if (isSelected) AppConstants.Dimensions.CARD_TYPE_OPTION_BORDER_WIDTH_SELECTED else AppConstants.Dimensions.CARD_TYPE_OPTION_BORDER_WIDTH,
                 color = borderColor,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_NORMAL)
             )
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_NORMAL)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(AppConstants.Dimensions.PADDING_MEDIUM),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM)
         ) {
             // Card type icon with gradient or color
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .size(AppConstants.Dimensions.CARD_TYPE_OPTION_ICON_CONTAINER_SIZE)
+                    .clip(RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_COMPACT))
                     .then(
                         if (gradient != null) {
                             Modifier.background(createGradientBrush(gradient))
@@ -478,14 +478,14 @@ private fun CardTypeOptionWithGradient(
                     imageVector = getCardTypeIcon(cardType),
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(AppConstants.Dimensions.DROPDOWN_ICON_SIZE)
                 )
             }
             
             // Card type name and description
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
             ) {
                 Text(
                     text = cardType.getDisplayName(),
@@ -523,8 +523,8 @@ private fun GradientPreview(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.height(100.dp),
-        shape = RoundedCornerShape(12.dp)
+        modifier = modifier.height(AppConstants.Dimensions.GRADIENT_PREVIEW_HEIGHT),
+        shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_NORMAL)
     ) {
         Box(
             modifier = Modifier
@@ -535,7 +535,7 @@ private fun GradientPreview(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
+                    .padding(AppConstants.Dimensions.PADDING_LARGE),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(
@@ -553,8 +553,8 @@ private fun GradientPreview(
                     Icon(
                         imageVector = getCardTypeIcon(cardType),
                         contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.8f),
-                        modifier = Modifier.size(24.dp)
+                        tint = Color.White.copy(alpha = AppConstants.AnimationValues.ALPHA_NEAR_OPAQUE),
+                        modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_LARGE)
                     )
                 }
                 
@@ -567,7 +567,7 @@ private fun GradientPreview(
                         Text(
                             text = name,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.9f)
+                            color = Color.White.copy(alpha = AppConstants.AnimationValues.ALPHA_ALMOST_OPAQUE)
                         )
                     }
                     

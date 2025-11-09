@@ -12,6 +12,7 @@ import com.technitedminds.wallet.presentation.screens.camera.CameraScreen
 import com.technitedminds.wallet.presentation.screens.carddetail.CardDetailScreen
 import com.technitedminds.wallet.presentation.screens.categories.CategoriesScreen
 import com.technitedminds.wallet.presentation.screens.home.HomeScreen
+import com.technitedminds.wallet.presentation.screens.home.EnhancedHomeScreen
 import com.technitedminds.wallet.presentation.screens.settings.SettingsScreen
 import com.technitedminds.wallet.presentation.constants.AppConstants
 
@@ -29,9 +30,9 @@ fun WalletNavigation(
         startDestination = startDestination,
         modifier = modifier
     ) {
-        // Home screen
+        // Home screen - using enhanced version
         composable(NavigationDestinations.Home.route) {
-            HomeScreen(
+            EnhancedHomeScreen(
                 onCardClick = { card ->
                     navController.navigateToDetail(NavigationDestinations.CardDetail.createRoute(card.id))
                 },

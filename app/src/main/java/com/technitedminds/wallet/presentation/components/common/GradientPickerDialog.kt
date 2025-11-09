@@ -81,7 +81,7 @@ fun GradientPickerDialog(
         mutableStateOf(selectedGradient?.direction ?: GradientDirection.TopToBottom) 
     }
     var gradientName by remember {
-        mutableStateOf(selectedGradient?.name ?: "Custom Gradient")
+        mutableStateOf(selectedGradient?.name ?: AppConstants.UIText.PRESET_GRADIENT)
     }
     
     Dialog(onDismissRequest = onDismiss) {
@@ -97,7 +97,7 @@ fun GradientPickerDialog(
             ) {
                 // Header
                 Text(
-                    text = "Customize Card Gradient",
+                    text = AppConstants.UIText.CUSTOMIZE_CARD_GRADIENT,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -106,8 +106,8 @@ fun GradientPickerDialog(
                 OutlinedTextField(
                     value = gradientName,
                     onValueChange = { gradientName = it },
-                    label = { Text("Gradient Name") },
-                    placeholder = { Text("My Custom Gradient") },
+                    label = { Text(AppConstants.UIText.GRADIENT_NAME) },
+                    placeholder = { Text(AppConstants.UIText.GRADIENT_NAME_PLACEHOLDER) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -117,13 +117,13 @@ fun GradientPickerDialog(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     ColorPickerRow(
-                        label = "Start Color",
+                        label = AppConstants.UIText.START_COLOR,
                         selectedColor = startColor,
                         onColorSelected = { startColor = it }
                     )
                     
                     ColorPickerRow(
-                        label = "End Color",
+                        label = AppConstants.UIText.END_COLOR,
                         selectedColor = endColor,
                         onColorSelected = { endColor = it }
                     )
@@ -134,7 +134,7 @@ fun GradientPickerDialog(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Gradient Direction",
+                        text = AppConstants.UIText.GRADIENT_DIRECTION,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Medium
                     )
@@ -176,7 +176,7 @@ fun GradientPickerDialog(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Preset Gradients",
+                        text = AppConstants.UIText.PRESET_GRADIENTS,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Medium
                     )
@@ -194,7 +194,7 @@ fun GradientPickerDialog(
                                     startColor = preset.startColor
                                     endColor = preset.endColor
                                     direction = preset.direction
-                                    gradientName = preset.name ?: "Preset Gradient"
+                                    gradientName = preset.name ?: AppConstants.UIText.PRESET_GRADIENT
                                 }
                             )
                         }
@@ -222,7 +222,7 @@ fun GradientPickerDialog(
                             )
                         }
                     ) {
-                        Text("Apply")
+                        Text(AppConstants.UIText.APPLY)
                     }
                 }
             }

@@ -201,7 +201,7 @@ fun CategoryDialog(
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text("Category Name") },
+                        label = { Text(AppConstants.UIText.CATEGORY_NAME_LABEL) },
                         placeholder = { Text("Enter category name") },
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Words
@@ -212,7 +212,7 @@ fun CategoryDialog(
                     OutlinedTextField(
                         value = description,
                         onValueChange = { description = it },
-                        label = { Text("Description (Optional)") },
+                        label = { Text(AppConstants.UIText.DESCRIPTION_OPTIONAL_LABEL) },
                         placeholder = { Text("Enter description") },
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Sentences

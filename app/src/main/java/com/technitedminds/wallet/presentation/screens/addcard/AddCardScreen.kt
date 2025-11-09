@@ -153,7 +153,7 @@ fun AddCardScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .weight(1f),
-                label = "step_content"
+                label = AppConstants.UIText.STEP_CONTENT_LABEL
             ) { step ->
                 when (step) {
                     AddCardStep.TYPE_SELECTION -> {
@@ -194,7 +194,7 @@ fun AddCardScreen(
     // Loading overlay
     LoadingOverlay(
         isVisible = uiState.isLoading,
-        text = "Saving card..."
+        text = AppConstants.UIText.SAVING_CARD
     )
 }
 
@@ -214,9 +214,9 @@ private fun AddCardTopBar(
         title = {
             Text(
                 text = when (currentStep) {
-                    AddCardStep.TYPE_SELECTION -> "Select Card Type"
-                    AddCardStep.CAMERA_CAPTURE -> "Capture Card Images"
-                    AddCardStep.FORM_DETAILS -> "Card Details"
+                    AddCardStep.TYPE_SELECTION -> AppConstants.UIText.SELECT_CARD_TYPE_TITLE
+                    AddCardStep.CAMERA_CAPTURE -> AppConstants.UIText.CAPTURE_CARD_IMAGES_TITLE
+                    AddCardStep.FORM_DETAILS -> AppConstants.UIText.CARD_DETAILS_TITLE
                 }
             )
         },
@@ -257,13 +257,13 @@ private fun AddCardBottomBar(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shadowElevation = 8.dp
+        shadowElevation = AppConstants.Dimensions.SPACING_SMALL
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(AppConstants.Dimensions.PADDING_LARGE),
+            horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM)
         ) {
             when (currentStep) {
                 AddCardStep.TYPE_SELECTION -> {
@@ -274,13 +274,13 @@ private fun AddCardBottomBar(
                         onClick = onSkipCamera,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Skip Camera")
+                        Text(AppConstants.UIText.SKIP_CAMERA)
                     }
                     Button(
                         onClick = onNextStep,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Continue")
+                        Text(AppConstants.UIText.CONTINUE)
                     }
                 }
                 AddCardStep.FORM_DETAILS -> {
@@ -291,12 +291,12 @@ private fun AddCardBottomBar(
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp
+                                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_SMALL),
+                                strokeWidth = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
                         }
-                        Text("Save Card")
+                        Text(AppConstants.UIText.SAVE_CARD)
                     }
                 }
             }
@@ -313,9 +313,9 @@ private fun StepProgressIndicator(
     modifier: Modifier = Modifier
 ) {
     val steps = listOf(
-        "Type" to AddCardStep.TYPE_SELECTION,
-        "Capture" to AddCardStep.CAMERA_CAPTURE,
-        "Details" to AddCardStep.FORM_DETAILS
+        AppConstants.UIText.STEP_TYPE to AddCardStep.TYPE_SELECTION,
+        AppConstants.UIText.STEP_CAPTURE to AddCardStep.CAMERA_CAPTURE,
+        AppConstants.UIText.STEP_DETAILS to AddCardStep.FORM_DETAILS
     )
 
     Row(
@@ -332,7 +332,7 @@ private fun StepProgressIndicator(
             ) {
                 // Step circle
                 Surface(
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_EXTRA_LARGE),
                     shape = androidx.compose.foundation.shape.CircleShape,
                     color = when {
                         isCompleted -> MaterialTheme.colorScheme.primary
@@ -349,7 +349,7 @@ private fun StepProgressIndicator(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_SMALL)
                             )
                         } else {
                             Text(
@@ -365,7 +365,7 @@ private fun StepProgressIndicator(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_EXTRA_SMALL))
 
                 // Step label
                 Text(
@@ -384,7 +384,7 @@ private fun StepProgressIndicator(
                 HorizontalDivider(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 8.dp),
+                        .padding(horizontal = AppConstants.Dimensions.SPACING_SMALL),
                     color = if (isCompleted) {
                         MaterialTheme.colorScheme.primary
                     } else {
@@ -407,12 +407,12 @@ private fun TypeSelectionStep(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(AppConstants.Dimensions.PADDING_LARGE)
     ) {
         Text(
-            text = "What type of card would you like to add?",
+            text = AppConstants.UIText.ADD_CARD_TYPE_PROMPT,
             style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(bottom = 24.dp)
+            modifier = Modifier.padding(bottom = AppConstants.Dimensions.PADDING_EXTRA_LARGE)
         )
 
         CardTypeSelector(
@@ -444,35 +444,35 @@ private fun CameraCaptureStep(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(AppConstants.Dimensions.PADDING_LARGE),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = Icons.Default.CameraAlt,
             contentDescription = null,
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_ICON_SIZE),
             tint = MaterialTheme.colorScheme.primary
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_EXTRA_LARGE))
 
         Text(
-            text = "Capture Your ${cardType.getDisplayName()}",
+            text = String.format(AppConstants.UIText.CAPTURE_CARD_PROMPT_TITLE, cardType.getDisplayName()),
             style = MaterialTheme.typography.headlineSmall,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_LARGE))
 
         Text(
-            text = "Take photos of both sides of your card for the best experience. We'll automatically extract the card information.",
+            text = AppConstants.UIText.CAPTURE_CARD_PROMPT_SUBTITLE,
             style = MaterialTheme.typography.bodyLarge,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_EXTRA_LARGE))
 
         Button(
             onClick = { onCameraCapture(cardType) },
@@ -481,10 +481,10 @@ private fun CameraCaptureStep(
             Icon(
                 imageVector = Icons.Default.CameraAlt,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_BUTTON_ICON_SIZE)
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Open Camera")
+            Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
+            Text(AppConstants.UIText.OPEN_CAMERA)
         }
     }
 }
@@ -534,12 +534,12 @@ private fun FormDetailsStep(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(AppConstants.Dimensions.PADDING_LARGE),
+        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
     ) {
         item {
             Text(
-                text = "Card Details",
+                text = AppConstants.UIText.CARD_DETAILS_TITLE,
                 style = MaterialTheme.typography.headlineSmall
             )
         }
@@ -563,8 +563,8 @@ private fun FormDetailsStep(
             OutlinedTextField(
                 value = cardName,
                 onValueChange = viewModel::updateCardName,
-                label = { Text("Card Name") },
-                placeholder = { Text("My ${selectedCardType?.getDisplayName() ?: "Card"}") },
+                label = { Text(AppConstants.UIText.CARD_NAME_LABEL) },
+                placeholder = { Text(String.format(AppConstants.UIText.CARD_NAME_PLACEHOLDER, selectedCardType?.getDisplayName() ?: "Card")) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Badge,
@@ -589,9 +589,9 @@ private fun FormDetailsStep(
         if (isTextualCard) {
             item {
                 Text(
-                    text = "Card Information",
+                    text = AppConstants.UIText.CARD_INFORMATION,
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = AppConstants.Dimensions.SPACING_SMALL)
                 )
             }
 
@@ -602,8 +602,8 @@ private fun FormDetailsStep(
                     onValueChange = { 
                         cardNumber = formatCardNumberInput(it)
                     },
-                    label = { Text("Card Number") },
-                    placeholder = { Text("1234 5678 9012 3456") },
+                    label = { Text(AppConstants.UIText.CARD_NUMBER_LABEL) },
+                    placeholder = { Text(AppConstants.UIText.CARD_NUMBER_PLACEHOLDER) },
                     keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                     leadingIcon = {
                         Icon(
@@ -615,9 +615,9 @@ private fun FormDetailsStep(
                         {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = "Auto-detected",
+                                contentDescription = AppConstants.UIText.AUTO_DETECTED,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
                             )
                         }
                     } else null,
@@ -632,8 +632,8 @@ private fun FormDetailsStep(
                     onValueChange = { 
                         expiryDate = formatExpiryInput(it)
                     },
-                    label = { Text("Expiry Date") },
-                    placeholder = { Text("MM/YY") },
+                    label = { Text(AppConstants.UIText.EXPIRY_DATE_LABEL) },
+                    placeholder = { Text(AppConstants.UIText.EXPIRY_DATE_PLACEHOLDER) },
                     keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                     leadingIcon = {
                         Icon(
@@ -645,9 +645,9 @@ private fun FormDetailsStep(
                         {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = "Auto-detected",
+                                contentDescription = AppConstants.UIText.AUTO_DETECTED,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
                             )
                         }
                     } else null,
@@ -662,8 +662,8 @@ private fun FormDetailsStep(
                     onValueChange = { 
                         cardholderName = it.uppercase()
                     },
-                    label = { Text("Cardholder Name") },
-                    placeholder = { Text("JOHN DOE") },
+                    label = { Text(AppConstants.UIText.CARDHOLDER_NAME_LABEL) },
+                    placeholder = { Text(AppConstants.UIText.CARDHOLDER_NAME_PLACEHOLDER) },
                     keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Text),
                     leadingIcon = {
                         Icon(
@@ -675,9 +675,9 @@ private fun FormDetailsStep(
                         {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = "Auto-detected",
+                                contentDescription = AppConstants.UIText.AUTO_DETECTED,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
                             )
                         }
                     } else null,
@@ -694,8 +694,8 @@ private fun FormDetailsStep(
                             cvv = it
                         }
                     },
-                    label = { Text("CVV") },
-                    placeholder = { Text("123") },
+                    label = { Text(AppConstants.UIText.CVV_LABEL) },
+                    placeholder = { Text(AppConstants.UIText.CVV_PLACEHOLDER) },
                     keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
                     leadingIcon = {
                         Icon(
@@ -707,9 +707,9 @@ private fun FormDetailsStep(
                         {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = "Auto-detected",
+                                contentDescription = AppConstants.UIText.AUTO_DETECTED,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
                             )
                         }
                     } else null,
@@ -732,10 +732,10 @@ private fun FormDetailsStep(
                         Icon(
                             imageVector = Icons.Default.Clear,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_BUTTON_ICON_SIZE)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Clear All & Enter Manually")
+                        Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
+                        Text(AppConstants.UIText.CLEAR_ALL_AND_ENTER_MANUALLY)
                     }
                 }
             }
@@ -744,7 +744,7 @@ private fun FormDetailsStep(
         item {
             // Custom fields header
             Text(
-                text = "Additional Information",
+                text = AppConstants.UIText.ADDITIONAL_INFORMATION,
                 style = MaterialTheme.typography.titleMedium
             )
         }
@@ -764,7 +764,7 @@ private fun FormDetailsStep(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Remove field"
+                            contentDescription = AppConstants.UIText.REMOVE_FIELD
                         )
                     }
                 },
@@ -776,17 +776,17 @@ private fun FormDetailsStep(
             // Add custom field button
             OutlinedButton(
                 onClick = {
-                    viewModel.addCustomField("notes", "")
+                    viewModel.addCustomField(AppConstants.UIText.NOTES_FIELD_LABEL, AppConstants.UIText.EMPTY_STRING)
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_BUTTON_ICON_SIZE)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Add Field")
+                Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
+                Text(AppConstants.UIText.ADD_FIELD)
             }
         }
 
@@ -798,28 +798,28 @@ private fun FormDetailsStep(
                 )
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(AppConstants.Dimensions.PADDING_LARGE),
+                    verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Security,
                             contentDescription = null,
-                            modifier = Modifier.size(20.dp),
+                            modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "Privacy & Security",
+                            text = AppConstants.UIText.PRIVACY_AND_SECURITY,
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     
                     Text(
-                        text = "• All data stays on your device\n• No information is sent to servers\n• You can edit or clear any field",
+                        text = AppConstants.UIText.PRIVACY_NOTICE,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -847,14 +847,14 @@ private fun OCRStatusCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(AppConstants.Dimensions.PADDING_LARGE),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM)
         ) {
             Icon(
                 imageVector = Icons.Default.AutoAwesome,
                 contentDescription = null,
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_EXTRA_LARGE),
                 tint = MaterialTheme.colorScheme.onPrimaryContainer
             )
             
@@ -862,13 +862,13 @@ private fun OCRStatusCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "Text Recognition Complete",
+                    text = AppConstants.UIText.TEXT_RECOGNITION_COMPLETE,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 
                 Text(
-                    text = "Extracted $extractedFieldCount field${if (extractedFieldCount != 1) "s" else ""} from your ${cardType.getDisplayName().lowercase()}",
+                    text = String.format(AppConstants.UIText.TEXT_RECOGNITION_SUBTITLE, extractedFieldCount, if (extractedFieldCount != 1) "s" else "", cardType.getDisplayName().lowercase()),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -894,14 +894,14 @@ private fun ManualEntryCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(AppConstants.Dimensions.PADDING_LARGE),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM)
         ) {
             Icon(
                 imageVector = Icons.Default.Edit,
                 contentDescription = null,
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_EXTRA_LARGE),
                 tint = MaterialTheme.colorScheme.onSecondaryContainer
             )
             
@@ -909,13 +909,13 @@ private fun ManualEntryCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "Manual Entry",
+                    text = AppConstants.UIText.MANUAL_ENTRY_TITLE,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
                 
                 Text(
-                    text = "Please enter your ${cardType.getDisplayName().lowercase()} details manually",
+                    text = String.format(AppConstants.UIText.MANUAL_ENTRY_SUBTITLE, cardType.getDisplayName().lowercase()),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
@@ -967,7 +967,7 @@ private fun CategoryDropdown(
             value = selectedCategory?.name ?: "",
             onValueChange = { },
             readOnly = true,
-            label = { Text("Category") },
+            label = { Text(AppConstants.UIText.CATEGORY_LABEL) },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Category,

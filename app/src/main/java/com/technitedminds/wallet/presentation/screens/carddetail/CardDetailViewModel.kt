@@ -8,6 +8,9 @@ import com.technitedminds.wallet.domain.usecase.card.DeleteCardUseCase
 import com.technitedminds.wallet.domain.usecase.card.GetCardsUseCase
 import com.technitedminds.wallet.domain.usecase.card.UpdateCardUseCase
 import com.technitedminds.wallet.domain.usecase.card.UpdateCardRequest
+import com.technitedminds.wallet.domain.usecase.category.GetCategoriesUseCase
+import com.technitedminds.wallet.domain.model.Category
+import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingManager
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingConfig
@@ -25,6 +28,7 @@ class CardDetailViewModel @Inject constructor(
     private val getCardsUseCase: GetCardsUseCase,
     private val updateCardUseCase: UpdateCardUseCase,
     private val deleteCardUseCase: DeleteCardUseCase,
+    private val getCategoriesUseCase: GetCategoriesUseCase,
     private val cardSharingManager: CardSharingManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -47,6 +51,13 @@ class CardDetailViewModel @Inject constructor(
     // Sharing dialog state
     private val _showSharingDialog = MutableStateFlow(false)
     val showSharingDialog = _showSharingDialog.asStateFlow()
+    
+    // Categories for dropdown
+    val categories = getCategoriesUseCase().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     // Edit state
     private val _isEditing = MutableStateFlow(false)
@@ -92,7 +103,9 @@ class CardDetailViewModel @Inject constructor(
                     val request = UpdateCardRequest(
                         cardId = edited.id,
                         name = edited.name,
+                        type = edited.type,
                         categoryId = edited.categoryId,
+                        extractedData = edited.extractedData,
                         customFields = edited.customFields
                     )
                     val result = updateCardUseCase(request)
@@ -124,6 +137,42 @@ class CardDetailViewModel @Inject constructor(
     }
 
     /**
+     * Update card category
+     */
+    fun updateCardCategory(categoryId: String) {
+        val current = _editedCard.value
+        if (current != null) {
+            _editedCard.value = current.copy(categoryId = categoryId)
+        }
+    }
+
+    /**
+     * Update card type
+     */
+    fun updateCardType(cardType: CardType) {
+        val current = _editedCard.value
+        if (current != null) {
+            _editedCard.value = current.copy(type = cardType)
+        }
+    }
+
+    /**
+     * Update extracted data field
+     */
+    fun updateExtractedData(key: String, value: String) {
+        val current = _editedCard.value
+        if (current != null) {
+            val updatedData = current.extractedData.toMutableMap()
+            if (value.isBlank()) {
+                updatedData.remove(key)
+            } else {
+                updatedData[key] = value
+            }
+            _editedCard.value = current.copy(extractedData = updatedData)
+        }
+    }
+
+    /**
      * Update custom field
      */
     fun updateCustomField(key: String, value: String) {
@@ -135,6 +184,30 @@ class CardDetailViewModel @Inject constructor(
             } else {
                 updatedFields[key] = value
             }
+            _editedCard.value = current.copy(customFields = updatedFields)
+        }
+    }
+
+    /**
+     * Add new custom field
+     */
+    fun addCustomField(key: String, value: String = "") {
+        val current = _editedCard.value
+        if (current != null && key.isNotBlank()) {
+            val updatedFields = current.customFields.toMutableMap()
+            updatedFields[key] = value
+            _editedCard.value = current.copy(customFields = updatedFields)
+        }
+    }
+
+    /**
+     * Remove custom field
+     */
+    fun removeCustomField(key: String) {
+        val current = _editedCard.value
+        if (current != null) {
+            val updatedFields = current.customFields.toMutableMap()
+            updatedFields.remove(key)
             _editedCard.value = current.copy(customFields = updatedFields)
         }
     }

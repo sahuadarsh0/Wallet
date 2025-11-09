@@ -93,13 +93,16 @@ class HomeViewModel @Inject constructor(
         
         HomeUiState(
             cards = cards,
+            filteredCards = cards,
             categories = categories,
             isLoading = false,
             isRefreshing = refreshing,
             searchQuery = query,
             selectedCategory = category,
+            selectedCategoryId = category,
             selectedCardType = cardType,
             isGridView = gridView,
+            isGridLayout = gridView,
             isEmpty = cards.isEmpty() && query.isBlank() && category == null && cardType == null
         )
     }.stateIn(
@@ -153,6 +156,13 @@ class HomeViewModel @Inject constructor(
     }
 
     /**
+     * Toggle layout (alias for toggleViewMode)
+     */
+    fun toggleLayout() {
+        toggleViewMode()
+    }
+
+    /**
      * Refresh cards data
      */
     fun refresh() {
@@ -165,6 +175,13 @@ class HomeViewModel @Inject constructor(
                 _isRefreshing.value = false
             }
         }
+    }
+
+    /**
+     * Refresh cards (alias for refresh)
+     */
+    fun refreshCards() {
+        refresh()
     }
 
     /**
@@ -185,13 +202,16 @@ class HomeViewModel @Inject constructor(
  */
 data class HomeUiState(
     val cards: List<Card> = emptyList(),
+    val filteredCards: List<Card> = emptyList(),
     val categories: List<Category> = emptyList(),
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val searchQuery: String = "",
     val selectedCategory: String? = null,
+    val selectedCategoryId: String? = null,
     val selectedCardType: CardType? = null,
     val isGridView: Boolean = true,
+    val isGridLayout: Boolean = true,
     val isEmpty: Boolean = false,
     val error: String? = null
 )

@@ -10,7 +10,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.technitedminds.wallet.presentation.constants.AppConstants
 import com.technitedminds.wallet.domain.model.Card
 
 /**
@@ -53,11 +55,11 @@ fun CardSharingDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Sharing option selection
-                Text(
-                    text = "What to share:",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+            Text(
+                text = AppConstants.UIText.WHAT_TO_SHARE_LABEL,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
                 
                 Column(
                     modifier = Modifier.selectableGroup(),
@@ -96,11 +98,11 @@ fun CardSharingDialog(
                 Divider()
                 
                 // Sharing configuration
-                Text(
-                    text = "Sharing options:",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+            Text(
+                text = AppConstants.UIText.SHARING_OPTIONS_LABEL,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
                 
                 // Sensitive information toggle
                 Row(
@@ -109,12 +111,9 @@ fun CardSharingDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
+                        Text(AppConstants.UIText.INCLUDE_SENSITIVE_INFO_LABEL)
                         Text(
-                            text = "Include sensitive info",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = "CVV, full card numbers, etc.",
+                            text = AppConstants.UIText.INCLUDE_SENSITIVE_INFO_SUBTITLE,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -124,7 +123,7 @@ fun CardSharingDialog(
                         onCheckedChange = { includeSensitiveInfo = it }
                     )
                 }
-                
+
                 // Image quality slider
                 Column {
                     Row(
@@ -133,7 +132,7 @@ fun CardSharingDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Image quality",
+                            text = AppConstants.UIText.IMAGE_QUALITY_LABEL,
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Text(
@@ -149,7 +148,7 @@ fun CardSharingDialog(
                         steps = 6
                     )
                 }
-                
+
                 // Watermark options
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -157,12 +156,9 @@ fun CardSharingDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
+                        Text(AppConstants.UIText.ADD_WATERMARK_LABEL)
                         Text(
-                            text = "Add watermark",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            text = "Protect shared images",
+                            text = AppConstants.UIText.PROTECT_SHARED_IMAGES_SUBTITLE,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -178,7 +174,7 @@ fun CardSharingDialog(
                     OutlinedTextField(
                         value = watermarkText,
                         onValueChange = { watermarkText = it },
-                        label = { Text("Watermark text") },
+                        label = { Text(AppConstants.UIText.WATERMARK_TEXT_LABEL) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )

@@ -21,6 +21,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
+import com.technitedminds.wallet.presentation.constants.AppConstants
 import java.io.File
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.foundation.clickable
@@ -118,7 +119,7 @@ fun CardBack(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "CVV:",
+                                text = AppConstants.UIText.CVV_LABEL,
                                 style = MaterialTheme.typography.labelMedium,
                                 color = Color.Black
                             )
@@ -145,7 +146,7 @@ fun CardBack(
                     )
                     
                     Text(
-                        text = "This card is protected by advanced security features",
+                        text = AppConstants.UIText.CARD_PROTECTED_NOTICE,
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White.copy(alpha = 0.8f),
                         textAlign = TextAlign.Center,
@@ -201,7 +202,7 @@ fun CardBack(
                 // Card creation date
                 if (!isCompact) {
                     Text(
-                        text = "Added ${formatDate(card.createdAt)}",
+                        text = String.format(AppConstants.UIText.CARD_ADDED_DATE_LABEL, formatDate(card.createdAt)),
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White.copy(alpha = 0.6f),
                         modifier = Modifier.padding(top = 8.dp)
@@ -213,7 +214,7 @@ fun CardBack(
         // Security watermark
         if (!isCompact) {
             Text(
-                text = "SECURE",
+                text = AppConstants.UIText.SECURE_WATERMARK,
                 style = MaterialTheme.typography.headlineLarge,
                 color = Color.White.copy(alpha = 0.1f),
                 fontWeight = FontWeight.Bold,

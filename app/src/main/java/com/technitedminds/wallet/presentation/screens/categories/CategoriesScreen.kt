@@ -121,7 +121,7 @@ fun CategoriesScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Add category"
+                    contentDescription = AppConstants.UIText.ADD_CATEGORY
                 )
             }
         },
@@ -150,8 +150,8 @@ fun CategoriesScreen(
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        contentPadding = PaddingValues(AppConstants.Dimensions.PADDING_LARGE),
+                        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL)
                     ) {
                         items(
                             items = uiState.categories,
@@ -180,7 +180,7 @@ fun CategoriesScreen(
     // Dialogs
     if (uiState.showCreateDialog) {
         CategoryDialog(
-            title = "Create Category",
+            title = AppConstants.UIText.CREATE_CATEGORY,
             category = null,
             onDismiss = viewModel::hideDialogs,
             onConfirm = { name, description, color, icon ->
@@ -191,7 +191,7 @@ fun CategoriesScreen(
 
     if (uiState.showEditDialog && uiState.editingCategory != null) {
         CategoryDialog(
-            title = "Edit Category",
+            title = AppConstants.UIText.EDIT_CATEGORY,
             category = uiState.editingCategory,
             onDismiss = viewModel::hideDialogs,
             onConfirm = { name, description, color, icon ->
@@ -227,31 +227,31 @@ private fun EmptyState(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.padding(32.dp),
+        modifier = modifier.padding(AppConstants.Dimensions.PADDING_EXTRA_LARGE),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
     ) {
         Icon(
             imageVector = Icons.Default.Category,
             contentDescription = null,
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_ICON_SIZE),
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
         Text(
-            text = "No Categories",
+            text = AppConstants.UIText.NO_CATEGORIES,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
         
         Text(
-            text = "Create categories to organize your cards better",
+            text = AppConstants.UIText.CREATE_CATEGORY_PROMPT,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL)
         ) {
             Button(
                 onClick = onCreateCategory,
@@ -260,10 +260,10 @@ private fun EmptyState(
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_BUTTON_ICON_SIZE)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Create Category")
+                Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
+                Text(AppConstants.UIText.CREATE_CATEGORY)
             }
             
             OutlinedButton(
@@ -273,10 +273,10 @@ private fun EmptyState(
                 Icon(
                     imageVector = Icons.Default.Restore,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_BUTTON_ICON_SIZE)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Add Default Categories")
+                Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
+                Text(AppConstants.UIText.ADD_DEFAULT_CATEGORIES)
             }
         }
     }
@@ -335,10 +335,10 @@ private fun CategoryItem(
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(6.dp)
         ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
     ) {
-        val surfaceColorAt8dp = MaterialTheme.colorScheme.surfaceColorAtElevation(8.dp)
-        val chipSurfaceColor = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp)
+        val surfaceColorAt8dp = MaterialTheme.colorScheme.surfaceColorAtElevation(AppConstants.Dimensions.SPACING_SMALL)
+        val chipSurfaceColor = MaterialTheme.colorScheme.surfaceColorAtElevation(AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
         val colorChipContainer = remember(baseColor, surfaceColorAt8dp) {
             Color(
                 ColorUtils.blendARGB(
@@ -356,7 +356,7 @@ private fun CategoryItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
         ) {
             Box(Modifier.fillMaxWidth()) {
                 Row(
@@ -370,7 +370,7 @@ private fun CategoryItem(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit category"
+                            contentDescription = AppConstants.UIText.EDIT_CATEGORY_CONTENT_DESC
                         )
                     }
 
@@ -382,18 +382,18 @@ private fun CategoryItem(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete category"
+                            contentDescription = AppConstants.UIText.DELETE_CATEGORY_CONTENT_DESC
                         )
                     }
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.padding(end = 96.dp) // prevent overlap
+                    horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE),
+                    modifier = Modifier.padding(end = AppConstants.Dimensions.CATEGORY_ACTION_BUTTON_PADDING) // prevent overlap
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(56.dp)
+                            .size(AppConstants.Dimensions.CATEGORY_ITEM_ICON_SIZE)
                             .background(iconGradient, shape = MaterialTheme.shapes.large),
                         contentAlignment = Alignment.Center
                     ) {
@@ -401,7 +401,7 @@ private fun CategoryItem(
                             imageVector = iconVector,
                             contentDescription = null,
                             tint = accentContent,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(AppConstants.Dimensions.CATEGORY_ITEM_ICON_INNER_SIZE)
                         )
                     }
 
@@ -428,8 +428,8 @@ private fun CategoryItem(
             }
 
             FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL),
+                verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL)
             ) {
                 AssistChip(
                     onClick = {},
@@ -480,9 +480,9 @@ private fun DeleteConfirmationDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete Category") },
+        title = { Text(AppConstants.UIText.DELETE_CATEGORY) },
         text = {
-            Text("Are you sure you want to delete \"$categoryName\"? Cards in this category will be moved to the default category.")
+            Text(String.format(AppConstants.UIText.DELETE_CATEGORY_CONFIRMATION, categoryName))
         },
         confirmButton = {
             TextButton(

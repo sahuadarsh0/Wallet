@@ -285,7 +285,7 @@ private fun CardTypeFilterChips(
             FilterChip(
                 selected = selectedCardType == null,
                 onClick = { onCardTypeSelected(null) },
-                label = { Text("All Types") },
+                label = { Text(AppConstants.UIText.ALL_TYPES_LABEL) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Apps,

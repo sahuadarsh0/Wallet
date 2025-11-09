@@ -1,0 +1,1 @@
+Read contents of @AppConstants.kt  go to each and every file and use read tool to read the files now replace all the hardcoded values with constants use existing constants or create new constant values 

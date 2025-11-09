@@ -103,7 +103,7 @@ fun CameraScreen(
                 CameraStep.FRONT_PREVIEW -> {
                     ImagePreviewStep(
                         imageFile = uiState.frontImage,
-                        title = "Front Side Preview",
+                        title = AppConstants.UIText.FRONT_SIDE_PREVIEW_TITLE,
                         onRetake = viewModel::retakeFrontImage,
                         onConfirm = viewModel::confirmFrontImage
                     )
@@ -120,7 +120,7 @@ fun CameraScreen(
                 CameraStep.BACK_PREVIEW -> {
                     ImagePreviewStep(
                         imageFile = uiState.backImage,
-                        title = "Back Side Preview",
+                        title = AppConstants.UIText.BACK_SIDE_PREVIEW_TITLE,
                         onRetake = viewModel::retakeBackImage,
                         onConfirm = viewModel::confirmBackImage
                     )
@@ -368,7 +368,7 @@ private fun ImagePreviewStep(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Retake")
+                Text(AppConstants.UIText.RETAKE_BUTTON_LABEL)
             }
 
             Button(
@@ -411,9 +411,9 @@ private fun ProcessingStep(
 
         Text(
             text = if (cardType.supportsOCR()) {
-                "Processing card images and extracting text..."
+                AppConstants.UIText.PROCESSING_CARD_IMAGES_WITH_OCR_MESSAGE
             } else {
-                "Processing card images..."
+                AppConstants.UIText.PROCESSING_CARD_IMAGES_MESSAGE
             },
             style = MaterialTheme.typography.headlineSmall,
             textAlign = TextAlign.Center,
@@ -423,7 +423,7 @@ private fun ProcessingStep(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "This may take a few moments",
+            text = AppConstants.UIText.PROCESSING_TAKES_A_FEW_MOMENTS_MESSAGE,
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -468,9 +468,9 @@ private fun CaptureInstructions(
         ) {
             Text(
                 text = if (isCapturingFront) {
-                    "Position the front of your ${cardType.getDisplayName().lowercase()}"
+                    String.format(AppConstants.UIText.POSITION_FRONT_OF_CARD_PROMPT, cardType.getDisplayName().lowercase())
                 } else {
-                    "Position the back of your ${cardType.getDisplayName().lowercase()}"
+                    String.format(AppConstants.UIText.POSITION_BACK_OF_CARD_PROMPT, cardType.getDisplayName().lowercase())
                 },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium,
@@ -480,7 +480,7 @@ private fun CaptureInstructions(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "• Ensure good lighting\n• Keep the card flat\n• Fill the frame completely",
+                text = AppConstants.UIText.CAPTURE_INSTRUCTIONS,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -533,7 +533,7 @@ private fun ErrorSnackbar(
             IconButton(onClick = onDismiss) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Dismiss",
+                    contentDescription = AppConstants.UIText.DISMISS_BUTTON_LABEL,
                     tint = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
@@ -603,7 +603,7 @@ private fun ImagePreviewPlaceholder(imageFile: File) {
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
-                text = if (imageFile.exists()) "Image Preview" else "Image Not Found",
+                text = if (imageFile.exists()) "Image Preview" else AppConstants.UIText.IMAGE_NOT_FOUND_LABEL,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -616,7 +616,7 @@ private fun ImagePreviewPlaceholder(imageFile: File) {
             
             if (imageFile.exists()) {
                 Text(
-                    text = "Size: ${imageFile.length() / 1024} KB",
+                    text = String.format(AppConstants.UIText.IMAGE_SIZE_LABEL, imageFile.length() / 1024),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
