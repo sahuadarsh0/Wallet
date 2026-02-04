@@ -35,10 +35,15 @@ class CardDetailViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val cardId: String = checkNotNull(savedStateHandle["cardId"])
+    
+    // Trigger to reload card data
+    private val _reloadTrigger = MutableStateFlow(0)
 
-    // Card data - convert suspend function to Flow
-    val card = flow {
-        emit(getCardsUseCase.getCardById(cardId))
+    // Card data - reloads when trigger changes
+    val card = _reloadTrigger.flatMapLatest {
+        flow {
+            emit(getCardsUseCase.getCardById(cardId))
+        }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -120,6 +125,8 @@ class CardDetailViewModel @Inject constructor(
                     }
                     _isEditing.value = false
                     _editedCard.value = null
+                    // Trigger card reload to reflect updated gradient and other changes
+                    _reloadTrigger.value++
                     _uiState.value = _uiState.value.copy(successMessage = "Card saved successfully")
                     _events.emit(CardDetailEvent.CardSaved)
                 } catch (e: Exception) {

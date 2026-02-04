@@ -162,7 +162,7 @@ fun AddCardScreen(
             AddCardBottomBar(
                 currentStep = currentStep,
                 isFormValid = isFormValid,
-                isLoading = uiState.isLoading,
+                isLoading = uiState.isLoading || uiState.isSaving,
                 onNextStep = viewModel::nextStep,
                 onSaveCard = viewModel::saveCard,
                 onSkipCamera = viewModel::skipCameraCapture
@@ -255,17 +255,23 @@ fun AddCardScreen(
         }
     }
 
-    // Error handling
+    // Error dialog
     uiState.error?.let { error ->
-        LaunchedEffect(error) {
-            // Show error snackbar
-            // Clear error - method doesn't exist, remove this
-        }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { viewModel.clearError() },
+            title = { Text("Error") },
+            text = { Text(error) },
+            confirmButton = {
+                Button(onClick = { viewModel.clearError() }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 
-    // Loading overlay
+    // Loading overlay during save operation
     LoadingOverlay(
-        isVisible = uiState.isLoading,
+        isVisible = uiState.isSaving,
         text = AppConstants.UIText.SAVING_CARD
     )
 }

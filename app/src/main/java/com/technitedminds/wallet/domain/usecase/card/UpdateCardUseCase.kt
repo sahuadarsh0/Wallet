@@ -76,6 +76,7 @@ constructor(
                             backImagePath = backImagePath,
                             extractedData = request.extractedData ?: existingCard.extractedData,
                             customFields = request.customFields ?: existingCard.customFields,
+                            customGradient = request.customGradient ?: existingCard.customGradient,
                             updatedAt = System.currentTimeMillis()
                     )
 

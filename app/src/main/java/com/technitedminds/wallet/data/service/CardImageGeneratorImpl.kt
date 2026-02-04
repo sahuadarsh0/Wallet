@@ -7,22 +7,37 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import com.technitedminds.wallet.data.local.files.ImageFileManager
 import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.domain.model.CardGradient
+import com.technitedminds.wallet.domain.model.GradientDirection
+import com.technitedminds.wallet.domain.model.ImageType
 import com.technitedminds.wallet.domain.service.CardImageGenerator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
+import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Implementation of CardImageGenerator that creates gradient card images.
  * Uses Android Graphics APIs for bitmap generation.
+ * Images are stored via ImageFileManager for proper lifecycle management.
  */
 @Singleton
-class CardImageGeneratorImpl @Inject constructor() : CardImageGenerator {
+class CardImageGeneratorImpl @Inject constructor(
+    private val imageFileManager: ImageFileManager
+) : CardImageGenerator {
+
+    /**
+     * Maps CardGradient direction to GradientDrawable.Orientation
+     */
+    private fun GradientDirection.toDrawableOrientation(): GradientDrawable.Orientation = when (this) {
+        GradientDirection.TopToBottom -> GradientDrawable.Orientation.TOP_BOTTOM
+        GradientDirection.LeftToRight -> GradientDrawable.Orientation.LEFT_RIGHT
+        GradientDirection.DiagonalTopLeftToBottomRight -> GradientDrawable.Orientation.TL_BR
+        GradientDirection.DiagonalTopRightToBottomLeft -> GradientDrawable.Orientation.TR_BL
+    }
 
     override suspend fun generateCardImage(
         card: Card,
@@ -45,23 +60,23 @@ class CardImageGeneratorImpl @Inject constructor() : CardImageGenerator {
                 canvas.drawBitmap(frontBitmap, 0f, 0f, null)
                 canvas.drawBitmap(backBitmap, 0f, height / 2f, null)
                 
-                val fileName = "combined_card_${card.id}_${System.currentTimeMillis()}.png"
-                val file = saveBitmapToTempFile(combinedBitmap, fileName)
+                val fileName = "combined_card_${card.id}_${System.currentTimeMillis()}"
+                val imagePath = saveBitmapWithImageFileManager(combinedBitmap, fileName, ImageType.FRONT)
                 
                 frontBitmap.recycle()
                 backBitmap.recycle()
                 combinedBitmap.recycle()
                 
-                file.absolutePath
+                imagePath
             } else {
                 val frontBitmap = generateCardBitmap(card, isBack = false, showAllDetails, width, height)
-                val fileName = "card_${card.id}_${System.currentTimeMillis()}.png"
-                val file = saveBitmapToTempFile(frontBitmap, fileName)
+                val fileName = "card_${card.id}_${System.currentTimeMillis()}"
+                val imagePath = saveBitmapWithImageFileManager(frontBitmap, fileName, ImageType.FRONT)
                 frontBitmap.recycle()
-                file.absolutePath
+                imagePath
             }
         } catch (e: Exception) {
-            "error_generating_card_${card.id}.png"
+            "error_generating_card_${card.id}.jpg"
         }
     }
 
@@ -73,10 +88,10 @@ class CardImageGeneratorImpl @Inject constructor() : CardImageGenerator {
     ): String? = withContext(Dispatchers.IO) {
         try {
             val bitmap = generateCardBitmap(card, isBack = false, showAllDetails, width, height)
-            val fileName = "front_${card.id}_${System.currentTimeMillis()}.png"
-            val file = saveBitmapToTempFile(bitmap, fileName)
+            val fileName = "front_${card.id}_${System.currentTimeMillis()}"
+            val imagePath = saveBitmapWithImageFileManager(bitmap, fileName, ImageType.FRONT)
             bitmap.recycle()
-            file.absolutePath
+            imagePath
         } catch (e: Exception) {
             null
         }
@@ -90,10 +105,10 @@ class CardImageGeneratorImpl @Inject constructor() : CardImageGenerator {
     ): String? = withContext(Dispatchers.IO) {
         try {
             val bitmap = generateCardBitmap(card, isBack = true, showAllDetails, width, height)
-            val fileName = "back_${card.id}_${System.currentTimeMillis()}.png"
-            val file = saveBitmapToTempFile(bitmap, fileName)
+            val fileName = "back_${card.id}_${System.currentTimeMillis()}"
+            val imagePath = saveBitmapWithImageFileManager(bitmap, fileName, ImageType.BACK)
             bitmap.recycle()
-            file.absolutePath
+            imagePath
         } catch (e: Exception) {
             null
         }
@@ -110,9 +125,9 @@ class CardImageGeneratorImpl @Inject constructor() : CardImageGenerator {
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap)
             
-            // Draw gradient background
+            // Draw gradient background with proper direction
             val gradientDrawable = GradientDrawable(
-                GradientDrawable.Orientation.TL_BR,
+                gradient.direction.toDrawableOrientation(),
                 intArrayOf(
                     Color.parseColor(gradient.startColor),
                     Color.parseColor(gradient.endColor)
@@ -127,42 +142,48 @@ class CardImageGeneratorImpl @Inject constructor() : CardImageGenerator {
                 color = Color.WHITE
             }
             
-            // Card type icon placeholder (centered)
+            // Card type icon placeholder (centered, 80dp equivalent semi-transparent)
             paint.textSize = height * 0.15f
             paint.textAlign = Paint.Align.CENTER
             paint.alpha = 128 // Semi-transparent
             canvas.drawText(cardTypeName.take(2).uppercase(), width / 2f, height * 0.45f, paint)
             
-            // Card name
+            // Card name in center bottom
             paint.alpha = 255
             paint.textSize = height * 0.06f
             canvas.drawText(cardName, width / 2f, height * 0.65f, paint)
             
-            // CardVault watermark
+            // CardVault watermark at bottom
             paint.textSize = height * 0.04f
             paint.alpha = 180
             canvas.drawText("CardVault", width / 2f, height * 0.9f, paint)
             
-            val fileName = "default_back_${System.currentTimeMillis()}.png"
-            val file = saveBitmapToTempFile(bitmap, fileName)
+            val fileName = "default_back_${System.currentTimeMillis()}"
+            val imagePath = saveBitmapWithImageFileManager(bitmap, fileName, ImageType.BACK)
             bitmap.recycle()
-            file.absolutePath
+            imagePath
         } catch (e: Exception) {
             null
         }
     }
 
-    private fun saveBitmapToTempFile(bitmap: Bitmap, fileName: String): File {
-        val tempDir = File(System.getProperty("java.io.tmpdir"), "card_sharing")
-        if (!tempDir.exists()) {
-            tempDir.mkdirs()
-        }
-        
-        val file = File(tempDir, fileName)
-        FileOutputStream(file).use { out ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
-        }
-        return file
+    /**
+     * Saves bitmap using ImageFileManager for proper storage lifecycle management.
+     * Uses JPEG compression at 85% quality for consistency.
+     */
+    private suspend fun saveBitmapWithImageFileManager(
+        bitmap: Bitmap,
+        fileName: String,
+        imageType: ImageType
+    ): String {
+        val outputStream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, outputStream)
+        val imageData = outputStream.toByteArray()
+        return imageFileManager.saveImage(imageData, fileName, imageType)
+    }
+
+    companion object {
+        private const val JPEG_QUALITY = 85
     }
 
     private fun generateCardBitmap(
@@ -175,13 +196,13 @@ class CardImageGeneratorImpl @Inject constructor() : CardImageGenerator {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         
-        // Create gradient background
-        val gradient = card.type.getDefaultGradient()
+        // Create gradient background using card's gradient (respects custom gradient if set)
+        val gradient = card.getGradient()
         val gradientDrawable = GradientDrawable(
-            GradientDrawable.Orientation.TL_BR,
+            gradient.direction.toDrawableOrientation(),
             intArrayOf(
-                Color.parseColor(gradient.first),
-                Color.parseColor(gradient.second)
+                Color.parseColor(gradient.startColor),
+                Color.parseColor(gradient.endColor)
             )
         )
         gradientDrawable.setBounds(0, 0, width, height)

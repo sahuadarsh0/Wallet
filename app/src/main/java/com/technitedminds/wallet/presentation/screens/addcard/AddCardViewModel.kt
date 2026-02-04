@@ -734,7 +734,12 @@ class AddCardViewModel @Inject constructor(
     }
     
     /**
-     * Validate the form and determine if it can be saved
+     * Validate the form and determine if it can be saved.
+     * 
+     * Validation rules:
+     * - Card name (min 2 chars) and category are always required
+     * - For OCR cards (Credit/Debit): card number and expiry are required (images optional - will generate gradient)
+     * - For image-only cards: images are optional - user can skip if they just want to store card info
      */
     private fun validateForm(state: AddCardUiState): Boolean {
         // Basic validation: card name is required
@@ -747,30 +752,23 @@ class AddCardViewModel @Inject constructor(
             return false
         }
         
-        // Front image is always required
-        if (state.frontImagePath == null) {
-            return false
-        }
-        
-        // Back image is required for OCR cards, optional for image cards
-        if (state.cardType.supportsOCR() && state.backImagePath == null) {
-            return false
-        }
-        
-        // For textual cards (Credit/Debit), only require card number and expiry date
+        // For OCR cards (Credit/Debit): card data is required for gradient generation
         if (state.cardType.supportsOCR()) {
-            // Card number is required
+            // Card number is required for OCR cards
             if (state.cardNumber.isBlank()) return false
-            if (state.cardNumber.isNotBlank() && state.cardNumber.replace(" ", "").length < 13) return false
+            if (state.cardNumber.replace(" ", "").length < 13) return false
             
-            // Expiry date is required
+            // Expiry date is required for OCR cards
             if (state.expiryDate.isBlank()) return false
-            if (state.expiryDate.isNotBlank() && !state.expiryDate.matches(Regex("""^\d{2}/\d{2}$"""))) return false
+            if (!state.expiryDate.matches(Regex("""^\d{2}/\d{2}$"""))) return false
             
             // Optional fields - validate only if present
             if (state.cardholderName.isNotBlank() && state.cardholderName.length < 2) return false
             if (state.cvv.isNotBlank() && state.cvv.length !in 3..4) return false
         }
+        // For image-only cards: images are optional
+        // User can skip image capture and just save card with name/category
+        // This allows flexibility for cards where user doesn't have the physical card handy
         
         return true
     }
@@ -824,6 +822,13 @@ class AddCardViewModel @Inject constructor(
      */
     fun hideGradientPicker() {
         _showGradientPicker.value = false
+    }
+
+    /**
+     * Clear any error message
+     */
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(error = null)
     }
 }
 

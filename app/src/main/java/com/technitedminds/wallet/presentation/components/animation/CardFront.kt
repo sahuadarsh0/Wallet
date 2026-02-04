@@ -84,8 +84,10 @@ fun CardFront(
                 shape = RoundedCornerShape(if (isCompact) 8.dp else 12.dp)
             )
     ) {
-        // Background image if available
-        if (card.frontImagePath.isNotBlank()) {
+        // Background image - only show for image-only cards (non-OCR cards)
+        // For OCR cards (Credit/Debit), always render the gradient live so changes are reflected immediately
+        // The saved images for OCR cards are only used for sharing purposes
+        if (!card.type.supportsOCR() && card.frontImagePath.isNotBlank()) {
             val imageFile = File(card.frontImagePath)
             if (imageFile.exists()) {
                 AsyncImage(
@@ -243,27 +245,39 @@ fun CardFront(
 }
 
 /**
- * Get gradient colors based on card type and custom color
+ * Get gradient colors based on card's custom gradient or type default.
+ * Uses card.getGradient() which returns customGradient if set, otherwise the type default.
  */
 private fun getCardGradient(card: Card): Brush {
-    val baseColor = try {
-        Color(card.getDisplayColor().toColorInt())
+    val gradient = card.getGradient()
+    
+    val startColor = try {
+        Color(gradient.startColor.toColorInt())
     } catch (e: Exception) {
-        // Fallback to type default if custom color is invalid
-        Color(card.type.getDefaultColor().toColorInt())
+        Color(Card.getDefaultGradientForType(card.type).startColor.toColorInt())
     }
     
-    // Create a darker shade for gradient
-    val darkerColor = Color(
-        red = (baseColor.red * 0.8f).coerceIn(0f, 1f),
-        green = (baseColor.green * 0.8f).coerceIn(0f, 1f),
-        blue = (baseColor.blue * 0.8f).coerceIn(0f, 1f),
-        alpha = baseColor.alpha
-    )
+    val endColor = try {
+        Color(gradient.endColor.toColorInt())
+    } catch (e: Exception) {
+        Color(Card.getDefaultGradientForType(card.type).endColor.toColorInt())
+    }
     
-    return Brush.linearGradient(
-        colors = listOf(baseColor, darkerColor)
-    )
+    // Apply gradient direction
+    return when (gradient.direction) {
+        com.technitedminds.wallet.domain.model.GradientDirection.TopToBottom -> 
+            Brush.verticalGradient(colors = listOf(startColor, endColor))
+        com.technitedminds.wallet.domain.model.GradientDirection.LeftToRight -> 
+            Brush.horizontalGradient(colors = listOf(startColor, endColor))
+        com.technitedminds.wallet.domain.model.GradientDirection.DiagonalTopLeftToBottomRight -> 
+            Brush.linearGradient(colors = listOf(startColor, endColor))
+        com.technitedminds.wallet.domain.model.GradientDirection.DiagonalTopRightToBottomLeft -> 
+            Brush.linearGradient(
+                colors = listOf(startColor, endColor),
+                start = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, 0f),
+                end = androidx.compose.ui.geometry.Offset(0f, Float.POSITIVE_INFINITY)
+            )
+    }
 }
 
 /**

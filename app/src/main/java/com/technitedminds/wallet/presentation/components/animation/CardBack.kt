@@ -29,7 +29,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import androidx.core.graphics.toColorInt
 import com.technitedminds.wallet.domain.model.Card
+import com.technitedminds.wallet.domain.model.GradientDirection
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
 import com.technitedminds.wallet.presentation.constants.AppConstants
 import java.io.File
@@ -52,12 +54,14 @@ fun CardBack(
         modifier = modifier
             .fillMaxSize()
             .background(
-                brush = getCardBackGradient(),
+                brush = getCardBackGradient(card),
                 shape = RoundedCornerShape(if (isCompact) 8.dp else 12.dp)
             )
     ) {
-        // Background image if available
-        if (card.backImagePath.isNotBlank()) {
+        // Background image - only show for image-only cards (non-OCR cards)
+        // For OCR cards (Credit/Debit), always render the gradient live so changes are reflected immediately
+        // The saved images for OCR cards are only used for sharing purposes
+        if (!card.type.supportsOCR() && card.backImagePath.isNotBlank()) {
             val imageFile = File(card.backImagePath)
             if (imageFile.exists()) {
                 AsyncImage(
@@ -246,15 +250,52 @@ fun CardBack(
 }
 
 /**
- * Get gradient for card back (more subtle than front)
+ * Get gradient for card back based on card's custom gradient (darkened version).
+ * Uses the card's gradient with reduced brightness for a more subtle back appearance.
  */
-private fun getCardBackGradient(): Brush {
-    return Brush.linearGradient(
-        colors = listOf(
-            Color(0xFF37474F), // Dark Blue Grey
-            Color(0xFF263238)
+private fun getCardBackGradient(card: Card): Brush {
+    val gradient = card.getGradient()
+    
+    // Darken the gradient colors for the back
+    val startColor = try {
+        val baseColor = Color(gradient.startColor.toColorInt())
+        Color(
+            red = (baseColor.red * 0.6f).coerceIn(0f, 1f),
+            green = (baseColor.green * 0.6f).coerceIn(0f, 1f),
+            blue = (baseColor.blue * 0.6f).coerceIn(0f, 1f),
+            alpha = baseColor.alpha
         )
-    )
+    } catch (e: Exception) {
+        Color(0xFF37474F)
+    }
+    
+    val endColor = try {
+        val baseColor = Color(gradient.endColor.toColorInt())
+        Color(
+            red = (baseColor.red * 0.5f).coerceIn(0f, 1f),
+            green = (baseColor.green * 0.5f).coerceIn(0f, 1f),
+            blue = (baseColor.blue * 0.5f).coerceIn(0f, 1f),
+            alpha = baseColor.alpha
+        )
+    } catch (e: Exception) {
+        Color(0xFF263238)
+    }
+    
+    // Apply gradient direction (same as front)
+    return when (gradient.direction) {
+        GradientDirection.TopToBottom -> 
+            Brush.verticalGradient(colors = listOf(startColor, endColor))
+        GradientDirection.LeftToRight -> 
+            Brush.horizontalGradient(colors = listOf(startColor, endColor))
+        GradientDirection.DiagonalTopLeftToBottomRight -> 
+            Brush.linearGradient(colors = listOf(startColor, endColor))
+        GradientDirection.DiagonalTopRightToBottomLeft -> 
+            Brush.linearGradient(
+                colors = listOf(startColor, endColor),
+                start = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, 0f),
+                end = androidx.compose.ui.geometry.Offset(0f, Float.POSITIVE_INFINITY)
+            )
+    }
 }
 
 /**
