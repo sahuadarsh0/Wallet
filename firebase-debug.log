@@ -1,0 +1,30 @@
+[debug] [2026-02-04T18:51:02.698Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-02-04T18:51:02.700Z] > authorizing via signed-in user (adarsh.sahu@lenskart.com)
+[debug] [2026-02-04T18:51:02.708Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-02-04T18:51:02.708Z] > authorizing via signed-in user (adarsh.sahu@lenskart.com)
+[debug] [2026-02-04T18:51:02.722Z] Checked if tokens are valid: false, expires at: 1770230947666
+[debug] [2026-02-04T18:51:02.722Z] Checked if tokens are valid: false, expires at: 1770230947666
+[debug] [2026-02-04T18:51:02.722Z] > refreshing access token with scopes: []
+[debug] [2026-02-04T18:51:02.723Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-02-04T18:51:02.723Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-02-04T18:51:02.724Z] Checked if tokens are valid: false, expires at: 1770230947666
+[debug] [2026-02-04T18:51:02.725Z] Checked if tokens are valid: false, expires at: 1770230947666
+[debug] [2026-02-04T18:51:02.725Z] > refreshing access token with scopes: []
+[debug] [2026-02-04T18:51:02.725Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-02-04T18:51:02.725Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-02-04T18:51:02.881Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-02-04T18:51:02.881Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-02-04T18:51:02.900Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com [none]
+[debug] [2026-02-04T18:51:02.900Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com  x-goog-user-project=
+[debug] [2026-02-04T18:51:02.902Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-02-04T18:51:02.902Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-02-04T18:51:02.918Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com [none]
+[debug] [2026-02-04T18:51:02.919Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com  x-goog-user-project=
+[debug] [2026-02-04T18:51:04.603Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com 400
+[debug] [2026-02-04T18:51:04.603Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com [omitted]
+[debug] [2026-02-04T18:51:04.604Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com 400
+[debug] [2026-02-04T18:51:04.604Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com [omitted]
+[debug] [2026-02-04T18:51:04.654Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-02-04T18:51:04.654Z] > authorizing via signed-in user (adarsh.sahu@lenskart.com)
+[debug] [2026-02-04T18:51:04.656Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-02-04T18:51:04.656Z] > authorizing via signed-in user (adarsh.sahu@lenskart.com)

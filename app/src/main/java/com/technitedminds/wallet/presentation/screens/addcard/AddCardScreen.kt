@@ -1,11 +1,15 @@
 package com.technitedminds.wallet.presentation.screens.addcard
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,10 +23,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.CameraAlt
@@ -34,7 +42,11 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Scanner
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -66,11 +78,22 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.domain.model.Card
+import com.technitedminds.wallet.domain.model.CardGradient
 import com.technitedminds.wallet.domain.model.CardType
+import com.technitedminds.wallet.domain.model.GradientDirection
 import com.technitedminds.wallet.presentation.components.common.CardTypeSelector
+import com.technitedminds.wallet.presentation.components.common.GradientPickerDialog
+import com.technitedminds.wallet.presentation.components.common.PrivacyNoticeCard
+import com.technitedminds.wallet.presentation.components.common.StepProgressIndicator
+import com.technitedminds.wallet.presentation.components.common.OCRStatusCard
+import com.technitedminds.wallet.presentation.components.common.ManualEntryCard
+import com.technitedminds.wallet.presentation.components.common.PremiumTextField
+import com.technitedminds.wallet.presentation.components.common.AnimatedSectionHeader
+import com.technitedminds.wallet.presentation.components.common.PremiumCard
 import com.technitedminds.wallet.presentation.constants.AppConstants
 import com.technitedminds.wallet.presentation.components.common.CompactLoadingIndicator
 import com.technitedminds.wallet.presentation.components.common.LoadingOverlay
+import com.technitedminds.wallet.presentation.components.animation.AnimatedSection
 
 /**
  * Add card screen with step-by-step workflow for card creation.
@@ -94,11 +117,26 @@ fun AddCardScreen(
     // Handle captured images from camera
     LaunchedEffect(capturedFrontImagePath, capturedBackImagePath, capturedExtractedData) {
         if (capturedFrontImagePath != null) {
-            viewModel.setCapturedImages(
-                frontPath = capturedFrontImagePath,
-                backPath = capturedBackImagePath,
-                extractedData = capturedExtractedData
-            )
+            val currentState = viewModel.captureState.value
+            val currentFrontPath = viewModel.uiState.value.frontImagePath
+            
+            // Handle front image capture
+            if (capturedFrontImagePath != currentFrontPath) {
+                viewModel.setFrontImagePath(capturedFrontImagePath)
+                // If extracted data is available, set it
+                if (capturedExtractedData.isNotEmpty()) {
+                    viewModel.setExtractedData(capturedExtractedData)
+                }
+            }
+            
+            // Handle back image capture
+            if (capturedBackImagePath != null && capturedBackImagePath != viewModel.uiState.value.backImagePath) {
+                viewModel.setBackImagePath(capturedBackImagePath)
+                // Update extracted data if available
+                if (capturedExtractedData.isNotEmpty()) {
+                    viewModel.setExtractedData(capturedExtractedData)
+                }
+            }
         }
     }
 
@@ -124,7 +162,7 @@ fun AddCardScreen(
             AddCardBottomBar(
                 currentStep = currentStep,
                 isFormValid = isFormValid,
-                isLoading = uiState.isLoading,
+                isLoading = uiState.isLoading || uiState.isSaving,
                 onNextStep = viewModel::nextStep,
                 onSaveCard = viewModel::saveCard,
                 onSkipCamera = viewModel::skipCameraCapture
@@ -139,16 +177,47 @@ fun AddCardScreen(
         ) {
             // Progress indicator
             StepProgressIndicator(
-                currentStep = currentStep,
+                currentStep = currentStep.ordinal,
                 modifier = Modifier.padding(16.dp)
             )
 
-            // Step content
+            // Step content with direction-aware animations
             AnimatedContent(
                 targetState = currentStep,
                 transitionSpec = {
-                    slideInHorizontally { it } + fadeIn() togetherWith
-                    slideOutHorizontally { -it } + fadeOut()
+                    val slideDuration = AppConstants.Animation.SLIDE_IN_DURATION_BASE
+                    val easing = EaseOutCubic
+                    
+                    // Determine direction by comparing step ordinals
+                    val isForward = targetState.ordinal > initialState.ordinal
+                    
+                    if (isForward) {
+                        // Forward navigation: slide in from right, slide out to left
+                        slideInHorizontally(
+                            initialOffsetX = { it },
+                            animationSpec = tween(slideDuration, easing = easing)
+                        ) + fadeIn(
+                            animationSpec = tween(slideDuration, easing = easing)
+                        ) togetherWith slideOutHorizontally(
+                            targetOffsetX = { -it },
+                            animationSpec = tween(slideDuration, easing = easing)
+                        ) + fadeOut(
+                            animationSpec = tween(slideDuration, easing = easing)
+                        )
+                    } else {
+                        // Backward navigation: slide in from left, slide out to right
+                        slideInHorizontally(
+                            initialOffsetX = { -it },
+                            animationSpec = tween(slideDuration, easing = easing)
+                        ) + fadeIn(
+                            animationSpec = tween(slideDuration, easing = easing)
+                        ) togetherWith slideOutHorizontally(
+                            targetOffsetX = { it },
+                            animationSpec = tween(slideDuration, easing = easing)
+                        ) + fadeOut(
+                            animationSpec = tween(slideDuration, easing = easing)
+                        )
+                    }
                 },
                 modifier = Modifier
                     .fillMaxSize()
@@ -165,10 +234,13 @@ fun AddCardScreen(
                     AddCardStep.CAMERA_CAPTURE -> {
                         CameraCaptureStep(
                             cardType = viewModel.selectedCardType.collectAsStateWithLifecycle().value ?: CardType.Credit,
+                            captureState = viewModel.captureState.collectAsStateWithLifecycle().value,
                             onCameraCapture = onCameraCapture,
                             onExtractedData = viewModel::setExtractedData,
                             onFrontImagePath = viewModel::setFrontImagePath,
                             onBackImagePath = viewModel::setBackImagePath,
+                            onOpenCameraForFront = viewModel::openCameraForFront,
+                            onOpenCameraForBack = viewModel::openCameraForBack,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -183,17 +255,23 @@ fun AddCardScreen(
         }
     }
 
-    // Error handling
+    // Error dialog
     uiState.error?.let { error ->
-        LaunchedEffect(error) {
-            // Show error snackbar
-            // Clear error - method doesn't exist, remove this
-        }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { viewModel.clearError() },
+            title = { Text("Error") },
+            text = { Text(error) },
+            confirmButton = {
+                Button(onClick = { viewModel.clearError() }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 
-    // Loading overlay
+    // Loading overlay during save operation
     LoadingOverlay(
-        isVisible = uiState.isLoading,
+        isVisible = uiState.isSaving,
         text = AppConstants.UIText.SAVING_CARD
     )
 }
@@ -225,7 +303,7 @@ private fun AddCardTopBar(
                 onClick = if (canGoBack) onPreviousStep else onNavigateBack
             ) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = AppConstants.ContentDescriptions.BACK
                 )
             }
@@ -304,97 +382,6 @@ private fun AddCardBottomBar(
     }
 }
 
-/**
- * Step progress indicator
- */
-@Composable
-private fun StepProgressIndicator(
-    currentStep: AddCardStep,
-    modifier: Modifier = Modifier
-) {
-    val steps = listOf(
-        AppConstants.UIText.STEP_TYPE to AddCardStep.TYPE_SELECTION,
-        AppConstants.UIText.STEP_CAPTURE to AddCardStep.CAMERA_CAPTURE,
-        AppConstants.UIText.STEP_DETAILS to AddCardStep.FORM_DETAILS
-    )
-
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        steps.forEachIndexed { index, (label, step) ->
-            val isActive = step == currentStep
-            val isCompleted = step.ordinal < currentStep.ordinal
-
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Step circle
-                Surface(
-                    modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_EXTRA_LARGE),
-                    shape = androidx.compose.foundation.shape.CircleShape,
-                    color = when {
-                        isCompleted -> MaterialTheme.colorScheme.primary
-                        isActive -> MaterialTheme.colorScheme.primaryContainer
-                        else -> MaterialTheme.colorScheme.surfaceVariant
-                    }
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        if (isCompleted) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_SMALL)
-                            )
-                        } else {
-                            Text(
-                                text = (index + 1).toString(),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = if (isActive) {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_EXTRA_SMALL))
-
-                // Step label
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isActive || isCompleted) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
-            }
-
-            // Connector line (except for last step)
-            if (index < steps.size - 1) {
-                HorizontalDivider(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = AppConstants.Dimensions.SPACING_SMALL),
-                    color = if (isCompleted) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.surfaceVariant
-                    }
-                )
-            }
-        }
-    }
-}
 
 /**
  * Type selection step
@@ -430,15 +417,18 @@ private fun TypeSelectionStep(
 }
 
 /**
- * Camera capture step
+ * Camera capture step with front-first capture flow
  */
 @Composable
 private fun CameraCaptureStep(
     cardType: CardType,
+    captureState: CaptureState,
     onCameraCapture: (CardType) -> Unit,
     onExtractedData: (Map<String, String>) -> Unit,
     onFrontImagePath: (String) -> Unit,
     onBackImagePath: (String) -> Unit,
+    onOpenCameraForFront: () -> Unit,
+    onOpenCameraForBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -448,43 +438,92 @@ private fun CameraCaptureStep(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        // Large camera icon (120dp) with primary color
         Icon(
             imageVector = Icons.Default.CameraAlt,
             contentDescription = null,
-            modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_ICON_SIZE),
+            modifier = Modifier.size(AppConstants.Dimensions.CAMERA_ICON_SIZE_LARGE),
             tint = MaterialTheme.colorScheme.primary
         )
 
         Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_EXTRA_LARGE))
 
+        // Contextual title based on capture state and card type
         Text(
-            text = String.format(AppConstants.UIText.CAPTURE_CARD_PROMPT_TITLE, cardType.getDisplayName()),
+            text = when (captureState) {
+                CaptureState.AWAITING_FRONT -> {
+                    String.format(AppConstants.UIText.POSITION_FRONT_OF_CARD_PROMPT, cardType.getDisplayName())
+                }
+                CaptureState.FRONT_CAPTURED -> {
+                    String.format(AppConstants.UIText.POSITION_BACK_OF_CARD_PROMPT, cardType.getDisplayName())
+                }
+                CaptureState.BACK_CAPTURED -> {
+                    String.format(AppConstants.UIText.CAPTURE_CARD_PROMPT_TITLE, cardType.getDisplayName())
+                }
+            },
             style = MaterialTheme.typography.headlineSmall,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_LARGE))
 
+        // Contextual instructions based on card type
         Text(
-            text = AppConstants.UIText.CAPTURE_CARD_PROMPT_SUBTITLE,
+            text = when {
+                captureState == CaptureState.AWAITING_FRONT && cardType.supportsOCR() -> {
+                    "We'll automatically extract card details from the front image."
+                }
+                captureState == CaptureState.AWAITING_FRONT -> {
+                    "Take a clear photo of the front of your ${cardType.getDisplayName().lowercase()}."
+                }
+                captureState == CaptureState.FRONT_CAPTURED && cardType.supportsOCR() -> {
+                    "Now capture the back side. We'll extract the CVV and other details."
+                }
+                captureState == CaptureState.FRONT_CAPTURED -> {
+                    "Now capture the back side of your ${cardType.getDisplayName().lowercase()}."
+                }
+                else -> {
+                    AppConstants.UIText.CAPTURE_CARD_PROMPT_SUBTITLE
+                }
+            },
             style = MaterialTheme.typography.bodyLarge,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
+        // Additional instructions for textual cards
+        if (cardType.supportsOCR() && captureState == CaptureState.AWAITING_FRONT) {
+            Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_MEDIUM))
+            Text(
+                text = AppConstants.UIText.CAPTURE_INSTRUCTIONS,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
         Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_EXTRA_LARGE))
 
+        // Open Camera Button
         Button(
             onClick = { onCameraCapture(cardType) },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = AppConstants.Dimensions.PADDING_EXTRA_LARGE)
         ) {
             Icon(
                 imageVector = Icons.Default.CameraAlt,
                 contentDescription = null,
-                modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_BUTTON_ICON_SIZE)
+                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
             )
             Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
-            Text(AppConstants.UIText.OPEN_CAMERA)
+            Text(
+                text = when (captureState) {
+                    CaptureState.AWAITING_FRONT -> "Capture Front"
+                    CaptureState.FRONT_CAPTURED -> "Capture Back"
+                    CaptureState.BACK_CAPTURED -> "Recapture"
+                }
+            )
         }
     }
 }
@@ -497,12 +536,15 @@ private fun FormDetailsStep(
     viewModel: AddCardViewModel,
     modifier: Modifier = Modifier
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val cardName by viewModel.cardName.collectAsStateWithLifecycle()
     val selectedCategory by viewModel.selectedCategory.collectAsStateWithLifecycle()
     val customFields by viewModel.customFields.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
     val extractedData by viewModel.extractedData.collectAsStateWithLifecycle()
     val selectedCardType by viewModel.selectedCardType.collectAsStateWithLifecycle()
+    val selectedGradient by viewModel.selectedGradient.collectAsStateWithLifecycle()
+    val showGradientPicker by viewModel.showGradientPicker.collectAsStateWithLifecycle()
 
     // OCR extracted fields state (editable)
     var cardNumber by remember { mutableStateOf(extractedData["cardNumber"] ?: "") }
@@ -518,15 +560,8 @@ private fun FormDetailsStep(
         cvv = extractedData["cvv"] ?: cvv
     }
 
-    // Update viewModel when local state changes
-    LaunchedEffect(cardNumber, expiryDate, cardholderName, cvv) {
-        val updatedData = mutableMapOf<String, String>()
-        if (cardNumber.isNotBlank()) updatedData["cardNumber"] = cardNumber
-        if (expiryDate.isNotBlank()) updatedData["expiryDate"] = expiryDate
-        if (cardholderName.isNotBlank()) updatedData["cardholderName"] = cardholderName
-        if (cvv.isNotBlank()) updatedData["cvv"] = cvv
-        viewModel.setExtractedData(updatedData)
-    }
+    // Note: ViewModel is updated directly via updateCardNumber, updateExpiryDate, etc.
+    // in the PremiumTextField onValueChange callbacks below
 
     val hasOCRData = extractedData.isNotEmpty()
     val isTextualCard = selectedCardType?.supportsOCR() == true
@@ -537,291 +572,374 @@ private fun FormDetailsStep(
             .padding(AppConstants.Dimensions.PADDING_LARGE),
         verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
     ) {
-        item {
-            Text(
-                text = AppConstants.UIText.CARD_DETAILS_TITLE,
-                style = MaterialTheme.typography.headlineSmall
-            )
-        }
-
         // OCR Status Card (for textual cards)
         if (isTextualCard) {
             item {
-                if (hasOCRData) {
-                    OCRStatusCard(
-                        extractedFieldCount = extractedData.size,
-                        cardType = selectedCardType ?: CardType.Credit
-                    )
-                } else {
-                    ManualEntryCard(cardType = selectedCardType ?: CardType.Credit)
+                AnimatedSection(index = 0) {
+                    if (hasOCRData) {
+                        OCRStatusCard(
+                            extractedFieldCount = extractedData.size
+                        )
+                    } else {
+                        ManualEntryCard()
+                    }
                 }
             }
         }
 
+        // Card Details Section: Name and Category
         item {
-            // Card name
-            OutlinedTextField(
-                value = cardName,
-                onValueChange = viewModel::updateCardName,
-                label = { Text(AppConstants.UIText.CARD_NAME_LABEL) },
-                placeholder = { Text(String.format(AppConstants.UIText.CARD_NAME_PLACEHOLDER, selectedCardType?.getDisplayName() ?: "Card")) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Badge,
-                        contentDescription = null
-                    )
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
-        item {
-            // Category selection
-            CategoryDropdown(
-                categories = categories,
-                selectedCategoryId = selectedCategory,
-                onCategorySelected = { id -> id?.let(viewModel::updateCategory) },
-                modifier = Modifier.fillMaxWidth()
-            )
+            AnimatedSection(index = if (isTextualCard) 1 else 0) {
+                PremiumCard(
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        AnimatedSectionHeader(
+                            title = "Card Details",
+                            icon = Icons.Default.CreditCard,
+                            subtitle = "Name and category for your card"
+                        )
+                        
+                        // Card name field
+                        PremiumTextField(
+                            value = cardName,
+                            onValueChange = viewModel::updateCardName,
+                            label = AppConstants.UIText.CARD_NAME_LABEL,
+                            leadingIcon = Icons.Default.Badge,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        
+                        // Category selection
+                        CategoryDropdown(
+                            categories = categories,
+                            selectedCategoryId = selectedCategory,
+                            onCategorySelected = { id -> id?.let(viewModel::updateCategory) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
         }
 
         // Card Information Section (for textual cards only)
         if (isTextualCard) {
             item {
-                Text(
-                    text = AppConstants.UIText.CARD_INFORMATION,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(top = AppConstants.Dimensions.SPACING_SMALL)
-                )
-            }
-
-            item {
-                // Card Number
-                OutlinedTextField(
-                    value = cardNumber,
-                    onValueChange = { 
-                        cardNumber = formatCardNumberInput(it)
-                    },
-                    label = { Text(AppConstants.UIText.CARD_NUMBER_LABEL) },
-                    placeholder = { Text(AppConstants.UIText.CARD_NUMBER_PLACEHOLDER) },
-                    keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Payment,
-                            contentDescription = null
-                        )
-                    },
-                    trailingIcon = if (hasOCRData && extractedData.containsKey("cardNumber")) {
-                        {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = AppConstants.UIText.AUTO_DETECTED,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
-                            )
-                        }
-                    } else null,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            item {
-                // Expiry Date
-                OutlinedTextField(
-                    value = expiryDate,
-                    onValueChange = { 
-                        expiryDate = formatExpiryInput(it)
-                    },
-                    label = { Text(AppConstants.UIText.EXPIRY_DATE_LABEL) },
-                    placeholder = { Text(AppConstants.UIText.EXPIRY_DATE_PLACEHOLDER) },
-                    keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.DateRange,
-                            contentDescription = null
-                        )
-                    },
-                    trailingIcon = if (hasOCRData && extractedData.containsKey("expiryDate")) {
-                        {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = AppConstants.UIText.AUTO_DETECTED,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
-                            )
-                        }
-                    } else null,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            item {
-                // Cardholder Name
-                OutlinedTextField(
-                    value = cardholderName,
-                    onValueChange = { 
-                        cardholderName = it.uppercase()
-                    },
-                    label = { Text(AppConstants.UIText.CARDHOLDER_NAME_LABEL) },
-                    placeholder = { Text(AppConstants.UIText.CARDHOLDER_NAME_PLACEHOLDER) },
-                    keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Text),
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null
-                        )
-                    },
-                    trailingIcon = if (hasOCRData && extractedData.containsKey("cardholderName")) {
-                        {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = AppConstants.UIText.AUTO_DETECTED,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
-                            )
-                        }
-                    } else null,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            item {
-                // CVV
-                OutlinedTextField(
-                    value = cvv,
-                    onValueChange = { 
-                        if (it.length <= 4 && it.all { char -> char.isDigit() }) {
-                            cvv = it
-                        }
-                    },
-                    label = { Text(AppConstants.UIText.CVV_LABEL) },
-                    placeholder = { Text(AppConstants.UIText.CVV_PLACEHOLDER) },
-                    keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Security,
-                            contentDescription = null
-                        )
-                    },
-                    trailingIcon = if (hasOCRData && extractedData.containsKey("cvv")) {
-                        {
-                            Icon(
-                                imageVector = Icons.Default.AutoAwesome,
-                                contentDescription = AppConstants.UIText.AUTO_DETECTED,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
-                            )
-                        }
-                    } else null,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            // Clear all OCR data button
-            if (hasOCRData) {
-                item {
-                    OutlinedButton(
-                        onClick = {
-                            cardNumber = ""
-                            expiryDate = ""
-                            cardholderName = ""
-                            cvv = ""
-                        },
-                        modifier = Modifier.fillMaxWidth()
+                AnimatedSection(index = 2) {
+                    PremiumCard(
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Clear,
-                            contentDescription = null,
-                            modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_BUTTON_ICON_SIZE)
-                        )
-                        Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
-                        Text(AppConstants.UIText.CLEAR_ALL_AND_ENTER_MANUALLY)
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            AnimatedSectionHeader(
+                                title = AppConstants.UIText.CARD_INFORMATION,
+                                icon = Icons.Default.Scanner,
+                                subtitle = "Card number, expiry and security details"
+                            )
+                            
+                            // Card Number
+                            PremiumTextField(
+                                value = cardNumber,
+                                onValueChange = { 
+                                    val formatted = formatCardNumberInput(it)
+                                    cardNumber = formatted
+                                    viewModel.updateCardNumber(formatted)
+                                },
+                                label = AppConstants.UIText.CARD_NUMBER_LABEL,
+                                keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                                leadingIcon = Icons.Default.Payment,
+                                trailingIcon = if (hasOCRData && extractedData.containsKey("cardNumber")) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.AutoAwesome,
+                                            contentDescription = AppConstants.UIText.AUTO_DETECTED,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
+                                        )
+                                    }
+                                } else null,
+                                isError = uiState.cardNumberError != null,
+                                errorMessage = uiState.cardNumberError,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            
+                            // Expiry Date
+                            PremiumTextField(
+                                value = expiryDate,
+                                onValueChange = { 
+                                    val formatted = formatExpiryInput(it)
+                                    expiryDate = formatted
+                                    viewModel.updateExpiryDate(formatted)
+                                },
+                                label = AppConstants.UIText.EXPIRY_DATE_LABEL,
+                                keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                                leadingIcon = Icons.Default.DateRange,
+                                trailingIcon = if (hasOCRData && extractedData.containsKey("expiryDate")) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.AutoAwesome,
+                                            contentDescription = AppConstants.UIText.AUTO_DETECTED,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
+                                        )
+                                    }
+                                } else null,
+                                isError = uiState.expiryDateError != null,
+                                errorMessage = uiState.expiryDateError,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            
+                            // Cardholder Name
+                            PremiumTextField(
+                                value = cardholderName,
+                                onValueChange = { 
+                                    val uppercased = it.uppercase()
+                                    cardholderName = uppercased
+                                    viewModel.updateCardholderName(uppercased)
+                                },
+                                label = AppConstants.UIText.CARDHOLDER_NAME_LABEL,
+                                keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Text),
+                                leadingIcon = Icons.Default.Person,
+                                trailingIcon = if (hasOCRData && extractedData.containsKey("cardholderName")) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.AutoAwesome,
+                                            contentDescription = AppConstants.UIText.AUTO_DETECTED,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
+                                        )
+                                    }
+                                } else null,
+                                isError = uiState.cardholderNameError != null,
+                                errorMessage = uiState.cardholderNameError,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            
+                            // CVV
+                            PremiumTextField(
+                                value = cvv,
+                                onValueChange = { 
+                                    if (it.length <= 4 && it.all { char -> char.isDigit() }) {
+                                        cvv = it
+                                        viewModel.updateCvv(it)
+                                    }
+                                },
+                                label = AppConstants.UIText.CVV_LABEL,
+                                keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                                leadingIcon = Icons.Default.Security,
+                                trailingIcon = if (hasOCRData && extractedData.containsKey("cvv")) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.AutoAwesome,
+                                            contentDescription = AppConstants.UIText.AUTO_DETECTED,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
+                                        )
+                                    }
+                                } else null,
+                                isError = uiState.cvvError != null,
+                                errorMessage = uiState.cvvError,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            
+                            // Clear all OCR data button
+                            if (hasOCRData) {
+                                OutlinedButton(
+                                    onClick = {
+                                        cardNumber = ""
+                                        expiryDate = ""
+                                        cardholderName = ""
+                                        cvv = ""
+                                        viewModel.clearOCRData()
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Clear,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_BUTTON_ICON_SIZE)
+                                    )
+                                    Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
+                                    Text(AppConstants.UIText.CLEAR_ALL_AND_ENTER_MANUALLY)
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
 
+        // Appearance Section (for ALL card types)
         item {
-            // Custom fields header
-            Text(
-                text = AppConstants.UIText.ADDITIONAL_INFORMATION,
-                style = MaterialTheme.typography.titleMedium
-            )
-        }
-
-        // Custom fields
-        items(
-            items = customFields.toList(),
-            key = { it.first }
-        ) { entry ->
-            OutlinedTextField(
-                value = entry.second,
-                onValueChange = { viewModel.updateCustomField(entry.first, it) },
-                label = { Text(entry.first) },
-                trailingIcon = {
-                    IconButton(
-                        onClick = { viewModel.removeCustomField(entry.first) }
+            val appearanceIndex = if (isTextualCard) 3 else 2
+            AnimatedSection(index = appearanceIndex) {
+                PremiumCard(
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = AppConstants.UIText.REMOVE_FIELD
+                        AnimatedSectionHeader(
+                            title = "Appearance",
+                            icon = Icons.Default.Palette,
+                            subtitle = "Customize your card's visual style"
+                        )
+                        
+                        AppearanceSection(
+                            cardType = selectedCardType ?: CardType.Credit,
+                            selectedGradient = selectedGradient,
+                            onEditGradient = { viewModel.showGradientPicker() },
+                            modifier = Modifier.fillMaxWidth(),
+                            showHeader = false // Header is now in PremiumCard
                         )
                     }
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
+                }
+            }
         }
 
+        // Additional Information Section
         item {
-            // Add custom field button
-            OutlinedButton(
-                onClick = {
-                    viewModel.addCustomField(AppConstants.UIText.NOTES_FIELD_LABEL, AppConstants.UIText.EMPTY_STRING)
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_BUTTON_ICON_SIZE)
-                )
-                Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
-                Text(AppConstants.UIText.ADD_FIELD)
+            val additionalInfoIndex = if (isTextualCard) 4 else 3
+            AnimatedSection(index = additionalInfoIndex) {
+                PremiumCard(
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        AnimatedSectionHeader(
+                            title = AppConstants.UIText.ADDITIONAL_INFORMATION,
+                            icon = Icons.AutoMirrored.Filled.Notes,
+                            subtitle = "Add custom fields and notes"
+                        )
+                        
+                        // Custom fields
+                        customFields.forEach { (key, value) ->
+                            OutlinedTextField(
+                                value = value,
+                                onValueChange = { viewModel.updateCustomField(key, it) },
+                                label = { Text(key) },
+                                trailingIcon = {
+                                    IconButton(
+                                        onClick = { viewModel.removeCustomField(key) }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = AppConstants.UIText.REMOVE_FIELD
+                                        )
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        
+                        // Add custom field button
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.addCustomField(AppConstants.UIText.NOTES_FIELD_LABEL, AppConstants.UIText.EMPTY_STRING)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_BUTTON_ICON_SIZE)
+                            )
+                            Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
+                            Text(AppConstants.UIText.ADD_FIELD)
+                        }
+                    }
+                }
             }
         }
 
         // Privacy notice
         item {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+            val privacyIndex = if (isTextualCard) 5 else 4
+            AnimatedSection(index = privacyIndex) {
+                PrivacyNoticeCard()
+            }
+        }
+    }
+
+    // Gradient Picker Dialog
+    GradientPickerDialog(
+        isVisible = showGradientPicker,
+        cardType = selectedCardType ?: CardType.Credit,
+        selectedGradient = selectedGradient,
+        onGradientSelected = { gradient ->
+            viewModel.updateGradient(gradient)
+            viewModel.hideGradientPicker()
+        },
+        onDismiss = { viewModel.hideGradientPicker() }
+    )
+}
+
+/**
+ * Appearance section for customizing card gradient
+ */
+@Composable
+private fun AppearanceSection(
+    cardType: CardType,
+    selectedGradient: CardGradient?,
+    onEditGradient: () -> Unit,
+    modifier: Modifier = Modifier,
+    showHeader: Boolean = true
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM)
+    ) {
+        if (showHeader) {
+            Text(
+                text = "Appearance",
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
+        
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .clickable { onEditGradient() },
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = createGradientBrush(selectedGradient ?: Card.getDefaultGradientForType(cardType))
+                    )
             ) {
-                Column(
-                    modifier = Modifier.padding(AppConstants.Dimensions.PADDING_LARGE),
-                    verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL)
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Security,
-                            contentDescription = null,
-                            modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    Column {
+                        Text(
+                            text = selectedGradient?.name ?: "Default Gradient",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = Color.White
                         )
                         Text(
-                            text = AppConstants.UIText.PRIVACY_AND_SECURITY,
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "Tap to customize",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.8f)
                         )
                     }
-                    
-                    Text(
-                        text = AppConstants.UIText.PRIVACY_NOTICE,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit gradient",
+                        tint = Color.White
                     )
                 }
             }
@@ -830,99 +948,28 @@ private fun FormDetailsStep(
 }
 
 /**
- * OCR status card showing extraction results
+ * Creates a Compose Brush from CardGradient
  */
-@Composable
-private fun OCRStatusCard(
-    extractedFieldCount: Int,
-    cardType: CardType,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+private fun createGradientBrush(gradient: CardGradient): Brush {
+    val startColor = Color(android.graphics.Color.parseColor(gradient.startColor))
+    val endColor = Color(android.graphics.Color.parseColor(gradient.endColor))
+    
+    return when (gradient.direction) {
+        GradientDirection.TopToBottom -> Brush.verticalGradient(listOf(startColor, endColor))
+        GradientDirection.LeftToRight -> Brush.horizontalGradient(listOf(startColor, endColor))
+        GradientDirection.DiagonalTopLeftToBottomRight -> Brush.linearGradient(
+            colors = listOf(startColor, endColor),
+            start = Offset(0f, 0f),
+            end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
         )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(AppConstants.Dimensions.PADDING_LARGE),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM)
-        ) {
-            Icon(
-                imageVector = Icons.Default.AutoAwesome,
-                contentDescription = null,
-                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_EXTRA_LARGE),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = AppConstants.UIText.TEXT_RECOGNITION_COMPLETE,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                
-                Text(
-                    text = String.format(AppConstants.UIText.TEXT_RECOGNITION_SUBTITLE, extractedFieldCount, if (extractedFieldCount != 1) "s" else "", cardType.getDisplayName().lowercase()),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-        }
+        GradientDirection.DiagonalTopRightToBottomLeft -> Brush.linearGradient(
+            colors = listOf(startColor, endColor),
+            start = Offset(Float.POSITIVE_INFINITY, 0f),
+            end = Offset(0f, Float.POSITIVE_INFINITY)
+        )
     }
 }
 
-/**
- * Manual entry card for when OCR fails
- */
-@Composable
-private fun ManualEntryCard(
-    cardType: CardType,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(AppConstants.Dimensions.PADDING_LARGE),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Edit,
-                contentDescription = null,
-                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_EXTRA_LARGE),
-                tint = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-            
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = AppConstants.UIText.MANUAL_ENTRY_TITLE,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-                
-                Text(
-                    text = String.format(AppConstants.UIText.MANUAL_ENTRY_SUBTITLE, cardType.getDisplayName().lowercase()),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
-        }
-    }
-}
 
 /**
  * Formats card number input as user types (adds spaces every 4 digits)

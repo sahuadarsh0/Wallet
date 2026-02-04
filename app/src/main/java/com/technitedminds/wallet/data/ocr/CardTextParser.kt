@@ -1,8 +1,8 @@
 package com.technitedminds.wallet.data.ocr
 
 import com.technitedminds.wallet.domain.model.CardType
+import com.technitedminds.wallet.domain.model.ImageSide
 import com.technitedminds.wallet.presentation.constants.AppConstants
-import com.technitedminds.wallet.domain.usecase.ocr.ImageSide
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -69,17 +69,59 @@ class CardTextParser @Inject constructor() {
     }
     
     private fun extractCardNumber(lines: List<String>): String? {
+        val candidates = mutableListOf<Pair<String, Int>>() // card number to score
+        
         for (line in lines) {
+            // First try standard patterns
             for (pattern in CARD_NUMBER_PATTERNS) {
                 pattern.find(line)?.let { match ->
-                    val cardNumber = match.value.replace(Regex(AppConstants.CardProcessing.CARD_NUMBER_CLEAN_PATTERN), "")
+                    val rawMatch = match.value
+                    val cardNumber = rawMatch.replace(Regex(AppConstants.CardProcessing.CARD_NUMBER_CLEAN_PATTERN), "")
                     if (cardNumber.length in AppConstants.CardProcessing.MIN_CARD_NUMBER_LENGTH..AppConstants.CardProcessing.MAX_CARD_NUMBER_LENGTH && cardNumber.all { it.isDigit() }) {
-                        return formatCardNumber(cardNumber)
+                        // Score based on format quality
+                        val score = calculateCardNumberScore(rawMatch, cardNumber)
+                        candidates.add(cardNumber to score)
                     }
                 }
             }
+            
+            // Also try extracting continuous digit sequences (OCR sometimes misses spaces)
+            val digitsOnly = line.filter { it.isDigit() }
+            if (digitsOnly.length in 13..19 && !candidates.any { it.first == digitsOnly }) {
+                candidates.add(digitsOnly to 1) // Lower score for unformatted
+            }
         }
-        return null
+        
+        // Return the candidate with highest score
+        return candidates
+            .maxByOrNull { it.second }
+            ?.first
+            ?.let { formatCardNumber(it) }
+    }
+    
+    /**
+     * Calculates a quality score for a card number candidate
+     */
+    private fun calculateCardNumberScore(rawMatch: String, cardNumber: String): Int {
+        var score = 0
+        
+        // Prefer 16-digit cards (most common)
+        if (cardNumber.length == 16) score += 3
+        else if (cardNumber.length == 15) score += 2 // Amex
+        
+        // Prefer properly spaced numbers (indicates embossed card text)
+        if (rawMatch.contains(" ") || rawMatch.contains("-")) score += 2
+        
+        // Check for valid card prefixes
+        when {
+            cardNumber.startsWith("4") -> score += 2 // Visa
+            cardNumber.startsWith("5") && cardNumber[1] in '1'..'5' -> score += 2 // Mastercard
+            cardNumber.startsWith("34") || cardNumber.startsWith("37") -> score += 2 // Amex
+            cardNumber.startsWith("6011") || cardNumber.startsWith("65") -> score += 2 // Discover
+            cardNumber.startsWith("3528") || cardNumber.startsWith("3589") -> score += 2 // JCB
+        }
+        
+        return score
     }
     
     private fun extractExpiryDate(lines: List<String>): String? {

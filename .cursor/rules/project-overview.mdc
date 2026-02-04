@@ -4,18 +4,18 @@ alwaysApply: true
 # CardVault - Android Wallet App Overview
 
 ## Project Identity
-CardVault is an **offline-first Android application** for managing digital cards (credit, debit, gift cards, vouchers, memberships). The app serves as a secure digital repository for physical cards with complete data locality.
+CardVault is an **offline-first Android application** for managing digital cards (credit, debit, gift cards, vouchers, memberships). The app serves as a secure digital repository for physical cards with complete data locality and **premium UI/UX experience**.
 
 ## Core Principles (CRITICAL - NEVER VIOLATE)
 - **100% Offline Operation**: NEVER add network permissions, cloud APIs, or remote dependencies
 - **Privacy First**: No analytics, tracking, or data collection - reject any third-party telemetry
-- **Premium Experience**: All animations must target 60fps with smooth Material Design 3 transitions
+- **Premium Experience**: All animations must target 60fps with smooth Material Design 3 transitions and enhanced UI components
 - **Local Storage Only**: All data stays on device in Room database and app's private storage
 - **Security**: Use Google Tink for encryption, sandboxed storage for all files
 
 ## Technology Stack
 - **Language**: Kotlin 100% (No Java code)
-- **UI Framework**: Jetpack Compose with Material Design 3
+- **UI Framework**: Jetpack Compose with Material Design 3 + **Enhanced UI Components**
 - **Architecture**: MVVM + Unidirectional Data Flow (UDF)
 - **DI**: Hilt (`@HiltAndroidApp`, `@AndroidEntryPoint`, `@HiltViewModel`)
 - **Navigation**: Compose Navigation with kotlinx.serialization for type-safe arguments
@@ -23,6 +23,32 @@ CardVault is an **offline-first Android application** for managing digital cards
 - **Camera**: CameraX for lifecycle-aware camera implementation
 - **ML**: Google ML Kit Text Recognition for offline OCR
 - **Images**: Coil for loading, caching, and transformations
+- **Enhanced UI**: PremiumCard, PremiumTextField, AnimatedSectionHeader, EnhancedSlideInItem
+
+## Enhanced UI Components Library
+- **PremiumCard**: Enhanced cards with gradient backgrounds, haptic feedback, and premium animations
+- **PremiumTextField**: Advanced text fields with icons, validation, and smooth focus transitions
+- **AnimatedSectionHeader**: Section headers with icons in circular gradient backgrounds and slide-in animations
+- **EnhancedSlideInItem**: Staggered slide-in animations for list items and sections
+- **StepProgressIndicator**: Visual progress tracking through multi-step workflows
+- **OCRStatusCard/ManualEntryCard**: Visual feedback for text recognition status
+- **PrivacyNoticeCard**: Offline-only operation explanations
+
+## Enhanced User Flows
+
+### Enhanced Add Card Flow
+1. **TypeSelectionStep**: Premium card type grid with gradient backgrounds and organized sections
+2. **CameraCaptureStep**: Front-first capture flow with contextual instructions and skip options
+3. **FormDetailsStep**: Multi-section form with PremiumCard containers and AnimatedSectionHeaders
+4. **Step Progress**: Visual indicator showing current position in 3-step workflow
+5. **Animations**: Smooth step transitions and staggered section slide-ins
+
+### Enhanced Card Detail Page
+1. **Immersive Display**: Prominent card with 3D flip animation and sharing options
+2. **Visual Hierarchy**: Organized information sections with clear typography
+3. **Premium Editing**: PremiumTextField components with haptic feedback
+4. **Staggered Animations**: Section slide-ins with 100ms delays for smooth experience
+5. **Mode Transitions**: Smooth fade animations between view and edit modes
 
 ## Build Configuration
 - **Target SDK**: API 36 (Android 15)

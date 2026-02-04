@@ -1,25 +1,31 @@
 package com.technitedminds.wallet.domain.usecase.ocr
 
-import com.technitedminds.wallet.data.ocr.MLKitTextRecognizer
 import com.technitedminds.wallet.domain.model.CardType
+import com.technitedminds.wallet.domain.model.ImageSide
+import com.technitedminds.wallet.domain.model.OCRResult
+import com.technitedminds.wallet.domain.service.OCRService
 import javax.inject.Inject
 
 /**
- * Use case for processing card images with OCR for textual cards only. Extracts text information
- * from credit, debit cards using ML Kit.
+ * Use case for processing card images with OCR for textual cards only.
+ * Extracts text information from credit and debit cards using the OCR service.
+ * 
+ * This use case follows Clean Architecture by depending on the OCRService interface
+ * rather than a concrete implementation.
  */
 class ProcessCardImageUseCase @Inject constructor(
-    private val mlKitTextRecognizer: MLKitTextRecognizer
+    private val ocrService: OCRService
 ) {
 
     /**
-     * Processes a card image to extract text data
+     * Processes a card image to extract text data.
+     * 
      * @param request The OCR processing request
      * @return Result containing extracted data or error
      */
     suspend operator fun invoke(request: ProcessCardImageRequest): Result<Map<String, String>> {
         return try {
-            // Only process textual cards
+            // Only process textual cards (Credit/Debit)
             if (!request.cardType.supportsOCR()) {
                 return Result.success(emptyMap())
             }
@@ -29,8 +35,8 @@ class ProcessCardImageUseCase @Inject constructor(
                 return Result.failure(IllegalArgumentException("Invalid image data"))
             }
 
-            // Process the image using ML Kit with side information
-            val ocrResult = mlKitTextRecognizer.processImageSide(
+            // Process the image using OCR service with side information
+            val ocrResult = ocrService.processImageSide(
                 request.imageData, 
                 request.cardType, 
                 request.imageSide
@@ -47,16 +53,17 @@ class ProcessCardImageUseCase @Inject constructor(
     }
 
     /**
-     * Processes both front and back images of a textual card
+     * Processes both front and back images of a textual card.
+     * 
      * @param frontImageData The front image data
      * @param backImageData The back image data
      * @param cardType The type of card being processed
      * @return Result containing combined extracted data
      */
     suspend fun processBothSides(
-            frontImageData: ByteArray,
-            backImageData: ByteArray,
-            cardType: CardType
+        frontImageData: ByteArray,
+        backImageData: ByteArray,
+        cardType: CardType
     ): Result<Map<String, String>> {
         return try {
             if (!cardType.supportsOCR()) {
@@ -64,10 +71,10 @@ class ProcessCardImageUseCase @Inject constructor(
             }
 
             // Process front side
-            val frontResult = mlKitTextRecognizer.processImageSide(frontImageData, cardType, ImageSide.FRONT)
+            val frontResult = ocrService.processImageSide(frontImageData, cardType, ImageSide.FRONT)
             
             // Process back side
-            val backResult = mlKitTextRecognizer.processImageSide(backImageData, cardType, ImageSide.BACK)
+            val backResult = ocrService.processImageSide(backImageData, cardType, ImageSide.BACK)
 
             // Combine results
             val combinedData = mutableMapOf<String, String>()
@@ -80,12 +87,20 @@ class ProcessCardImageUseCase @Inject constructor(
                 combinedData.putAll(backResult.extractedData)
             }
 
-            // Filter to only extract the 4 required fields: cardNumber, expiryDate, cardholderName, cvv
+            // Filter to only extract the 4 required fields
             val filteredData = mutableMapOf<String, String>()
-            combinedData["cardNumber"]?.let { filteredData["cardNumber"] = it }
-            combinedData["expiryDate"]?.let { filteredData["expiryDate"] = it }
-            combinedData["cardholderName"]?.let { filteredData["cardholderName"] = it }
-            combinedData["cvv"]?.let { filteredData["cvv"] = it }
+            combinedData[OCRResult.FIELD_CARD_NUMBER]?.let { 
+                filteredData[OCRResult.FIELD_CARD_NUMBER] = it 
+            }
+            combinedData[OCRResult.FIELD_EXPIRY_DATE]?.let { 
+                filteredData[OCRResult.FIELD_EXPIRY_DATE] = it 
+            }
+            combinedData[OCRResult.FIELD_CARDHOLDER_NAME]?.let { 
+                filteredData[OCRResult.FIELD_CARDHOLDER_NAME] = it 
+            }
+            combinedData[OCRResult.FIELD_CVV]?.let { 
+                filteredData[OCRResult.FIELD_CVV] = it 
+            }
 
             // Return success if we got any data, even if one side failed
             if (filteredData.isNotEmpty()) {
@@ -104,54 +119,56 @@ class ProcessCardImageUseCase @Inject constructor(
     }
 
     /**
-     * Processes a textual card image to extract relevant information This is a placeholder
-     * implementation - in a real app, this would use ML Kit
+     * Processes only the front image of a textual card.
+     * Used when back image is not available or skipped.
+     * 
+     * @param frontImageData The front image data
+     * @param cardType The type of card being processed
+     * @return Result containing extracted data from front side only
      */
-    private suspend fun processTextualCard(
-            imageData: ByteArray,
-            imageSide: ImageSide
-    ): Map<String, String> {
-        // Placeholder implementation
-        // In a real app, this would:
-        // 1. Use ML Kit Text Recognition API
-        // 2. Apply image preprocessing (contrast, rotation, etc.)
-        // 3. Extract text using OCR
-        // 4. Parse the extracted text for card-specific information
-        // 5. Validate and format the extracted data
-
-        val extractedData = mutableMapOf<String, String>()
-
-        when (imageSide) {
-            ImageSide.FRONT -> {
-                // Front side typically contains:
-                // - Card number
-                // - Cardholder name
-                // - Expiry date
-                // - Bank name/logo
-
-                // Placeholder extracted data
-                extractedData["processingStatus"] = "placeholder_implementation"
-                extractedData["imageSide"] = "front"
-                extractedData["ocrConfidence"] = "0.0"
+    suspend fun processFrontOnly(
+        frontImageData: ByteArray,
+        cardType: CardType
+    ): Result<Map<String, String>> {
+        return try {
+            if (!cardType.supportsOCR()) {
+                return Result.success(emptyMap())
             }
-            ImageSide.BACK -> {
-                // Back side typically contains:
-                // - CVV/CVC
-                // - Signature strip
-                // - Additional bank information
-                // - Customer service information
 
-                // Placeholder extracted data
-                extractedData["processingStatus"] = "placeholder_implementation"
-                extractedData["imageSide"] = "back"
-                extractedData["ocrConfidence"] = "0.0"
+            // Process front side only
+            val frontResult = ocrService.processImageSide(frontImageData, cardType, ImageSide.FRONT)
+
+            // Filter to only extract the 4 required fields
+            val filteredData = mutableMapOf<String, String>()
+            if (frontResult.success) {
+                frontResult.extractedData[OCRResult.FIELD_CARD_NUMBER]?.let { 
+                    filteredData[OCRResult.FIELD_CARD_NUMBER] = it 
+                }
+                frontResult.extractedData[OCRResult.FIELD_EXPIRY_DATE]?.let { 
+                    filteredData[OCRResult.FIELD_EXPIRY_DATE] = it 
+                }
+                frontResult.extractedData[OCRResult.FIELD_CARDHOLDER_NAME]?.let { 
+                    filteredData[OCRResult.FIELD_CARDHOLDER_NAME] = it 
+                }
+                // Note: CVV is typically on the back, so won't be available with front-only processing
             }
+
+            // Return success if we got any data
+            if (filteredData.isNotEmpty()) {
+                Result.success(filteredData.toMap())
+            } else {
+                val errorMessage = frontResult.errorMessage ?: "OCR processing failed for front side"
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
-
-        return extractedData
     }
 
-    /** Validates image data for OCR processing */
+    /**
+     * Validates image data for OCR processing.
+     * Checks file size and image format headers.
+     */
     private fun isValidImageData(imageData: ByteArray): Boolean {
         if (imageData.size < 100) return false // Too small
         if (imageData.size > 10 * 1024 * 1024) return false // Too large (>10MB)
@@ -163,82 +180,22 @@ class ProcessCardImageUseCase @Inject constructor(
             header.size >= 2 && header[0] == 0xFF.toByte() && header[1] == 0xD8.toByte() -> true
             // PNG
             header.size >= 8 &&
-                    header[0] == 0x89.toByte() &&
-                    header[1] == 0x50.toByte() &&
-                    header[2] == 0x4E.toByte() &&
-                    header[3] == 0x47.toByte() -> true
+                header[0] == 0x89.toByte() &&
+                header[1] == 0x50.toByte() &&
+                header[2] == 0x4E.toByte() &&
+                header[3] == 0x47.toByte() -> true
             else -> false
         }
     }
-
-    /**
-     * Parses raw OCR text to extract structured card information This would contain the actual
-     * parsing logic in a real implementation
-     */
-    private fun parseCardText(
-            rawText: String,
-            cardType: CardType,
-            imageSide: ImageSide
-    ): Map<String, String> {
-        val extractedData = mutableMapOf<String, String>()
-
-        // Placeholder parsing logic
-        // Real implementation would use regex patterns and validation
-
-        return extractedData
-    }
-
-    /** Validates extracted card data */
-    private fun validateExtractedData(data: Map<String, String>): Map<String, String> {
-        val validatedData = mutableMapOf<String, String>()
-
-        // Validate card number (Luhn algorithm, format, etc.)
-        data["cardNumber"]?.let { cardNumber ->
-            if (isValidCardNumber(cardNumber)) {
-                validatedData["cardNumber"] = formatCardNumber(cardNumber)
-            }
-        }
-
-        // Validate expiry date
-        data["expiryDate"]?.let { expiryDate ->
-            if (isValidExpiryDate(expiryDate)) {
-                validatedData["expiryDate"] = formatExpiryDate(expiryDate)
-            }
-        }
-
-        // Validate cardholder name
-        data["cardholderName"]?.let { name ->
-            if (isValidCardholderName(name)) {
-                validatedData["cardholderName"] = formatCardholderName(name)
-            }
-        }
-
-        // Copy other fields as-is
-        data.forEach { (key, value) ->
-            if (key !in listOf("cardNumber", "expiryDate", "cardholderName")) {
-                validatedData[key] = value
-            }
-        }
-
-        return validatedData
-    }
-
-    // Placeholder validation methods
-    private fun isValidCardNumber(cardNumber: String): Boolean = cardNumber.isNotBlank()
-    private fun isValidExpiryDate(expiryDate: String): Boolean = expiryDate.isNotBlank()
-    private fun isValidCardholderName(name: String): Boolean = name.isNotBlank()
-
-    // Placeholder formatting methods
-    private fun formatCardNumber(cardNumber: String): String = cardNumber.trim()
-    private fun formatExpiryDate(expiryDate: String): String = expiryDate.trim()
-    private fun formatCardholderName(name: String): String = name.trim().uppercase()
 }
 
-/** Request for processing a card image */
+/**
+ * Request for processing a card image.
+ */
 data class ProcessCardImageRequest(
-        val imageData: ByteArray,
-        val cardType: CardType,
-        val imageSide: ImageSide
+    val imageData: ByteArray,
+    val cardType: CardType,
+    val imageSide: ImageSide
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -259,10 +216,4 @@ data class ProcessCardImageRequest(
         result = 31 * result + imageSide.hashCode()
         return result
     }
-}
-
-/** Enum representing which side of the card is being processed */
-enum class ImageSide {
-    FRONT,
-    BACK
 }

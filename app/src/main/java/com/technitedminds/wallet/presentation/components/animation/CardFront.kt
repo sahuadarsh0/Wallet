@@ -1,7 +1,10 @@
 package com.technitedminds.wallet.presentation.components.animation
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,18 +29,25 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material.icons.filled.VpnKey
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -74,8 +84,10 @@ fun CardFront(
                 shape = RoundedCornerShape(if (isCompact) 8.dp else 12.dp)
             )
     ) {
-        // Background image if available
-        if (card.frontImagePath.isNotBlank()) {
+        // Background image - only show for image-only cards (non-OCR cards)
+        // For OCR cards (Credit/Debit), always render the gradient live so changes are reflected immediately
+        // The saved images for OCR cards are only used for sharing purposes
+        if (!card.type.supportsOCR() && card.frontImagePath.isNotBlank()) {
             val imageFile = File(card.frontImagePath)
             if (imageFile.exists()) {
                 AsyncImage(
@@ -212,24 +224,13 @@ fun CardFront(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.Top
         ) {
-            // Share button
+            // Share button with animations and haptic feedback
             if (showShareButton && onShare != null && !isCompact) {
-                Surface(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clickable { onShare(CardSharingOption.FrontOnly) },
-                    shape = CircleShape,
-                    color = Color.White.copy(alpha = 0.2f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Share,
-                        contentDescription = "Share front",
-                        tint = Color.White,
-                        modifier = Modifier
-                            .padding(6.dp)
-                            .size(20.dp)
-                    )
-                }
+                ShareButton(
+                    onShare = { onShare(CardSharingOption.FrontOnly) },
+                    contentDescription = AppConstants.ContentDescriptions.SHARE_FRONT,
+                    modifier = Modifier.size(32.dp)
+                )
             }
             
             // Card type icon
@@ -244,27 +245,39 @@ fun CardFront(
 }
 
 /**
- * Get gradient colors based on card type and custom color
+ * Get gradient colors based on card's custom gradient or type default.
+ * Uses card.getGradient() which returns customGradient if set, otherwise the type default.
  */
 private fun getCardGradient(card: Card): Brush {
-    val baseColor = try {
-        Color(card.getDisplayColor().toColorInt())
+    val gradient = card.getGradient()
+    
+    val startColor = try {
+        Color(gradient.startColor.toColorInt())
     } catch (e: Exception) {
-        // Fallback to type default if custom color is invalid
-        Color(card.type.getDefaultColor().toColorInt())
+        Color(Card.getDefaultGradientForType(card.type).startColor.toColorInt())
     }
     
-    // Create a darker shade for gradient
-    val darkerColor = Color(
-        red = (baseColor.red * 0.8f).coerceIn(0f, 1f),
-        green = (baseColor.green * 0.8f).coerceIn(0f, 1f),
-        blue = (baseColor.blue * 0.8f).coerceIn(0f, 1f),
-        alpha = baseColor.alpha
-    )
+    val endColor = try {
+        Color(gradient.endColor.toColorInt())
+    } catch (e: Exception) {
+        Color(Card.getDefaultGradientForType(card.type).endColor.toColorInt())
+    }
     
-    return Brush.linearGradient(
-        colors = listOf(baseColor, darkerColor)
-    )
+    // Apply gradient direction
+    return when (gradient.direction) {
+        com.technitedminds.wallet.domain.model.GradientDirection.TopToBottom -> 
+            Brush.verticalGradient(colors = listOf(startColor, endColor))
+        com.technitedminds.wallet.domain.model.GradientDirection.LeftToRight -> 
+            Brush.horizontalGradient(colors = listOf(startColor, endColor))
+        com.technitedminds.wallet.domain.model.GradientDirection.DiagonalTopLeftToBottomRight -> 
+            Brush.linearGradient(colors = listOf(startColor, endColor))
+        com.technitedminds.wallet.domain.model.GradientDirection.DiagonalTopRightToBottomLeft -> 
+            Brush.linearGradient(
+                colors = listOf(startColor, endColor),
+                start = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, 0f),
+                end = androidx.compose.ui.geometry.Offset(0f, Float.POSITIVE_INFINITY)
+            )
+    }
 }
 
 /**
@@ -305,5 +318,70 @@ private fun formatCardNumber(cardNumber: String): String {
             "$first4 •••• $last4"
         }
         else -> cleaned
+    }
+}
+
+/**
+ * Share button component with animations, haptic feedback, and loading state
+ */
+@Composable
+private fun ShareButton(
+    onShare: () -> Unit,
+    contentDescription: String,
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false
+) {
+    val hapticFeedback = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    // Scale animation for press feedback
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) AppConstants.AnimationValues.SCALE_PRESSED else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "share_button_scale"
+    )
+    
+    Surface(
+        modifier = modifier
+            .scale(scale)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(
+                    bounded = false,
+                    radius = 20.dp
+                ),
+                onClick = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onShare()
+                }
+            ),
+        shape = CircleShape,
+        color = Color.White.copy(alpha = 0.2f)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = contentDescription,
+                    tint = Color.White,
+                    modifier = Modifier
+                        .padding(6.dp)
+                        .size(20.dp)
+                )
+            }
+        }
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,7 +57,7 @@ fun CameraScreen(
                 is CameraEvent.ImagesReady -> {
                     onImagesConfirmed(
                         event.frontImage.absolutePath, 
-                        event.backImage.absolutePath, 
+                        event.backImage?.absolutePath, 
                         uiState.extractedData
                     )
                 }
@@ -101,11 +102,13 @@ fun CameraScreen(
                     )
                 }
                 CameraStep.FRONT_PREVIEW -> {
-                    ImagePreviewStep(
+                    ImagePreviewStepWithSkip(
                         imageFile = uiState.frontImage,
                         title = AppConstants.UIText.FRONT_SIDE_PREVIEW_TITLE,
                         onRetake = viewModel::retakeFrontImage,
-                        onConfirm = viewModel::confirmFrontImage
+                        onConfirm = viewModel::confirmFrontImage,
+                        onSkipBack = if (!cardType.supportsOCR()) viewModel::skipBackCapture else null,
+                        showSkipOption = !cardType.supportsOCR()
                     )
                 }
                 CameraStep.BACK_CAPTURE -> {
@@ -129,6 +132,16 @@ fun CameraScreen(
                     ProcessingStep(
                         cardType = cardType,
                         progress = uiState.processingProgress
+                    )
+                }
+                CameraStep.OCR_PREVIEW -> {
+                    OCRPreviewStep(
+                        extractedData = uiState.extractedData,
+                        ocrSucceeded = uiState.ocrSucceeded,
+                        ocrError = uiState.ocrError,
+                        onConfirm = viewModel::confirmOCRResults,
+                        onProceedWithoutOCR = viewModel::proceedWithoutOCR,
+                        onRetryOCR = viewModel::retryOCR
                     )
                 }
             }
@@ -169,6 +182,7 @@ private fun CameraTopBar(
                         CameraStep.BACK_CAPTURE -> "Capture Back"
                         CameraStep.BACK_PREVIEW -> "Back Preview"
                         CameraStep.PROCESSING -> "Processing"
+                        CameraStep.OCR_PREVIEW -> "Review Results"
                     },
                     style = MaterialTheme.typography.titleMedium
                 )
@@ -223,7 +237,7 @@ private fun AspectRatioSelector(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            CardAspectRatio.values().forEach { ratio ->
+            CardAspectRatio.entries.forEach { ratio ->
                 DropdownMenuItem(
                     text = {
                         Row(
@@ -388,6 +402,226 @@ private fun ImagePreviewStep(
 }
 
 /**
+ * Image preview step with skip back option for non-OCR cards
+ */
+@Composable
+private fun ImagePreviewStepWithSkip(
+    imageFile: File?,
+    title: String,
+    onRetake: () -> Unit,
+    onConfirm: () -> Unit,
+    onSkipBack: (() -> Unit)?,
+    showSkipOption: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        // Image preview
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            imageFile?.let { file ->
+                SimpleImagePreview(
+                    imageFile = file,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Action buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = onRetake,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(AppConstants.UIText.RETAKE_BUTTON_LABEL)
+            }
+
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(AppConstants.UIText.CAPTURE_BACK)
+            }
+        }
+        
+        // Skip back option
+        if (showSkipOption && onSkipBack != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+            TextButton(
+                onClick = onSkipBack,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Skip back image (optional)")
+            }
+        }
+    }
+}
+
+/**
+ * OCR preview step showing extracted data with options to confirm, retry, or proceed without OCR
+ */
+@Composable
+private fun OCRPreviewStep(
+    extractedData: Map<String, String>,
+    ocrSucceeded: Boolean,
+    ocrError: String?,
+    onConfirm: () -> Unit,
+    onProceedWithoutOCR: () -> Unit,
+    onRetryOCR: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Header
+        Icon(
+            imageVector = if (ocrSucceeded) Icons.Filled.CheckCircle else Icons.Filled.Warning,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = if (ocrSucceeded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Text(
+            text = if (ocrSucceeded) "Card Information Extracted" else "OCR Processing Issue",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        if (ocrSucceeded) {
+            Text(
+                text = "We found ${extractedData.size} field(s) from your card",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Show extracted data
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    extractedData.forEach { (key, value) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = formatFieldName(key),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = if (key == "cvv") "***" else value,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            Text(
+                text = ocrError ?: "Could not extract card information",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center
+            )
+        }
+        
+        Spacer(modifier = Modifier.weight(1f))
+        
+        // Action buttons
+        if (ocrSucceeded) {
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Continue with extracted data")
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = onRetryOCR,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Retry OCR")
+                }
+                
+                OutlinedButton(
+                    onClick = onProceedWithoutOCR,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Proceed without OCR (manual entry)")
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Formats field names for display
+ */
+private fun formatFieldName(key: String): String {
+    return when (key) {
+        "cardNumber" -> "Card Number"
+        "expiryDate" -> "Expiry Date"
+        "cardholderName" -> "Cardholder Name"
+        "cvv" -> "CVV"
+        else -> key.replaceFirstChar { it.uppercase() }
+    }
+}
+
+/**
  * Processing step with progress indicator
  */
 @Composable
@@ -433,7 +667,7 @@ private fun ProcessingStep(
 
         // Progress indicator
         LinearProgressIndicator(
-            progress = progress,
+            progress = { progress },
             modifier = Modifier.fillMaxWidth()
         )
 

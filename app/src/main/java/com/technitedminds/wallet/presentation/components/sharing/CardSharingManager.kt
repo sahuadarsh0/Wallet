@@ -3,13 +3,13 @@ package com.technitedminds.wallet.presentation.components.sharing
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
 import androidx.core.content.FileProvider
 import com.technitedminds.wallet.domain.model.Card
-import com.technitedminds.wallet.domain.model.CardType
-import com.technitedminds.wallet.domain.util.CardGradientGenerator
+import com.technitedminds.wallet.domain.service.CardImageGenerator
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -29,7 +29,7 @@ import javax.inject.Singleton
 @Singleton
 class CardSharingManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val cardGradientGenerator: CardGradientGenerator
+    private val cardImageGenerator: CardImageGenerator
 ) {
     
     /**
@@ -76,59 +76,103 @@ class CardSharingManager @Inject constructor(
         
         when (sharingOption) {
             CardSharingOption.FrontOnly -> {
-                val frontImage = cardGradientGenerator.generateCardFrontImage(
+                val frontImagePath = cardImageGenerator.generateCardFrontImagePath(
                     card = card,
                     showAllDetails = config.includeSensitiveInfo,
                     width = config.maxImageWidth,
                     height = config.maxImageHeight
                 )
-                frontImage?.let { bitmap ->
-                    val file = saveBitmapToFile(bitmap, "${card.id}_front_gradient.png", config)
-                    files.add(file)
+                frontImagePath?.let { path ->
+                    val file = processImageFile(path, "${card.id}_front_gradient.png", config)
+                    file?.let { files.add(it) }
                 }
             }
             
             CardSharingOption.BackOnly -> {
-                val backImage = cardGradientGenerator.generateCardBackImage(
+                val backImagePath = cardImageGenerator.generateCardBackImagePath(
                     card = card,
                     showAllDetails = config.includeSensitiveInfo,
                     width = config.maxImageWidth,
                     height = config.maxImageHeight
                 )
-                backImage?.let { bitmap ->
-                    val file = saveBitmapToFile(bitmap, "${card.id}_back_gradient.png", config)
-                    files.add(file)
+                backImagePath?.let { path ->
+                    val file = processImageFile(path, "${card.id}_back_gradient.png", config)
+                    file?.let { files.add(it) }
                 }
             }
             
             CardSharingOption.BothSides -> {
                 // Generate both front and back
-                val frontImage = cardGradientGenerator.generateCardFrontImage(
+                val frontImagePath = cardImageGenerator.generateCardFrontImagePath(
                     card = card,
                     showAllDetails = config.includeSensitiveInfo,
                     width = config.maxImageWidth,
                     height = config.maxImageHeight
                 )
-                val backImage = cardGradientGenerator.generateCardBackImage(
+                val backImagePath = cardImageGenerator.generateCardBackImagePath(
                     card = card,
                     showAllDetails = config.includeSensitiveInfo,
                     width = config.maxImageWidth,
                     height = config.maxImageHeight
                 )
                 
-                frontImage?.let { bitmap ->
-                    val file = saveBitmapToFile(bitmap, "${card.id}_front_gradient.png", config)
-                    files.add(file)
+                frontImagePath?.let { path ->
+                    val file = processImageFile(path, "${card.id}_front_gradient.png", config)
+                    file?.let { files.add(it) }
                 }
                 
-                backImage?.let { bitmap ->
-                    val file = saveBitmapToFile(bitmap, "${card.id}_back_gradient.png", config)
-                    files.add(file)
+                backImagePath?.let { path ->
+                    val file = processImageFile(path, "${card.id}_back_gradient.png", config)
+                    file?.let { files.add(it) }
                 }
             }
         }
         
         return files
+    }
+    
+    /**
+     * Process an image file - load, optionally add watermark, and save to share directory
+     */
+    private fun processImageFile(
+        sourcePath: String,
+        targetFileName: String,
+        config: CardSharingConfig
+    ): File? {
+        return try {
+            val sourceFile = File(sourcePath)
+            if (!sourceFile.exists()) return null
+            
+            val bitmap = BitmapFactory.decodeFile(sourcePath) ?: return null
+            val processedBitmap = if (config.addWatermark) {
+                addWatermark(bitmap, config.watermarkText)
+            } else {
+                bitmap
+            }
+            
+            val shareDir = File(context.cacheDir, "shared_cards")
+            if (!shareDir.exists()) {
+                shareDir.mkdirs()
+            }
+            
+            val targetFile = File(shareDir, targetFileName)
+            FileOutputStream(targetFile).use { out ->
+                processedBitmap.compress(
+                    Bitmap.CompressFormat.PNG,
+                    (config.imageQuality * 100).toInt(),
+                    out
+                )
+            }
+            
+            if (processedBitmap !== bitmap) {
+                processedBitmap.recycle()
+            }
+            bitmap.recycle()
+            
+            targetFile
+        } catch (e: Exception) {
+            null
+        }
     }
     
     /**
@@ -177,37 +221,6 @@ class CardSharingManager @Inject constructor(
         }
         
         return files
-    }
-    
-    /**
-     * Save bitmap to file with optional watermark
-     */
-    private fun saveBitmapToFile(
-        bitmap: Bitmap,
-        fileName: String,
-        config: CardSharingConfig
-    ): File {
-        val finalBitmap = if (config.addWatermark) {
-            addWatermark(bitmap, config.watermarkText)
-        } else {
-            bitmap
-        }
-        
-        val shareDir = File(context.cacheDir, "shared_cards")
-        if (!shareDir.exists()) {
-            shareDir.mkdirs()
-        }
-        
-        val file = File(shareDir, fileName)
-        FileOutputStream(file).use { out ->
-            finalBitmap.compress(
-                Bitmap.CompressFormat.PNG,
-                (config.imageQuality * 100).toInt(),
-                out
-            )
-        }
-        
-        return file
     }
     
     /**

@@ -1,6 +1,7 @@
 package com.technitedminds.wallet.domain.usecase.card
 
 import com.technitedminds.wallet.domain.model.Card
+import com.technitedminds.wallet.domain.model.CardGradient
 import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.domain.repository.CardRepository
 import com.technitedminds.wallet.domain.repository.CategoryRepository
@@ -75,6 +76,7 @@ constructor(
                             backImagePath = backImagePath,
                             extractedData = request.extractedData ?: existingCard.extractedData,
                             customFields = request.customFields ?: existingCard.customFields,
+                            customGradient = request.customGradient ?: existingCard.customGradient,
                             updatedAt = System.currentTimeMillis()
                     )
 
@@ -262,7 +264,8 @@ data class UpdateCardRequest(
         val frontImageData: ByteArray? = null,
         val backImageData: ByteArray? = null,
         val extractedData: Map<String, String>? = null,
-        val customFields: Map<String, String>? = null
+        val customFields: Map<String, String>? = null,
+        val customGradient: CardGradient? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -284,6 +287,7 @@ data class UpdateCardRequest(
         } else if (other.backImageData != null) return false
         if (extractedData != other.extractedData) return false
         if (customFields != other.customFields) return false
+        if (customGradient != other.customGradient) return false
 
         return true
     }
@@ -297,6 +301,7 @@ data class UpdateCardRequest(
         result = 31 * result + (backImageData?.contentHashCode() ?: 0)
         result = 31 * result + (extractedData?.hashCode() ?: 0)
         result = 31 * result + (customFields?.hashCode() ?: 0)
+        result = 31 * result + (customGradient?.hashCode() ?: 0)
         return result
     }
 }

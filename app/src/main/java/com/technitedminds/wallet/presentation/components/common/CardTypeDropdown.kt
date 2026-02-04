@@ -48,7 +48,7 @@ fun CardTypeDropdown(
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
         )
         
         ExposedDropdownMenu(

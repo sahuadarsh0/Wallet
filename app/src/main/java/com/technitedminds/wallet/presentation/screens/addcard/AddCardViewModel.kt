@@ -3,7 +3,9 @@ package com.technitedminds.wallet.presentation.screens.addcard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.technitedminds.wallet.domain.model.Card
+import com.technitedminds.wallet.domain.model.CardGradient
 import com.technitedminds.wallet.domain.model.CardType
+import com.technitedminds.wallet.domain.service.CardImageGenerator
 import com.technitedminds.wallet.domain.usecase.card.AddCardUseCase
 import com.technitedminds.wallet.domain.usecase.card.GetCardsUseCase
 import com.technitedminds.wallet.domain.usecase.card.UpdateCardUseCase
@@ -23,6 +25,13 @@ import javax.inject.Inject
 // Wizard step handling (top-level so composables can reference directly)
 enum class AddCardStep { TYPE_SELECTION, CAMERA_CAPTURE, FORM_DETAILS }
 
+// Capture state for tracking front/back image capture progress
+enum class CaptureState {
+    AWAITING_FRONT,
+    FRONT_CAPTURED,
+    BACK_CAPTURED
+}
+
 // Basic events (top-level for easy collection in UI)
 sealed interface AddCardEvent {
     data class CardSaved(val card: com.technitedminds.wallet.domain.model.Card) : AddCardEvent
@@ -37,7 +46,8 @@ class AddCardViewModel @Inject constructor(
     private val updateCardUseCase: UpdateCardUseCase,
     private val getCardsUseCase: GetCardsUseCase,
     private val getCategoriesUseCase: com.technitedminds.wallet.domain.usecase.category.GetCategoriesUseCase,
-    private val manageCategoryUseCase: com.technitedminds.wallet.domain.usecase.category.ManageCategoryUseCase
+    private val manageCategoryUseCase: com.technitedminds.wallet.domain.usecase.category.ManageCategoryUseCase,
+    private val cardImageGenerator: CardImageGenerator
 ) : ViewModel() {
     private val _currentStep = MutableStateFlow(AddCardStep.TYPE_SELECTION)
     val currentStep: StateFlow<AddCardStep> = _currentStep.asStateFlow()
@@ -65,6 +75,15 @@ class AddCardViewModel @Inject constructor(
 
     private val _selectedCardType = MutableStateFlow<CardType?>(null)
     val selectedCardType: StateFlow<CardType?> = _selectedCardType.asStateFlow()
+
+    private val _selectedGradient = MutableStateFlow<CardGradient?>(null)
+    val selectedGradient: StateFlow<CardGradient?> = _selectedGradient.asStateFlow()
+
+    private val _showGradientPicker = MutableStateFlow(false)
+    val showGradientPicker: StateFlow<Boolean> = _showGradientPicker.asStateFlow()
+
+    private val _captureState = MutableStateFlow(CaptureState.AWAITING_FRONT)
+    val captureState: StateFlow<CaptureState> = _captureState.asStateFlow()
 
     init {
         // Load categories and ensure default categories exist
@@ -198,6 +217,15 @@ class AddCardViewModel @Inject constructor(
     fun saveCard() {
         val currentState = _uiState.value
 
+        // Clear any previous field errors before validation
+        _uiState.value = currentState.copy(
+            cardNumberError = null,
+            expiryDateError = null,
+            cardholderNameError = null,
+            cvvError = null,
+            error = null
+        )
+
         // Enhanced validation with specific error messages
         if (currentState.cardName.isBlank()) {
             _uiState.value = currentState.copy(error = "Card name is required")
@@ -215,27 +243,78 @@ class AddCardViewModel @Inject constructor(
         }
 
         if (currentState.frontImagePath == null) {
-            _uiState.value = currentState.copy(error = "Front image is required. Please capture both sides of the card.")
+            _uiState.value = currentState.copy(error = "Front image is required. Please capture the front side of the card.")
             return
         }
 
-        if (currentState.backImagePath == null) {
-            _uiState.value = currentState.copy(error = "Back image is required. Please capture both sides of the card.")
+        // Back image is required for OCR cards, optional for image cards (will generate default)
+        if (currentState.cardType.supportsOCR() && currentState.backImagePath == null) {
+            _uiState.value = currentState.copy(error = "Back image is required for ${currentState.cardType.getDisplayName()}. Please capture both sides of the card.")
             return
         }
 
         // Validate textual card fields if it's a credit/debit card
         if (currentState.cardType.supportsOCR()) {
-            // Only require card number and expiry date - make other fields optional
-            if (currentState.cardNumber.isBlank()) {
-                _uiState.value = currentState.copy(error = "Card number is required for ${currentState.cardType.getDisplayName()}")
+            var hasFieldErrors = false
+            val errors = mutableMapOf<String, String?>()
+            
+            
+            // Card number validation
+            when {
+                currentState.cardNumber.isBlank() -> {
+                    errors["cardNumber"] = "Card number is required"
+                    hasFieldErrors = true
+                }
+                currentState.cardNumber.replace(" ", "").length < 13 -> {
+                    errors["cardNumber"] = "Card number must be at least 13 digits"
+                    hasFieldErrors = true
+                }
+                else -> errors["cardNumber"] = null
+            }
+            
+            // Expiry date validation
+            when {
+                currentState.expiryDate.isBlank() -> {
+                    errors["expiryDate"] = "Expiry date is required"
+                    hasFieldErrors = true
+                }
+                !currentState.expiryDate.matches(Regex("""^\d{2}/\d{2}$""")) -> {
+                    errors["expiryDate"] = "Expiry date must be in MM/YY format"
+                    hasFieldErrors = true
+                }
+                else -> errors["expiryDate"] = null
+            }
+            
+            // Cardholder name validation (optional but validate format if provided)
+            if (currentState.cardholderName.isNotBlank() && currentState.cardholderName.length < 2) {
+                errors["cardholderName"] = "Cardholder name must be at least 2 characters"
+                hasFieldErrors = true
+            } else {
+                errors["cardholderName"] = null
+            }
+            
+            // CVV validation (optional but validate format if provided)
+            when {
+                currentState.cvv.isNotBlank() && currentState.cvv.length !in 3..4 -> {
+                    errors["cvv"] = "CVV must be 3 or 4 digits"
+                    hasFieldErrors = true
+                }
+                currentState.cvv.isNotBlank() && !currentState.cvv.all { it.isDigit() } -> {
+                    errors["cvv"] = "CVV must contain only digits"
+                    hasFieldErrors = true
+                }
+                else -> errors["cvv"] = null
+            }
+            
+            if (hasFieldErrors) {
+                _uiState.value = currentState.copy(
+                    cardNumberError = errors["cardNumber"],
+                    expiryDateError = errors["expiryDate"],
+                    cardholderNameError = errors["cardholderName"],
+                    cvvError = errors["cvv"]
+                )
                 return
             }
-            if (currentState.expiryDate.isBlank()) {
-                _uiState.value = currentState.copy(error = "Expiry date is required for ${currentState.cardType.getDisplayName()}")
-                return
-            }
-            // Cardholder name and CVV are optional - OCR might not always extract them
         }
 
         viewModelScope.launch {
@@ -259,31 +338,9 @@ class AddCardViewModel @Inject constructor(
                     updateCardUseCase(card)
                     _events.emit(AddCardEvent.CardSaved(card))
                 } else {
-                    // For adding new card, use AddCardRequest
-                    println("AddCardViewModel: Saving new card - ${currentState.cardName}")
-                    println("AddCardViewModel: Card type - ${currentState.cardType.getDisplayName()}")
-                    println("AddCardViewModel: Category - ${currentState.categoryId}")
-                    println("AddCardViewModel: Front image path - ${currentState.frontImagePath}")
-                    println("AddCardViewModel: Back image path - ${currentState.backImagePath}")
-
-                    // Validate image files exist
-                    val frontImageFile = java.io.File(currentState.frontImagePath!!)
-                    val backImageFile = java.io.File(currentState.backImagePath!!)
-
-                    if (!frontImageFile.exists()) {
-                        throw Exception("Front image file not found: ${currentState.frontImagePath}")
-                    }
-
-                    if (!backImageFile.exists()) {
-                        throw Exception("Back image file not found: ${currentState.backImagePath}")
-                    }
-
-                    val frontImageData = frontImageFile.readBytes()
-                    val backImageData = backImageFile.readBytes()
-
-                    println("AddCardViewModel: Front image size - ${frontImageData.size} bytes")
-                    println("AddCardViewModel: Back image size - ${backImageData.size} bytes")
-
+                    // Determine storage strategy based on card type
+                    val useGradientImages = requiresGradientImages(currentState.cardType)
+                    
                     // Prepare extracted data for textual cards
                     val finalExtractedData = if (currentState.cardType.supportsOCR()) {
                         mapOf(
@@ -295,40 +352,129 @@ class AddCardViewModel @Inject constructor(
                     } else {
                         currentState.extractedData
                     }
-
+                    
+                    val cardId = currentState.cardId ?: generateCardId()
+                    val gradient = _selectedGradient.value ?: Card.getDefaultGradientForType(currentState.cardType)
+                    
+                    val imageResult: Triple<ByteArray, ByteArray, CardGradient?> = if (useGradientImages) {
+                        // OCR cards: Generate gradient images, discard original captured images
+                        try {
+                            // Create temporary card for image generation
+                            val tempCard = Card(
+                                id = cardId,
+                                name = currentState.cardName,
+                                type = currentState.cardType,
+                                categoryId = currentState.categoryId,
+                                frontImagePath = "", // Not used for generation
+                                backImagePath = "", // Not used for generation
+                                extractedData = finalExtractedData,
+                                customFields = currentState.customFields,
+                                customGradient = gradient,
+                                createdAt = System.currentTimeMillis(),
+                                updatedAt = System.currentTimeMillis()
+                            )
+                            
+                            // Generate gradient images
+                            val frontImagePath = cardImageGenerator.generateCardFrontImagePath(tempCard)
+                                ?: throw Exception("Failed to generate front gradient image")
+                            val backImagePath = cardImageGenerator.generateCardBackImagePath(tempCard)
+                                ?: throw Exception("Failed to generate back gradient image")
+                            
+                            // Read generated images
+                            val frontFile = java.io.File(frontImagePath)
+                            val backFile = java.io.File(backImagePath)
+                            
+                            if (!frontFile.exists()) {
+                                throw Exception("Generated front image file not found")
+                            }
+                            if (!backFile.exists()) {
+                                throw Exception("Generated back image file not found")
+                            }
+                            
+                            // Clean up original captured images (discard them)
+                            currentState.frontImagePath?.let { path ->
+                                java.io.File(path).takeIf { it.exists() }?.delete()
+                            }
+                            currentState.backImagePath?.let { path ->
+                                java.io.File(path).takeIf { it.exists() }?.delete()
+                            }
+                            
+                            Triple(frontFile.readBytes(), backFile.readBytes(), gradient)
+                        } catch (e: Exception) {
+                            throw Exception("Failed to generate gradient images: ${e.message}", e)
+                        }
+                    } else {
+                        // Image cards: Save captured images, generate default back if only front captured
+                        val frontImageFile = currentState.frontImagePath?.let { java.io.File(it) }
+                            ?: throw Exception("Front image is required")
+                        
+                        if (!frontImageFile.exists()) {
+                            throw Exception("Front image file not found: ${currentState.frontImagePath}")
+                        }
+                        
+                        val frontData = frontImageFile.readBytes()
+                        
+                        val backData = if (currentState.backImagePath != null) {
+                            val backImageFile = java.io.File(currentState.backImagePath!!)
+                            if (!backImageFile.exists()) {
+                                throw Exception("Back image file not found: ${currentState.backImagePath}")
+                            }
+                            backImageFile.readBytes()
+                        } else {
+                            // Generate default back image
+                            val defaultBackPath = cardImageGenerator.generateDefaultBackImage(
+                                cardName = currentState.cardName,
+                                cardTypeName = currentState.cardType.getDisplayName(),
+                                gradient = gradient
+                            ) ?: throw Exception("Failed to generate default back image")
+                            
+                            val defaultBackFile = java.io.File(defaultBackPath)
+                            if (!defaultBackFile.exists()) {
+                                throw Exception("Generated default back image file not found")
+                            }
+                            defaultBackFile.readBytes()
+                        }
+                        
+                        Triple(frontData, backData, null) // No custom gradient for image cards
+                    }
+                    
+                    val frontImageData = imageResult.first
+                    val backImageData = imageResult.second
+                    val customGradient = imageResult.third
+                    
                     val request = com.technitedminds.wallet.domain.usecase.card.AddCardRequest(
-                        cardId = currentState.cardId ?: generateCardId(),
+                        cardId = cardId,
                         name = currentState.cardName,
                         type = currentState.cardType,
                         categoryId = currentState.categoryId,
                         frontImageData = frontImageData,
                         backImageData = backImageData,
                         extractedData = finalExtractedData,
-                        customFields = currentState.customFields
+                        customFields = currentState.customFields,
+                        customGradient = customGradient
                     )
-
-                    println("AddCardViewModel: Calling addCardUseCase with request")
+                    
                     val result = addCardUseCase(request)
                     result.fold(
-                        onSuccess = { cardId ->
-                            println("AddCardViewModel: Card saved successfully with ID: $cardId")
-                            val card = Card(
-                                id = cardId,
+                        onSuccess = { savedCardId ->
+                            // Get the actual saved card to emit event
+                            val savedCard = Card(
+                                id = savedCardId,
                                 name = currentState.cardName,
                                 type = currentState.cardType,
                                 categoryId = currentState.categoryId,
-                                frontImagePath = currentState.frontImagePath ?: "",
-                                backImagePath = currentState.backImagePath ?: "",
+                                frontImagePath = "", // Will be set by repository
+                                backImagePath = "", // Will be set by repository
                                 extractedData = finalExtractedData,
                                 customFields = currentState.customFields,
+                                customGradient = customGradient,
                                 createdAt = System.currentTimeMillis(),
                                 updatedAt = System.currentTimeMillis()
                             )
-                            _events.emit(AddCardEvent.CardSaved(card))
+                            _events.emit(AddCardEvent.CardSaved(savedCard))
                         },
                         onFailure = { error ->
-                            println("AddCardViewModel: Failed to save card: ${error.message}")
-                            throw error
+                            throw Exception("Failed to save card: ${error.message}", error)
                         }
                     )
                 }
@@ -368,21 +514,45 @@ class AddCardViewModel @Inject constructor(
 
     fun selectCardType(type: CardType) {
         _selectedCardType.value = type
+        // Initialize default gradient for the selected card type
+        if (_selectedGradient.value == null) {
+            val defaultGradient = Card.getDefaultGradientForType(type)
+            _selectedGradient.value = defaultGradient
+        }
         val newState = _uiState.value.copy(cardType = type)
         _uiState.value = newState.copy(canSave = validateForm(newState))
         _currentStep.value = AddCardStep.CAMERA_CAPTURE
+        _captureState.value = CaptureState.AWAITING_FRONT
     }
 
     fun setExtractedData(data: Map<String, String>) {
-        _uiState.value = _uiState.value.copy(extractedData = data)
+        val currentState = _uiState.value
+        val newState = currentState.copy(
+            extractedData = data,
+            // Also update individual fields for validation
+            cardNumber = data["cardNumber"] ?: currentState.cardNumber,
+            expiryDate = data["expiryDate"] ?: currentState.expiryDate,
+            cardholderName = data["cardholderName"] ?: currentState.cardholderName,
+            cvv = data["cvv"] ?: currentState.cvv,
+            hasOCRData = data.isNotEmpty()
+        )
+        _uiState.value = newState.copy(canSave = validateForm(newState))
     }
 
     fun setFrontImagePath(path: String) {
-        _uiState.value = _uiState.value.copy(frontImagePath = path)
+        val newState = _uiState.value.copy(frontImagePath = path)
+        _uiState.value = newState.copy(canSave = validateForm(newState))
+        _captureState.value = CaptureState.FRONT_CAPTURED
     }
 
     fun setBackImagePath(path: String) {
-        _uiState.value = _uiState.value.copy(backImagePath = path)
+        val newState = _uiState.value.copy(backImagePath = path)
+        _uiState.value = newState.copy(canSave = validateForm(newState))
+        _captureState.value = CaptureState.BACK_CAPTURED
+        // Automatically progress to form details after back capture
+        if (_currentStep.value == AddCardStep.CAMERA_CAPTURE) {
+            _currentStep.value = AddCardStep.FORM_DETAILS
+        }
     }
 
     fun setCapturedImages(frontPath: String, backPath: String?, extractedData: Map<String, String>) {
@@ -416,8 +586,42 @@ class AddCardViewModel @Inject constructor(
         
         _uiState.value = newState.copy(canSave = validateForm(newState))
         
-        // Move to form details step after capturing images
+        // Update capture state based on what was captured
+        when {
+            frontPath.isNotBlank() && backPath != null && backPath.isNotBlank() -> {
+                _captureState.value = CaptureState.BACK_CAPTURED
+                // Move to form details step after capturing both images
+                _currentStep.value = AddCardStep.FORM_DETAILS
+            }
+            frontPath.isNotBlank() -> {
+                _captureState.value = CaptureState.FRONT_CAPTURED
+            }
+            else -> {
+                _captureState.value = CaptureState.AWAITING_FRONT
+            }
+        }
+    }
+    
+    /**
+     * Skip back capture and proceed to form details
+     */
+    fun skipBackCapture() {
+        _captureState.value = CaptureState.BACK_CAPTURED
         _currentStep.value = AddCardStep.FORM_DETAILS
+    }
+    
+    /**
+     * Open camera for front capture
+     */
+    fun openCameraForFront() {
+        _captureState.value = CaptureState.AWAITING_FRONT
+    }
+    
+    /**
+     * Open camera for back capture
+     */
+    fun openCameraForBack() {
+        _captureState.value = CaptureState.FRONT_CAPTURED
     }
     
     /**
@@ -425,9 +629,17 @@ class AddCardViewModel @Inject constructor(
      */
     fun updateCardNumber(cardNumber: String) {
         val currentState = _uiState.value
+        val updatedExtractedData = currentState.extractedData.toMutableMap().apply {
+            if (cardNumber.isNotBlank()) {
+                this["cardNumber"] = cardNumber
+            } else {
+                this.remove("cardNumber")
+            }
+        }
         val newState = currentState.copy(
             cardNumber = cardNumber,
-            cardNumberError = null
+            cardNumberError = null,
+            extractedData = updatedExtractedData
         )
         _uiState.value = newState.copy(canSave = validateForm(newState))
     }
@@ -438,9 +650,17 @@ class AddCardViewModel @Inject constructor(
     fun updateExpiryDate(expiryDate: String) {
         val currentState = _uiState.value
         val formatted = formatExpiryInput(expiryDate)
+        val updatedExtractedData = currentState.extractedData.toMutableMap().apply {
+            if (formatted.isNotBlank()) {
+                this["expiryDate"] = formatted
+            } else {
+                this.remove("expiryDate")
+            }
+        }
         val newState = currentState.copy(
             expiryDate = formatted,
-            expiryDateError = null
+            expiryDateError = null,
+            extractedData = updatedExtractedData
         )
         _uiState.value = newState.copy(canSave = validateForm(newState))
     }
@@ -450,9 +670,17 @@ class AddCardViewModel @Inject constructor(
      */
     fun updateCardholderName(cardholderName: String) {
         val currentState = _uiState.value
+        val updatedExtractedData = currentState.extractedData.toMutableMap().apply {
+            if (cardholderName.isNotBlank()) {
+                this["cardholderName"] = cardholderName
+            } else {
+                this.remove("cardholderName")
+            }
+        }
         val newState = currentState.copy(
             cardholderName = cardholderName,
-            cardholderNameError = null
+            cardholderNameError = null,
+            extractedData = updatedExtractedData
         )
         _uiState.value = newState.copy(canSave = validateForm(newState))
     }
@@ -506,7 +734,12 @@ class AddCardViewModel @Inject constructor(
     }
     
     /**
-     * Validate the form and determine if it can be saved
+     * Validate the form and determine if it can be saved.
+     * 
+     * Validation rules:
+     * - Card name (min 2 chars) and category are always required
+     * - For OCR cards (Credit/Debit): card number and expiry are required (images optional - will generate gradient)
+     * - For image-only cards: images are optional - user can skip if they just want to store card info
      */
     private fun validateForm(state: AddCardUiState): Boolean {
         // Basic validation: card name is required
@@ -519,25 +752,23 @@ class AddCardViewModel @Inject constructor(
             return false
         }
         
-        // Images are required
-        if (state.frontImagePath == null || state.backImagePath == null) {
-            return false
-        }
-        
-        // For textual cards (Credit/Debit), only require card number and expiry date
+        // For OCR cards (Credit/Debit): card data is required for gradient generation
         if (state.cardType.supportsOCR()) {
-            // Card number is required
+            // Card number is required for OCR cards
             if (state.cardNumber.isBlank()) return false
-            if (state.cardNumber.isNotBlank() && state.cardNumber.replace(" ", "").length < 13) return false
+            if (state.cardNumber.replace(" ", "").length < 13) return false
             
-            // Expiry date is required
+            // Expiry date is required for OCR cards
             if (state.expiryDate.isBlank()) return false
-            if (state.expiryDate.isNotBlank() && !state.expiryDate.matches(Regex("""^\d{2}/\d{2}$"""))) return false
+            if (!state.expiryDate.matches(Regex("""^\d{2}/\d{2}$"""))) return false
             
             // Optional fields - validate only if present
             if (state.cardholderName.isNotBlank() && state.cardholderName.length < 2) return false
             if (state.cvv.isNotBlank() && state.cvv.length !in 3..4) return false
         }
+        // For image-only cards: images are optional
+        // User can skip image capture and just save card with name/category
+        // This allows flexibility for cards where user doesn't have the physical card handy
         
         return true
     }
@@ -562,6 +793,42 @@ class AddCardViewModel @Inject constructor(
      */
     private fun generateCardId(): String {
         return "card_${System.currentTimeMillis()}_${(1000..9999).random()}"
+    }
+    
+    /**
+     * Determines the storage strategy based on card type.
+     * OCR cards (Credit/Debit) use gradient images, image cards use captured images.
+     */
+    private fun requiresGradientImages(cardType: CardType): Boolean {
+        return cardType.supportsOCR()
+    }
+
+    /**
+     * Update the selected gradient
+     */
+    fun updateGradient(gradient: CardGradient) {
+        _selectedGradient.value = gradient
+    }
+
+    /**
+     * Show the gradient picker dialog
+     */
+    fun showGradientPicker() {
+        _showGradientPicker.value = true
+    }
+
+    /**
+     * Hide the gradient picker dialog
+     */
+    fun hideGradientPicker() {
+        _showGradientPicker.value = false
+    }
+
+    /**
+     * Clear any error message
+     */
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(error = null)
     }
 }
 
@@ -596,7 +863,8 @@ data class AddCardUiState(
     val cardNumberError: String? = null,
     val expiryDateError: String? = null,
     val cardholderNameError: String? = null,
-    val cvvError: String? = null
+    val cvvError: String? = null,
+    val selectedGradient: CardGradient? = null
 ) {
     // Computed property for OCR status
     val hasOCRDataComputed: Boolean

@@ -11,6 +11,10 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
+import androidx.compose.material.icons.automirrored.filled.Label
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -135,7 +139,7 @@ private val predefinedIcons = listOf(
     // General
     Icons.Default.Category,
     Icons.Default.Folder,
-    Icons.Default.Label,
+    Icons.AutoMirrored.Filled.Label,
     Icons.Default.Bookmark,
     Icons.Default.Tag,
     Icons.Default.Apps,
@@ -206,8 +210,8 @@ private val predefinedIcons = listOf(
     
     // Education & Learning
     Icons.Default.School,
-    Icons.Default.MenuBook,
-    Icons.Default.LibraryBooks,
+    Icons.AutoMirrored.Filled.MenuBook,
+    Icons.AutoMirrored.Filled.LibraryBooks,
     Icons.Default.Science,
     Icons.Default.Psychology,
     Icons.Default.AutoStories,
@@ -218,7 +222,7 @@ private val predefinedIcons = listOf(
     Icons.Default.SportsFootball,
     Icons.Default.SportsTennis,
     Icons.Default.Pool,
-    Icons.Default.DirectionsRun,
+    Icons.AutoMirrored.Filled.DirectionsRun,
     
     // Travel & Tourism
     Icons.Default.TravelExplore,

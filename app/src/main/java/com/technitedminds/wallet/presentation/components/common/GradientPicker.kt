@@ -446,7 +446,7 @@ private fun GradientDirectionPicker(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.height(120.dp)
         ) {
-            items(GradientDirection.values()) { direction ->
+            items(GradientDirection.entries) { direction ->
                 DirectionOption(
                     direction = direction,
                     isSelected = selectedDirection == direction,

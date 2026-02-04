@@ -214,7 +214,8 @@ enum class CaptureState {
 **Design Decisions**:
 - Sections appear with staggered slide-in animations
 - OCR cards show: Basic Info, Card Info, Appearance, Additional Info
-- Image cards show: Basic Info, Additional Info only
+- Image cards show: Basic Info, Appearance, Additional Info
+- All card types have access to gradient customization
 - All sections use PremiumCard containers
 - Form validates in real-time with visual feedback
 
@@ -287,7 +288,7 @@ private fun CardInformationSection(
 - Auto-detected fields show AutoAwesome icon as trailing icon
 - "Clear All and Enter Manually" button if OCR data exists
 
-**E. Appearance Section** (OCR cards only):
+**E. Appearance Section** (All card types):
 ```kotlin
 @Composable
 private fun AppearanceSection(
@@ -299,8 +300,11 @@ private fun AppearanceSection(
 ```
 - Uses EnhancedColorPicker component
 - Shows gradient preview with card type
-- Allows custom gradient selection
+- Allows custom gradient selection with start color, end color, and direction
 - Defaults to card type's predefined gradient
+- Available for both OCR and image-only cards
+- For OCR cards: gradient used to generate card images
+- For image-only cards: gradient stored for default back image generation
 
 **F. Additional Information Section**:
 ```kotlin
@@ -536,13 +540,14 @@ class CardGradientGenerator {
 class CardGradientGenerator {
     suspend fun generateDefaultBack(
         cardType: CardType,
-        cardName: String
+        cardName: String,
+        gradient: CardGradient
     ): String // Returns path to generated image
 }
 ```
 
 **Default Back Layout**:
-- Neutral gradient (card type's default colors at 50% opacity)
+- User-selected gradient (or card type's default if not customized)
 - Card type icon (center, 80dp, semi-transparent)
 - Card name (center bottom, titleMedium)
 - "CardVault" watermark (bottom, labelSmall)

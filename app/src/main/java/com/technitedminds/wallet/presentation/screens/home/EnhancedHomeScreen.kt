@@ -32,10 +32,10 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
-import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.domain.model.Card
+import com.technitedminds.wallet.domain.model.GradientDirection
 import com.technitedminds.wallet.presentation.components.animation.EnhancedShimmerEffect
 import com.technitedminds.wallet.presentation.components.animation.EnhancedSlideInItem
 import com.technitedminds.wallet.presentation.components.common.AnimatedSectionHeader
@@ -212,7 +213,7 @@ private fun EnhancedHomeTopBar(
                 // Layout toggle
                 IconButton(onClick = onToggleLayout) {
                     Icon(
-                        imageVector = if (isGridLayout) Icons.Default.ViewList else Icons.Default.GridView,
+                        imageVector = if (isGridLayout) Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView,
                         contentDescription = if (isGridLayout) AppConstants.ContentDescriptions.LIST_VIEW else AppConstants.ContentDescriptions.GRID_VIEW
                     )
                 }
@@ -487,14 +488,7 @@ private fun EnhancedCardGridItem(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color(android.graphics.Color.parseColor(card.getDisplayColor())).copy(alpha = 0.8f),
-                            Color(android.graphics.Color.parseColor(card.getDisplayColor())).copy(alpha = 0.4f)
-                        )
-                    )
-                )
+                .background(brush = getCardGradientBrush(card))
                 .padding(16.dp)
         ) {
             Column(
@@ -539,6 +533,13 @@ private fun EnhancedCardListItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val gradient = card.getGradient()
+    val primaryColor = try {
+        Color(android.graphics.Color.parseColor(gradient.startColor))
+    } catch (e: Exception) {
+        Color(android.graphics.Color.parseColor(Card.getDefaultGradientForType(card.type).startColor))
+    }
+    
     PremiumCard(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
@@ -551,12 +552,12 @@ private fun EnhancedCardListItem(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Card type icon with background
+            // Card type icon with background using card's gradient color
             Box(
                 modifier = Modifier
                     .size(48.dp)
                     .background(
-                        color = Color(android.graphics.Color.parseColor(card.getDisplayColor())).copy(alpha = 0.2f),
+                        color = primaryColor.copy(alpha = 0.2f),
                         shape = RoundedCornerShape(12.dp)
                     ),
                 contentAlignment = Alignment.Center
@@ -564,7 +565,7 @@ private fun EnhancedCardListItem(
                 Icon(
                     imageVector = card.type.getIcon(),
                     contentDescription = null,
-                    tint = Color(android.graphics.Color.parseColor(card.getDisplayColor())),
+                    tint = primaryColor,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -627,5 +628,41 @@ private fun EmptyCardsState(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = AppConstants.AnimationValues.ALPHA_NEAR_OPAQUE)
         )
+    }
+}
+
+/**
+ * Helper function to create a gradient brush from a card's custom or default gradient.
+ * Uses card.getGradient() which returns customGradient if set, otherwise the type default.
+ */
+private fun getCardGradientBrush(card: Card): Brush {
+    val gradient = card.getGradient()
+    
+    val startColor = try {
+        Color(android.graphics.Color.parseColor(gradient.startColor))
+    } catch (e: Exception) {
+        Color(android.graphics.Color.parseColor(Card.getDefaultGradientForType(card.type).startColor))
+    }
+    
+    val endColor = try {
+        Color(android.graphics.Color.parseColor(gradient.endColor))
+    } catch (e: Exception) {
+        Color(android.graphics.Color.parseColor(Card.getDefaultGradientForType(card.type).endColor))
+    }
+    
+    // Apply gradient direction
+    return when (gradient.direction) {
+        GradientDirection.TopToBottom -> 
+            Brush.verticalGradient(colors = listOf(startColor, endColor))
+        GradientDirection.LeftToRight -> 
+            Brush.horizontalGradient(colors = listOf(startColor, endColor))
+        GradientDirection.DiagonalTopLeftToBottomRight -> 
+            Brush.linearGradient(colors = listOf(startColor, endColor))
+        GradientDirection.DiagonalTopRightToBottomLeft -> 
+            Brush.linearGradient(
+                colors = listOf(startColor, endColor),
+                start = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, 0f),
+                end = androidx.compose.ui.geometry.Offset(0f, Float.POSITIVE_INFINITY)
+            )
     }
 }

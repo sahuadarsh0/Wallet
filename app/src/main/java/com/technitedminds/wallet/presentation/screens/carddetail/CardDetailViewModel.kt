@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.technitedminds.wallet.domain.model.Card
+import com.technitedminds.wallet.domain.model.CardGradient
 import com.technitedminds.wallet.domain.usecase.card.DeleteCardUseCase
 import com.technitedminds.wallet.domain.usecase.card.GetCardsUseCase
 import com.technitedminds.wallet.domain.usecase.card.UpdateCardUseCase
@@ -34,10 +35,15 @@ class CardDetailViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val cardId: String = checkNotNull(savedStateHandle["cardId"])
+    
+    // Trigger to reload card data
+    private val _reloadTrigger = MutableStateFlow(0)
 
-    // Card data - convert suspend function to Flow
-    val card = flow {
-        emit(getCardsUseCase.getCardById(cardId))
+    // Card data - reloads when trigger changes
+    val card = _reloadTrigger.flatMapLatest {
+        flow {
+            emit(getCardsUseCase.getCardById(cardId))
+        }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -51,6 +57,10 @@ class CardDetailViewModel @Inject constructor(
     // Sharing dialog state
     private val _showSharingDialog = MutableStateFlow(false)
     val showSharingDialog = _showSharingDialog.asStateFlow()
+    
+    // Gradient picker state
+    private val _showGradientPicker = MutableStateFlow(false)
+    val showGradientPicker = _showGradientPicker.asStateFlow()
     
     // Categories for dropdown
     val categories = getCategoriesUseCase().stateIn(
@@ -106,7 +116,8 @@ class CardDetailViewModel @Inject constructor(
                         type = edited.type,
                         categoryId = edited.categoryId,
                         extractedData = edited.extractedData,
-                        customFields = edited.customFields
+                        customFields = edited.customFields,
+                        customGradient = edited.customGradient
                     )
                     val result = updateCardUseCase(request)
                     if (result.isFailure) {
@@ -114,6 +125,9 @@ class CardDetailViewModel @Inject constructor(
                     }
                     _isEditing.value = false
                     _editedCard.value = null
+                    // Trigger card reload to reflect updated gradient and other changes
+                    _reloadTrigger.value++
+                    _uiState.value = _uiState.value.copy(successMessage = "Card saved successfully")
                     _events.emit(CardDetailEvent.CardSaved)
                 } catch (e: Exception) {
                     _uiState.value = _uiState.value.copy(
@@ -223,6 +237,30 @@ class CardDetailViewModel @Inject constructor(
     }
 
     /**
+     * Show gradient picker dialog
+     */
+    fun showGradientPicker() {
+        _showGradientPicker.value = true
+    }
+
+    /**
+     * Hide gradient picker dialog
+     */
+    fun hideGradientPicker() {
+        _showGradientPicker.value = false
+    }
+
+    /**
+     * Update card gradient
+     */
+    fun updateCardGradient(gradient: CardGradient) {
+        val current = _editedCard.value
+        if (current != null) {
+            _editedCard.value = current.withCustomGradient(gradient)
+        }
+    }
+
+    /**
      * Delete the card
      */
     fun deleteCard() {
@@ -269,6 +307,13 @@ class CardDetailViewModel @Inject constructor(
      */
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    /**
+     * Clear success message
+     */
+    fun clearSuccessMessage() {
+        _uiState.value = _uiState.value.copy(successMessage = null)
     }
 
     /**
@@ -365,7 +410,8 @@ data class CardDetailUiState(
     val isLoading: Boolean = false,
     val isCardFlipped: Boolean = false,
     val showDeleteDialog: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val successMessage: String? = null
 )
 
 /**
