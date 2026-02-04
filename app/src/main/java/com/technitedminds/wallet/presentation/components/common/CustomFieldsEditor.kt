@@ -1,19 +1,50 @@
 package com.technitedminds.wallet.presentation.components.common
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.Notes
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CreditScore
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Numbers
+import androidx.compose.material.icons.filled.Percent
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.technitedminds.wallet.domain.model.Card
-import androidx.compose.ui.window.Dialog
-import com.technitedminds.wallet.presentation.constants.AppConstants
 import com.technitedminds.wallet.domain.model.CardType
+import com.technitedminds.wallet.presentation.constants.AppConstants
 
 /**
  * Editor for custom fields with predefined suggestions
@@ -211,7 +242,7 @@ private fun getSuggestedCustomFields(cardType: CardType): Set<String> {
  */
 private fun getCustomFieldIcon(key: String): androidx.compose.ui.graphics.vector.ImageVector {
     return when (key.lowercase()) {
-        "notes", "note", "description" -> Icons.Default.Notes
+        "notes", "note", "description" -> Icons.AutoMirrored.Filled.Notes
         "website", "url", "link" -> Icons.Default.Language
         "phone", "phonenumber", "contactnumber" -> Icons.Default.Phone
         "email", "emailaddress" -> Icons.Default.Email

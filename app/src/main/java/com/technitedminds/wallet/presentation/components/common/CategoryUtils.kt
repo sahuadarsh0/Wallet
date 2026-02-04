@@ -34,7 +34,6 @@ import androidx.compose.material.icons.filled.CorporateFare
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.DirectionsCar
-import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.DirectionsTransit
 import androidx.compose.material.icons.filled.Domain
 import androidx.compose.material.icons.filled.ElectricalServices
@@ -403,7 +402,7 @@ fun getIconName(icon: ImageVector): String {
         Icons.Default.SportsFootball -> "SportsFootball"
         Icons.Default.SportsTennis -> "SportsTennis"
         Icons.Default.Pool -> "Pool"
-        Icons.Default.DirectionsRun -> "DirectionsRun"
+        Icons.AutoMirrored.Filled.DirectionsRun -> "DirectionsRun"
         
         // Travel & Tourism
         Icons.Default.TravelExplore -> "TravelExplore"

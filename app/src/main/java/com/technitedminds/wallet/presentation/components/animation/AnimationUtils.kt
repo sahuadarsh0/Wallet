@@ -379,3 +379,53 @@ fun calculateAnimationDuration(
     val calculatedDuration = (distance / baseSpeed * 1000).toInt()
     return calculatedDuration.coerceIn(minDuration, maxDuration)
 }
+
+/**
+ * Staggered section slide-in animation wrapper for form sections
+ * Applies slideInVertically (from bottom) + fadeIn with staggered delays
+ * 
+ * @param index The index of the section for staggered delay calculation
+ * @param baseDelay Base delay in milliseconds between sections (default: 100ms)
+ * @param duration Animation duration in milliseconds (default: 400ms)
+ * @param content The composable content to animate
+ */
+@Composable
+fun AnimatedSection(
+    index: Int,
+    baseDelay: Int = 100,
+    duration: Int = 400,
+    content: @Composable () -> Unit
+) {
+    var isVisible by remember { mutableStateOf(false) }
+    val delay = index * baseDelay
+    val easing = EaseOutCubic
+    
+    // Trigger animation when composable enters composition
+    LaunchedEffect(Unit) {
+        isVisible = true
+    }
+    
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = slideInVertically(
+            initialOffsetY = { it },
+            animationSpec = tween(
+                durationMillis = duration,
+                delayMillis = delay,
+                easing = easing
+            )
+        ) + fadeIn(
+            animationSpec = tween(
+                durationMillis = duration,
+                delayMillis = delay,
+                easing = easing
+            )
+        ),
+        exit = slideOutVertically(
+            targetOffsetY = { it },
+            animationSpec = tween(duration)
+        ) + fadeOut(animationSpec = tween(duration))
+    ) {
+        content()
+    }
+}

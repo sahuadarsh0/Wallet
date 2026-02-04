@@ -20,7 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.lifecycleScope
 import com.technitedminds.wallet.ui.theme.WalletTheme
 import com.technitedminds.wallet.presentation.navigation.WalletAppScaffold
-import com.technitedminds.wallet.presentation.screens.home.HomeScreen
+import com.technitedminds.wallet.presentation.screens.home.EnhancedHomeScreen
 import com.technitedminds.wallet.presentation.screens.settings.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
@@ -104,6 +104,6 @@ class MainActivity : ComponentActivity() {
 fun HomePreview() {
     WalletTheme {
         // Preview kept simple without navigation
-        HomeScreen(onCardClick = { }, onAddCardClick = { }, modifier = Modifier.fillMaxSize())
+        EnhancedHomeScreen(onCardClick = { }, onAddCardClick = { }, modifier = Modifier.fillMaxSize())
     }
 }

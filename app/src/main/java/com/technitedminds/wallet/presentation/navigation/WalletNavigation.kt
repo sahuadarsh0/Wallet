@@ -1,7 +1,9 @@
 package com.technitedminds.wallet.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -11,7 +13,6 @@ import com.technitedminds.wallet.presentation.screens.addcard.AddCardScreen
 import com.technitedminds.wallet.presentation.screens.camera.CameraScreen
 import com.technitedminds.wallet.presentation.screens.carddetail.CardDetailScreen
 import com.technitedminds.wallet.presentation.screens.categories.CategoriesScreen
-import com.technitedminds.wallet.presentation.screens.home.HomeScreen
 import com.technitedminds.wallet.presentation.screens.home.EnhancedHomeScreen
 import com.technitedminds.wallet.presentation.screens.settings.SettingsScreen
 import com.technitedminds.wallet.presentation.constants.AppConstants
@@ -43,11 +44,12 @@ fun WalletNavigation(
         }
         
         // Add card screen
-        composable(NavigationDestinations.AddCard.route) { _ ->
-            // Check for camera capture results
-            val frontImagePath = navController.getNavigationResult<String>(NavigationResultKeys.FRONT_IMAGE_PATH)
-            val backImagePath = navController.getNavigationResult<String>(NavigationResultKeys.BACK_IMAGE_PATH)
-            val extractedData = navController.getNavigationResult<Map<String, String>>(NavigationResultKeys.EXTRACTED_DATA)
+        composable(NavigationDestinations.AddCard.route) { backStackEntry ->
+            // Observe camera capture results reactively
+            val savedStateHandle = backStackEntry.savedStateHandle
+            val frontImagePath by savedStateHandle.getStateFlow<String?>(NavigationResultKeys.FRONT_IMAGE_PATH, null).collectAsStateWithLifecycle()
+            val backImagePath by savedStateHandle.getStateFlow<String?>(NavigationResultKeys.BACK_IMAGE_PATH, null).collectAsStateWithLifecycle()
+            val extractedData by savedStateHandle.getStateFlow<Map<String, String>?>(NavigationResultKeys.EXTRACTED_DATA, null).collectAsStateWithLifecycle()
             
             AddCardScreen(
                 onNavigateBack = {

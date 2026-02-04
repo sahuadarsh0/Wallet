@@ -1,19 +1,29 @@
 package com.technitedminds.wallet.presentation.components.animation
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -23,9 +33,6 @@ import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
 import com.technitedminds.wallet.presentation.constants.AppConstants
 import java.io.File
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.CircleShape
 
 /**
  * Back side of the card display with security information and additional details.
@@ -224,26 +231,16 @@ fun CardBack(
             )
         }
         
-        // Share button (top right)
+        // Share button (top right) with animations and haptic feedback
         if (showShareButton && onShare != null && !isCompact) {
-            Surface(
+            ShareButton(
+                onShare = { onShare(CardSharingOption.BackOnly) },
+                contentDescription = AppConstants.ContentDescriptions.SHARE_BACK,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(12.dp)
                     .size(32.dp)
-                    .clickable { onShare(CardSharingOption.BackOnly) },
-                shape = CircleShape,
-                color = Color.White.copy(alpha = 0.2f)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = "Share back",
-                    tint = Color.White,
-                    modifier = Modifier
-                        .padding(6.dp)
-                        .size(20.dp)
-                )
-            }
+            )
         }
     }
 }
@@ -279,4 +276,69 @@ private fun formatDate(timestamp: Long): String {
     val date = java.util.Date(timestamp)
     val formatter = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
     return formatter.format(date)
+}
+
+/**
+ * Share button component with animations, haptic feedback, and loading state
+ */
+@Composable
+private fun ShareButton(
+    onShare: () -> Unit,
+    contentDescription: String,
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false
+) {
+    val hapticFeedback = LocalHapticFeedback.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    // Scale animation for press feedback
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) AppConstants.AnimationValues.SCALE_PRESSED else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "share_button_scale"
+    )
+    
+    Surface(
+        modifier = modifier
+            .scale(scale)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(
+                    bounded = false,
+                    radius = 20.dp
+                ),
+                onClick = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onShare()
+                }
+            ),
+        shape = CircleShape,
+        color = Color.White.copy(alpha = 0.2f)
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = contentDescription,
+                    tint = Color.White,
+                    modifier = Modifier
+                        .padding(6.dp)
+                        .size(20.dp)
+                )
+            }
+        }
+    }
 }

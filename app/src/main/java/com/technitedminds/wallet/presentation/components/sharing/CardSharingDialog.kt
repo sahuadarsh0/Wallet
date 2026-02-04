@@ -24,11 +24,14 @@ fun CardSharingDialog(
     isVisible: Boolean,
     onDismiss: () -> Unit,
     onShare: (CardSharingOption, CardSharingConfig) -> Unit,
+    initialOption: CardSharingOption? = null,
     modifier: Modifier = Modifier
 ) {
     if (!isVisible) return
     
-    var selectedOption by remember { mutableStateOf(CardSharingOption.FrontOnly) }
+    var selectedOption by remember(isVisible, initialOption) { 
+        mutableStateOf(initialOption ?: CardSharingOption.FrontOnly) 
+    }
     var includeSensitiveInfo by remember { mutableStateOf(false) }
     var imageQuality by remember { mutableFloatStateOf(0.8f) }
     var addWatermark by remember { mutableStateOf(true) }
@@ -95,7 +98,7 @@ fun CardSharingDialog(
                     }
                 }
                 
-                Divider()
+                HorizontalDivider()
                 
                 // Sharing configuration
             Text(

@@ -2,7 +2,7 @@ package com.technitedminds.wallet.presentation.components.common
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Build
@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.Hotel
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.LocalOffer
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Palette
@@ -61,7 +60,7 @@ fun CardType.getIcon(): ImageVector = when (this) {
     is CardType.Voucher -> Icons.Default.LocalOffer
     is CardType.Event -> Icons.Default.Event
     is CardType.BusinessCard -> Icons.Default.Business
-    is CardType.LibraryCard -> Icons.Default.MenuBook
+    is CardType.LibraryCard -> Icons.AutoMirrored.Filled.MenuBook
     is CardType.HotelCard -> Icons.Default.Hotel
     is CardType.StudentCard -> Icons.Default.School
     is CardType.AccessCard -> Icons.Default.Key

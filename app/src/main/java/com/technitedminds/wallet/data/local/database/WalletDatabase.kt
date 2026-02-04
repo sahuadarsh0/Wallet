@@ -39,7 +39,7 @@ abstract class WalletDatabase : RoomDatabase() {
                                                 WalletDatabase::class.java,
                                                 DATABASE_NAME
                                         )
-                                        .fallbackToDestructiveMigration()
+                                        .fallbackToDestructiveMigration(dropAllTables = true)
                                         .addCallback(DatabaseCallback())
                                         .build()
                         INSTANCE = instance

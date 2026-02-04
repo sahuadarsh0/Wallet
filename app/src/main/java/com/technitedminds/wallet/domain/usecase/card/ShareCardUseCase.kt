@@ -2,7 +2,7 @@ package com.technitedminds.wallet.domain.usecase.card
 
 import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.domain.repository.ImageRepository
-import com.technitedminds.wallet.domain.util.CardGradientGenerator
+import com.technitedminds.wallet.domain.service.CardImageGenerator
 import javax.inject.Inject
 
 /**
@@ -12,9 +12,8 @@ import javax.inject.Inject
  */
 class ShareCardUseCase @Inject constructor(
     private val imageRepository: ImageRepository,
-    private val cardGradientGenerator: CardGradientGenerator
+    private val cardImageGenerator: CardImageGenerator
 ) {
-
 
     suspend operator fun invoke(
         card: Card,
@@ -35,7 +34,7 @@ class ShareCardUseCase @Inject constructor(
 
     private suspend fun shareTextualCard(card: Card, shareOption: ShareOption): Result<List<String>> {
         // Generate gradient card design showing all extracted details including CVV
-        val gradientCardImage = cardGradientGenerator.generateCardImage(
+        val gradientCardImage = cardImageGenerator.generateCardImage(
             card = card,
             showAllDetails = true, // Include CVV and all sensitive information
             includeBack = shareOption == ShareOption.BothSides || shareOption == ShareOption.BackOnly

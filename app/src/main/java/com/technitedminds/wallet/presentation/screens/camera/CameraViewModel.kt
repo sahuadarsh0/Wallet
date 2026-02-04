@@ -21,14 +21,15 @@ enum class CameraStep {
     FRONT_PREVIEW,
     BACK_CAPTURE,
     BACK_PREVIEW,
-    PROCESSING
+    PROCESSING,
+    OCR_PREVIEW  // New step for OCR results preview before confirming
 }
 
 /**
  * Camera events
  */
 sealed class CameraEvent {
-    data class ImagesReady(val frontImage: File, val backImage: File) : CameraEvent()
+    data class ImagesReady(val frontImage: File, val backImage: File?) : CameraEvent()  // backImage is now nullable
     object NavigateBack : CameraEvent()
 }
 
@@ -41,7 +42,9 @@ data class CameraUiState(
     val frontImage: File? = null,
     val backImage: File? = null,
     val extractedData: Map<String, String> = emptyMap(),
-    val processingProgress: Float = 0f
+    val processingProgress: Float = 0f,
+    val ocrSucceeded: Boolean = false,  // NEW
+    val ocrError: String? = null  // NEW - specific OCR error separate from general error
 )
 
 /**
@@ -142,6 +145,14 @@ class CameraViewModel @Inject constructor(
     }
 
     /**
+     * Skips back capture and processes with front only
+     */
+    fun skipBackCapture() {
+        _currentStep.value = CameraStep.PROCESSING
+        processImages()
+    }
+
+    /**
      * Sets an error message
      */
     fun setError(error: String) {
@@ -161,34 +172,56 @@ class CameraViewModel @Inject constructor(
     private fun processImages() {
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(isLoading = true, processingProgress = 0f)
+                _uiState.value = _uiState.value.copy(
+                    isLoading = true, 
+                    processingProgress = 0f,
+                    ocrError = null,
+                    ocrSucceeded = false
+                )
 
                 val frontImage = _uiState.value.frontImage
-                val backImage = _uiState.value.backImage
+                val backImage = _uiState.value.backImage  // Can be null
                 val currentCardType = _cardType.value
 
-                if (frontImage == null || backImage == null || currentCardType == null) {
-                    setError("Missing images or card type")
+                if (frontImage == null || currentCardType == null) {
+                    setError("Missing front image or card type")
                     return@launch
                 }
 
                 // Update progress
                 _uiState.value = _uiState.value.copy(processingProgress = 0.3f)
 
-                // Process OCR if supported
+                // Process OCR if supported and we have images
                 val extractedData = if (currentCardType.supportsOCR()) {
                     _uiState.value = _uiState.value.copy(processingProgress = 0.6f)
                     
-                    val frontImageBytes = frontImage.readBytes()
-                    val backImageBytes = backImage.readBytes()
-                    val result = processCardImageUseCase.processBothSides(
-                        frontImageBytes, 
-                        backImageBytes, 
-                        currentCardType
-                    )
-                    
-                    result.getOrElse { 
-                        setError("Failed to extract card information: ${it.message}")
+                    try {
+                        val frontImageBytes = frontImage.readBytes()
+                        val backImageBytes = backImage?.readBytes()
+                        
+                        val result = if (backImageBytes != null) {
+                            processCardImageUseCase.processBothSides(
+                                frontImageBytes, 
+                                backImageBytes, 
+                                currentCardType
+                            )
+                        } else {
+                            processCardImageUseCase.processFrontOnly(
+                                frontImageBytes,
+                                currentCardType
+                            )
+                        }
+                        
+                        result.getOrElse { exception ->
+                            _uiState.value = _uiState.value.copy(
+                                ocrError = "OCR failed: ${exception.message}"
+                            )
+                            emptyMap()
+                        }
+                    } catch (e: Exception) {
+                        _uiState.value = _uiState.value.copy(
+                            ocrError = "OCR processing error: ${e.message}"
+                        )
                         emptyMap()
                     }
                 } else {
@@ -198,15 +231,21 @@ class CameraViewModel @Inject constructor(
                 // Update progress
                 _uiState.value = _uiState.value.copy(processingProgress = 0.9f)
 
-                // Complete processing
+                // Update state with results
+                val ocrSucceeded = extractedData.isNotEmpty()
                 _uiState.value = _uiState.value.copy(
                     extractedData = extractedData,
                     processingProgress = 1f,
-                    isLoading = false
+                    isLoading = false,
+                    ocrSucceeded = ocrSucceeded
                 )
 
-                // Emit success event
-                _events.send(CameraEvent.ImagesReady(frontImage, backImage))
+                // For OCR cards, show preview step. For others, complete immediately.
+                if (currentCardType.supportsOCR()) {
+                    _currentStep.value = CameraStep.OCR_PREVIEW
+                } else {
+                    _events.send(CameraEvent.ImagesReady(frontImage, backImage))
+                }
 
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false)
@@ -222,5 +261,40 @@ class CameraViewModel @Inject constructor(
         viewModelScope.launch {
             _events.send(CameraEvent.NavigateBack)
         }
+    }
+
+    /**
+     * Confirms OCR results and completes the flow
+     */
+    fun confirmOCRResults() {
+        viewModelScope.launch {
+            val frontImage = _uiState.value.frontImage
+            val backImage = _uiState.value.backImage
+            if (frontImage != null) {
+                _events.send(CameraEvent.ImagesReady(frontImage, backImage))
+            }
+        }
+    }
+
+    /**
+     * Proceeds without OCR data (when OCR fails)
+     */
+    fun proceedWithoutOCR() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(extractedData = emptyMap())
+            val frontImage = _uiState.value.frontImage
+            val backImage = _uiState.value.backImage
+            if (frontImage != null) {
+                _events.send(CameraEvent.ImagesReady(frontImage, backImage))
+            }
+        }
+    }
+
+    /**
+     * Retries OCR processing
+     */
+    fun retryOCR() {
+        _currentStep.value = CameraStep.PROCESSING
+        processImages()
     }
 }

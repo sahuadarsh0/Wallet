@@ -142,7 +142,7 @@ fun GradientPickerDialog(
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(GradientDirection.values()) { dir ->
+                        items(GradientDirection.entries) { dir ->
                             DirectionChip(
                                 direction = dir,
                                 isSelected = direction == dir,

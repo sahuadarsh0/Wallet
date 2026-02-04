@@ -11,7 +11,7 @@ data class Card(
         /** User-defined name for the card */
         val name: String,
 
-        /** Type of the card (Credit, Debit , or ImageOnly) */
+        /** Type of the card (Credit, Debit, or other predefined/image-only types) */
         val type: CardType,
 
         /** ID of the category this card belongs to */

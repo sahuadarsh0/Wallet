@@ -502,19 +502,23 @@ private fun ShareOptionButton(
 fun EnhancedSlideInItem(
     visible: Boolean,
     index: Int = 0,
+    baseDelay: Int = AppConstants.Animation.SLIDE_IN_DURATION_INCREMENT,
     content: @Composable () -> Unit
 ) {
+    val delay = index * baseDelay
     AnimatedVisibility(
         visible = visible,
         enter = slideInVertically(
             initialOffsetY = { it },
             animationSpec = tween(
-                durationMillis = AppConstants.Animation.SLIDE_IN_DURATION_BASE + (index * AppConstants.Animation.SLIDE_IN_DURATION_INCREMENT),
+                durationMillis = AppConstants.Animation.SLIDE_IN_DURATION_BASE + delay,
+                delayMillis = delay,
                 easing = EaseOutCubic
             )
         ) + fadeIn(
             animationSpec = tween(
-                durationMillis = AppConstants.Animation.SLIDE_IN_DURATION_BASE + (index * AppConstants.Animation.SLIDE_IN_DURATION_INCREMENT),
+                durationMillis = AppConstants.Animation.SLIDE_IN_DURATION_BASE + delay,
+                delayMillis = delay,
                 easing = EaseOutCubic
             )
         ),

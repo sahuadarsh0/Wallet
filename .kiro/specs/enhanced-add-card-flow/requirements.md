@@ -113,11 +113,11 @@ This specification defines the requirements for enhancing the Add Card Flow in C
 
 #### Acceptance Criteria
 
-1. THE CardVault System SHALL organize the form into distinct sections: Card Details, Card Information (OCR cards only), Appearance (OCR cards only), and Additional Information
+1. THE CardVault System SHALL organize the form into distinct sections: Card Details, Card Information (OCR cards only), Appearance (all card types), and Additional Information
 2. WHEN displaying sections, THE CardVault System SHALL use section headers with appropriate titles
 3. WHEN viewing OCR card forms, THE CardVault System SHALL show dedicated fields for card number, expiry date, cardholder name, and CVV
-4. WHEN viewing OCR card forms, THE CardVault System SHALL display an Appearance section with gradient color picker for card design
-5. WHEN viewing image card forms, THE CardVault System SHALL skip the Card Information and Appearance sections and show only basic details
+4. WHEN viewing any card form, THE CardVault System SHALL display an Appearance section with gradient color picker for card design
+5. WHEN viewing image card forms, THE CardVault System SHALL skip the Card Information section but show the Appearance section
 6. THE CardVault System SHALL display a privacy notice card at the bottom explaining offline-only operation
 
 ### Requirement 9
@@ -220,25 +220,27 @@ This specification defines the requirements for enhancing the Add Card Flow in C
 
 ### Requirement 17
 
-**User Story:** As a CardVault user, I want to choose custom gradient colors for my Credit and Debit cards, so that I can personalize my card appearance
+**User Story:** As a CardVault user, I want to choose custom gradient colors for all my cards, so that I can personalize my card appearance regardless of card type
 
 #### Acceptance Criteria
 
-1. WHEN adding a Credit or Debit card, THE CardVault System SHALL display an Appearance section with the EnhancedColorPicker component
-2. THE CardVault System SHALL provide predefined gradient color schemes for Credit and Debit cards as defaults
+1. WHEN adding any card type, THE CardVault System SHALL display an Appearance section with the EnhancedColorPicker component
+2. THE CardVault System SHALL provide predefined gradient color schemes for each card type as defaults
 3. WHEN the user selects a gradient color, THE CardVault System SHALL update the preview to show the selected gradient
-4. WHEN the user saves the card, THE CardVault System SHALL use the selected gradient colors to generate the card images
-5. THE CardVault System SHALL store the gradient color information in the card's custom fields for future reference
+4. WHEN the user saves an OCR card (Credit/Debit), THE CardVault System SHALL use the selected gradient colors to generate the card images
+5. WHEN the user saves an image-only card, THE CardVault System SHALL store the gradient for use in default back image generation if needed
+6. THE CardVault System SHALL store the gradient color information in the card's custom fields for all card types
+7. THE CardVault System SHALL allow users to create custom gradients with custom start color, end color, and direction for any card type
 
 ### Requirement 18
 
-**User Story:** As a CardVault user adding image-only cards, I want my actual card images saved, so that I can view the exact visual appearance of my physical cards
+**User Story:** As a CardVault user adding image-only cards, I want my actual card images saved with customizable gradient for the back, so that I can view the exact visual appearance of my physical cards
 
 #### Acceptance Criteria
 
-1. WHEN saving an image-only card (Gym, Voucher, Gift, etc.) with front image only, THE CardVault System SHALL save the front image and generate a default gradient back image
+1. WHEN saving an image-only card (Gym, Voucher, Gift, etc.) with front image only, THE CardVault System SHALL save the front image and generate a gradient back image using the selected gradient
 2. WHEN saving an image-only card with both front and back images, THE CardVault System SHALL save both captured images to the file system
-3. WHEN generating default back image for image-only cards, THE CardVault System SHALL use a neutral gradient with the card type icon and name
+3. WHEN generating default back image for image-only cards, THE CardVault System SHALL use the user-selected gradient (or default if not customized) with the card type icon and name
 4. THE CardVault System SHALL NOT generate gradient cards for the front of image-only card types (always use captured image)
 5. WHEN displaying image-only cards, THE CardVault System SHALL show the actual captured front image and either captured or generated back image
 6. THE CardVault System SHALL optimize and compress captured images for efficient storage

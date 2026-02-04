@@ -1,8 +1,8 @@
 package com.technitedminds.wallet.data.ocr
 
 import com.technitedminds.wallet.domain.model.CardType
+import com.technitedminds.wallet.domain.model.ImageSide
 import com.technitedminds.wallet.presentation.constants.AppConstants
-import com.technitedminds.wallet.domain.usecase.ocr.ImageSide
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton

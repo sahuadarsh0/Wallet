@@ -6,7 +6,7 @@ import com.google.mlkit.vision.text.TextRecognition
 // ML Kit TextRecognizerOptions - using default options
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.technitedminds.wallet.domain.model.CardType
-import com.technitedminds.wallet.domain.usecase.ocr.ImageSide
+import com.technitedminds.wallet.domain.model.ImageSide
 import com.technitedminds.wallet.presentation.constants.AppConstants
 import javax.inject.Inject
 import javax.inject.Singleton

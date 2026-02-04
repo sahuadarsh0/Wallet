@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [ ] 1. Enhance TypeSelectionStep with premium card type grid
+- [x] 1. Enhance TypeSelectionStep with premium card type grid
   - Replace existing CardTypeSelector with enhanced grid layout
   - Create CardTypeItem composable with gradient background and icon
   - Organize types into two sections: "Cards with Text Recognition" and "Image-Only Cards"
@@ -79,15 +79,15 @@
   - Only show section for OCR card types
   - _Requirements: 5.3, 5.4, 5.5, 8.3, 14.1, 14.3, 15.1, 15.2, 15.3, 15.4_
 
-- [ ] 9. Implement AppearanceSection with gradient picker
-  - Create section for OCR cards only
+- [ ] 9. Implement AppearanceSection with gradient picker for all card types
+  - Create section for all card types (OCR and image-only)
   - Integrate EnhancedColorPicker component
   - Display gradient preview with selected colors
   - Provide default gradient based on card type
-  - Allow custom gradient selection
+  - Allow custom gradient selection with start color, end color, and direction
   - Store selected gradient in ViewModel state
   - Wrap section with PremiumCard and AnimatedSectionHeader
-  - _Requirements: 8.4, 17.1, 17.2, 17.3, 17.4, 17.5_
+  - _Requirements: 8.4, 17.1, 17.2, 17.3, 17.4, 17.5, 17.6, 17.7_
 
 - [ ] 10. Enhance AdditionalInformationSection with custom fields
   - Display existing custom fields with OutlinedTextField
@@ -117,9 +117,9 @@
   - Return image paths for storage in card entity
   - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7_
 
-- [ ] 13. Implement default back image generation for image cards
-  - Create generateDefaultBack method in CardGradientGenerator
-  - Use neutral gradient with card type's colors at 50% opacity
+- [ ] 13. Implement default back image generation for image cards with custom gradient
+  - Create generateDefaultBack method in CardGradientGenerator accepting gradient parameter
+  - Use user-selected gradient (or default if not customized)
   - Display card type icon (80dp, semi-transparent) in center
   - Show card name in center bottom
   - Add "CardVault" watermark at bottom
@@ -199,12 +199,13 @@
 
 - [ ] 22. Implement card type adaptation logic
   - Show Card Information section only for OCR card types
-  - Show Appearance section only for OCR card types
-  - Hide both sections for image-only card types
+  - Show Appearance section for all card types
+  - Hide Card Information section for image-only card types
   - Pre-fill OCR fields when extracted data is available
   - Display empty fields for manual entry when no OCR data
   - Validate OCR fields as required, other fields as optional
-  - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5_
+  - Ensure gradient selection is available for all card types
+  - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 17.1, 17.7_
 
 - [ ] 23. Test complete add card flow for OCR cards
   - Test type selection → camera capture → OCR processing → form details → save

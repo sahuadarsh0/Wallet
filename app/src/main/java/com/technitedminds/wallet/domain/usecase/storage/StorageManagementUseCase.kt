@@ -1,86 +1,119 @@
 package com.technitedminds.wallet.domain.usecase.storage
 
-import com.technitedminds.wallet.data.local.storage.StorageManager
-import com.technitedminds.wallet.presentation.constants.AppConstants
+import com.technitedminds.wallet.domain.model.CleanupResult
+import com.technitedminds.wallet.domain.model.StorageStats
+import com.technitedminds.wallet.domain.service.StorageService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Use case for storage management operations including cleanup, optimization, and statistics.
+ * 
+ * This use case follows Clean Architecture by depending on the StorageService interface
+ * rather than a concrete implementation.
  */
 @Singleton
 class StorageManagementUseCase @Inject constructor(
-    private val storageManager: StorageManager
+    private val storageService: StorageService
 ) {
     
     /**
-     * Performs comprehensive storage cleanup
+     * Performs comprehensive storage cleanup.
+     * 
+     * @return CleanupResult containing details of what was cleaned
      */
-    suspend fun performStorageCleanup(): StorageManager.CleanupResult {
-        return storageManager.performFullCleanup()
+    suspend fun performStorageCleanup(): CleanupResult {
+        return storageService.performFullCleanup()
     }
     
     /**
-     * Gets storage statistics as a Flow
+     * Gets storage statistics as a Flow.
+     * 
+     * @return Flow emitting current storage statistics
      */
-    fun getStorageStatistics(): Flow<StorageManager.StorageStats> = flow {
-        emit(storageManager.getStorageStatistics())
+    fun getStorageStatistics(): Flow<StorageStats> = flow {
+        emit(storageService.getStorageStatistics())
     }
     
     /**
-     * Checks if storage space is running low
+     * Checks if storage space is running low.
+     * 
+     * @return true if storage is critically low
      */
     fun isStorageSpaceLow(): Boolean {
-        return storageManager.isStorageSpaceLow()
+        return storageService.isStorageSpaceLow()
     }
     
     /**
-     * Gets available storage space in bytes
+     * Gets available storage space in bytes.
+     * 
+     * @return Available storage space in bytes
      */
     fun getAvailableStorageSpace(): Long {
-        return storageManager.getAvailableStorageSpace()
+        return storageService.getAvailableStorageSpace()
     }
     
     /**
-     * Creates a temporary file for processing
+     * Creates a temporary file for processing.
+     * 
+     * @param prefix File name prefix
+     * @param suffix File extension suffix
+     * @return Created temporary file, or null if creation failed
      */
-    suspend fun createTempFile(prefix: String, suffix: String): java.io.File? {
-        return storageManager.createTempFile(prefix, suffix)
+    suspend fun createTempFile(prefix: String, suffix: String): File? {
+        return storageService.createTempFile(prefix, suffix)
     }
     
     /**
-     * Cleans up a specific temporary file
+     * Cleans up a specific temporary file.
+     * 
+     * @param file The temporary file to delete
+     * @return true if file was successfully deleted
      */
-    suspend fun cleanupTempFile(file: java.io.File): Boolean {
-        return storageManager.cleanupTempFile(file)
+    suspend fun cleanupTempFile(file: File): Boolean {
+        return storageService.cleanupTempFile(file)
     }
     
     /**
-     * Formats bytes to human readable format
+     * Formats bytes to human readable format.
+     * Pure Kotlin implementation with no external dependencies.
+     * 
+     * @param bytes Number of bytes to format
+     * @return Human readable string (e.g., "1.5 MB")
      */
     fun formatBytes(bytes: Long): String {
-        val units = AppConstants.Storage.STORAGE_UNITS
+        val units = listOf("B", "KB", "MB", "GB", "TB")
         var size = bytes.toDouble()
         var unitIndex = 0
         
-        while (size >= AppConstants.Storage.BYTES_PER_KB && unitIndex < units.size - 1) {
-            size /= AppConstants.Storage.BYTES_PER_KB
+        while (size >= BYTES_PER_KB && unitIndex < units.size - 1) {
+            size /= BYTES_PER_KB
             unitIndex++
         }
         
-        return String.format("${AppConstants.Storage.DECIMAL_FORMAT_PATTERN} %s", size, units[unitIndex])
+        return String.format("%.2f %s", size, units[unitIndex])
     }
     
     /**
-     * Calculates storage usage percentage
+     * Calculates storage usage percentage.
+     * 
+     * @param usedBytes Bytes currently used
+     * @param totalBytes Total available bytes
+     * @return Percentage as float (0.0 to 100.0)
      */
     fun calculateStorageUsagePercentage(usedBytes: Long, totalBytes: Long): Float {
         return if (totalBytes > 0) {
-            (usedBytes.toFloat() / totalBytes.toFloat()) * AppConstants.Storage.STORAGE_PERCENTAGE_MULTIPLIER
+            (usedBytes.toFloat() / totalBytes.toFloat()) * 100f
         } else {
             0f
         }
+    }
+    
+    companion object {
+        /** Bytes per kilobyte for conversion */
+        private const val BYTES_PER_KB = 1024.0
     }
 }

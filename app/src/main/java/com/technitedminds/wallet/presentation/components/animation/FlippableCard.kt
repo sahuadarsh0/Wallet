@@ -18,6 +18,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.technitedminds.wallet.domain.model.Card
+import com.technitedminds.wallet.presentation.components.sharing.CardSharingDialog
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
 import com.technitedminds.wallet.presentation.constants.AppConstants
 
@@ -36,7 +37,15 @@ fun FlippableCard(
     onCardLongPress: (() -> Unit)? = null
 ) {
     var isFlipped by remember { mutableStateOf(false) }
+    var showSharingDialog by remember { mutableStateOf(false) }
+    var pendingShareOption by remember { mutableStateOf<CardSharingOption?>(null) }
     val hapticFeedback = LocalHapticFeedback.current
+    
+    // Handle share button click - show dialog instead of direct share
+    val handleShareClick: (CardSharingOption) -> Unit = { option ->
+        pendingShareOption = option
+        showSharingDialog = true
+    }
     
     // Animation for card flip
     val rotation by animateFloatAsState(
@@ -99,7 +108,7 @@ fun FlippableCard(
                     card = card,
                     isCompact = isCompact,
                     showShareButton = showShareButtons,
-                    onShare = onShare,
+                    onShare = if (onShare != null) handleShareClick else null,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -134,7 +143,7 @@ fun FlippableCard(
                     card = card,
                     isCompact = isCompact,
                     showShareButton = showShareButtons,
-                    onShare = onShare,
+                    onShare = if (onShare != null) handleShareClick else null,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -157,7 +166,7 @@ fun FlippableCard(
         // Share both sides button (top center)
         if (showShareButtons && onShare != null && !isCompact && card.backImagePath.isNotBlank()) {
             ShareBothSidesButton(
-                onShare = { onShare(CardSharingOption.BothSides) },
+                onShare = { handleShareClick(CardSharingOption.BothSides) },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(AppConstants.Dimensions.SPACING_SMALL)
@@ -171,6 +180,25 @@ fun FlippableCard(
                 isPressed = false
             }
         }
+    }
+    
+    // CardSharingDialog integration
+    if (showShareButtons && onShare != null && !isCompact) {
+        CardSharingDialog(
+            card = card,
+            isVisible = showSharingDialog,
+            onDismiss = {
+                showSharingDialog = false
+                pendingShareOption = null
+            },
+            initialOption = pendingShareOption,
+            onShare = { option, config ->
+                // The option is already selected in the dialog, use it directly
+                onShare(option)
+                showSharingDialog = false
+                pendingShareOption = null
+            }
+        )
     }
 }
 
@@ -252,7 +280,15 @@ fun EnhancedFlippableCard(
     onCardLongPress: (() -> Unit)? = null
 ) {
     var isFlipped by remember { mutableStateOf(false) }
+    var showSharingDialog by remember { mutableStateOf(false) }
+    var pendingShareOption by remember { mutableStateOf<CardSharingOption?>(null) }
     val hapticFeedback = LocalHapticFeedback.current
+    
+    // Handle share button click - show dialog instead of direct share
+    val handleShareClick: (CardSharingOption) -> Unit = { option ->
+        pendingShareOption = option
+        showSharingDialog = true
+    }
     
     // Animation states
     val rotation by animateFloatAsState(
@@ -321,7 +357,7 @@ fun EnhancedFlippableCard(
                     card = card,
                     isCompact = isCompact,
                     showShareButton = showShareButtons,
-                    onShare = onShare,
+                    onShare = if (onShare != null) handleShareClick else null,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -347,7 +383,7 @@ fun EnhancedFlippableCard(
                     card = card,
                     isCompact = isCompact,
                     showShareButton = showShareButtons,
-                    onShare = onShare,
+                    onShare = if (onShare != null) handleShareClick else null,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -362,11 +398,30 @@ fun EnhancedFlippableCard(
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     isFlipped = !isFlipped 
                 },
-                onShare = onShare,
+                onShare = if (onShare != null) handleShareClick else null,
                 showShareButtons = showShareButtons,
                 modifier = Modifier.fillMaxSize()
             )
         }
+    }
+    
+    // CardSharingDialog integration
+    if (showShareButtons && onShare != null && !isCompact) {
+        CardSharingDialog(
+            card = card,
+            isVisible = showSharingDialog,
+            onDismiss = {
+                showSharingDialog = false
+                pendingShareOption = null
+            },
+            initialOption = pendingShareOption,
+            onShare = { option, config ->
+                // The option is already selected in the dialog, use it directly
+                onShare(option)
+                showSharingDialog = false
+                pendingShareOption = null
+            }
+        )
     }
 }
 
