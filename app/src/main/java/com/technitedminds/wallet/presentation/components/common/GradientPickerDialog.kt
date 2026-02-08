@@ -8,6 +8,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -81,6 +83,9 @@ import com.technitedminds.wallet.domain.model.CardGradient
 import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.domain.model.GradientDirection
 import com.technitedminds.wallet.presentation.constants.AppConstants
+import com.technitedminds.wallet.ui.theme.gradientContrastText
+import com.technitedminds.wallet.ui.theme.isLightColor
+import com.technitedminds.wallet.ui.theme.WalletSpring
 
 /**
  * Modern gradient picker dialog with tab-based navigation and enhanced UX
@@ -316,6 +321,9 @@ private fun LiveGradientPreview(
                 .background(createGradientBrush(gradient))
                 .padding(20.dp)
         ) {
+            // Auto-detect text color based on gradient surface
+            val textColor = gradientContrastText(gradient.startColor, gradient.endColor)
+
             // Card type icon in top right
             Box(
                 modifier = Modifier.fillMaxWidth(),
@@ -324,7 +332,7 @@ private fun LiveGradientPreview(
                 Icon(
                     imageVector = getCardTypeIcon(cardType),
                     contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.9f),
+                    tint = textColor.copy(alpha = 0.9f),
                     modifier = Modifier.size(32.dp)
                 )
             }
@@ -337,7 +345,7 @@ private fun LiveGradientPreview(
                     text = cardType.getDisplayName(),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = textColor
                 )
                 
                 gradient.name?.let { name ->
@@ -345,7 +353,7 @@ private fun LiveGradientPreview(
                     Text(
                         text = name,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.9f)
+                        color = textColor.copy(alpha = 0.85f)
                     )
                 }
             }
@@ -375,25 +383,22 @@ private fun PresetGradientsTab(
             color = MaterialTheme.colorScheme.onSurface
         )
         
-        // Calculate grid height based on number of presets
-        val presetCount = getPresetGradients().size
-        val rows = (presetCount + 2) / 3 // 3 columns
-        val gridHeight = (rows * 110).dp // 90dp card + 8dp name + 12dp gap
-        
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
+        // Non-lazy grid so it flows naturally inside scrollable parent
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.height(gridHeight),
-            userScrollEnabled = false
+            maxItemsInEachRow = 3,
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            items(getPresetGradients()) { preset ->
+            getPresetGradients().forEach { preset ->
                 PresetGradientCard(
                     gradient = preset,
                     isSelected = currentGradient.startColor == preset.startColor &&
                                 currentGradient.endColor == preset.endColor &&
                                 currentGradient.direction == preset.direction,
-                    onClick = { onGradientChanged(preset) }
+                    onClick = { onGradientChanged(preset) },
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
@@ -457,22 +462,21 @@ private fun CustomGradientTab(
 private fun PresetGradientCard(
     gradient: CardGradient,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val borderColor by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "preset_border"
+        animationSpec = WalletSpring.snappy(),
+        label = "preset_border",
     )
     
     val interactionSource = remember { MutableInteractionSource() }
     
     Column(
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Card(
             modifier = Modifier
@@ -551,27 +555,18 @@ private fun ColorPickerSection(
             color = MaterialTheme.colorScheme.onSurface
         )
         
-        // Calculate grid height: 60 colors / 8 columns = 8 rows (rounded up)
-        // Each row: 36dp swatch + 8dp gap = 44dp per row
-        val colorCount = getColorPalette().size
-        val columns = 8
-        val rows = (colorCount + columns - 1) / columns // Ceiling division
-        val swatchSize = 36.dp
-        val gap = 8.dp
-        val gridHeight = (rows * (swatchSize + gap)).coerceAtMost(360.dp)
-        
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(columns),
-            horizontalArrangement = Arrangement.spacedBy(gap),
-            verticalArrangement = Arrangement.spacedBy(gap),
-            modifier = Modifier.height(gridHeight),
-            userScrollEnabled = false
+        // Non-lazy FlowRow so colors scroll naturally with parent
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            items(getColorPalette()) { color ->
+            getColorPalette().forEach { color ->
                 ColorSwatch(
                     color = color,
                     isSelected = selectedColor.equals(color, ignoreCase = true),
-                    onClick = { onColorSelected(color) }
+                    onClick = { onColorSelected(color) },
                 )
             }
         }
@@ -589,11 +584,8 @@ private fun ColorSwatch(
 ) {
     val scale by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "swatch_scale"
+        animationSpec = WalletSpring.bouncy(),
+        label = "swatch_scale",
     )
     
     Box(
@@ -638,26 +630,19 @@ private fun DirectionPickerSection(
             color = MaterialTheme.colorScheme.onSurface
         )
         
-        // 4 directions in 2 columns = 2 rows
-        // Each row: 60dp card + 12dp gap = 72dp per row
-        val directionCount = GradientDirection.entries.size
-        val rows = (directionCount + 1) / 2 // 2 columns
-        val cardHeight = 60.dp
-        val gap = 12.dp
-        val gridHeight = rows * (cardHeight + gap)
-        
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(gap),
-            verticalArrangement = Arrangement.spacedBy(gap),
-            modifier = Modifier.height(gridHeight),
-            userScrollEnabled = false
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            maxItemsInEachRow = 2,
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            items(GradientDirection.entries) { direction ->
+            GradientDirection.entries.forEach { direction ->
                 DirectionOption(
                     direction = direction,
                     isSelected = selectedDirection == direction,
-                    onClick = { onDirectionSelected(direction) }
+                    onClick = { onDirectionSelected(direction) },
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
@@ -671,19 +656,17 @@ private fun DirectionPickerSection(
 private fun DirectionOption(
     direction: GradientDirection,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val borderColor by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "direction_border"
+        animationSpec = WalletSpring.snappy(),
+        label = "direction_border",
     )
     
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(60.dp)
             .border(
@@ -803,31 +786,41 @@ private fun getColorPalette(): List<String> = listOf(
 )
 
 /**
- * Get preset gradients - curated collection with names
+ * Fresh modern gradient presets — curated for 2025/2026 aesthetics.
+ * Organized into themed groups for intuitive browsing.
  */
 private fun getPresetGradients(): List<CardGradient> = listOf(
-    CardGradient("#667eea", "#764ba2", GradientDirection.TopToBottom, "Purple Haze"),
-    CardGradient("#f093fb", "#f5576c", GradientDirection.TopToBottom, "Sunset"),
-    CardGradient("#4facfe", "#00f2fe", GradientDirection.TopToBottom, "Ocean Blue"),
-    CardGradient("#a8edea", "#fed6e3", GradientDirection.TopToBottom, "Cotton Candy"),
-    CardGradient("#ffecd2", "#fcb69f", GradientDirection.TopToBottom, "Peach"),
-    CardGradient("#43e97b", "#38f9d7", GradientDirection.TopToBottom, "Emerald"),
-    CardGradient("#fa709a", "#fee140", GradientDirection.TopToBottom, "Sunrise"),
-    CardGradient("#89f7fe", "#66a6ff", GradientDirection.TopToBottom, "Sky"),
-    CardGradient("#d299c2", "#fef9d7", GradientDirection.TopToBottom, "Lavender"),
-    CardGradient("#ff9a9e", "#fecfef", GradientDirection.LeftToRight, "Rose"),
-    CardGradient("#a18cd1", "#fbc2eb", GradientDirection.DiagonalTopLeftToBottomRight, "Violet"),
-    CardGradient("#fad0c4", "#ffd1ff", GradientDirection.DiagonalTopRightToBottomLeft, "Blush"),
-    CardGradient("#30cfd0", "#330867", GradientDirection.TopToBottom, "Deep Sea"),
-    CardGradient("#ff6e7f", "#bfe9ff", GradientDirection.LeftToRight, "Berry"),
-    CardGradient("#ee9ca7", "#ffdde1", GradientDirection.TopToBottom, "Coral"),
-    CardGradient("#2af598", "#009efd", GradientDirection.DiagonalTopLeftToBottomRight, "Aurora"),
-    CardGradient("#f83600", "#f9d423", GradientDirection.TopToBottom, "Fire"),
-    CardGradient("#00d2ff", "#3a7bd5", GradientDirection.LeftToRight, "Glacier"),
-    CardGradient("#fc466b", "#3f5efb", GradientDirection.DiagonalTopLeftToBottomRight, "Neon"),
-    CardGradient("#fddb92", "#d1fdff", GradientDirection.TopToBottom, "Pastel"),
-    CardGradient("#F44336", "#9C27B0", GradientDirection.TopToBottom, "Magenta"),
-    CardGradient("#4CAF50", "#2196F3", GradientDirection.LeftToRight, "Nature")
+    // -- Vibrant & Bold --
+    CardGradient("#6366F1", "#EC4899", GradientDirection.DiagonalTopLeftToBottomRight, "Indigo Rose"),
+    CardGradient("#8B5CF6", "#06B6D4", GradientDirection.TopToBottom, "Cosmic Teal"),
+    CardGradient("#F43F5E", "#F97316", GradientDirection.LeftToRight, "Ember"),
+    CardGradient("#3B82F6", "#8B5CF6", GradientDirection.DiagonalTopLeftToBottomRight, "Electric Violet"),
+    CardGradient("#10B981", "#3B82F6", GradientDirection.TopToBottom, "Ocean Mint"),
+    CardGradient("#F59E0B", "#EF4444", GradientDirection.DiagonalTopRightToBottomLeft, "Sunset Blaze"),
+
+    // -- Soft & Pastel --
+    CardGradient("#C4B5FD", "#FBCFE8", GradientDirection.TopToBottom, "Lilac Dream"),
+    CardGradient("#A5F3FC", "#C4B5FD", GradientDirection.LeftToRight, "Frosted Iris"),
+    CardGradient("#FDE68A", "#FECACA", GradientDirection.TopToBottom, "Peach Glow"),
+    CardGradient("#BBF7D0", "#BFDBFE", GradientDirection.DiagonalTopLeftToBottomRight, "Mint Sky"),
+    CardGradient("#FECDD3", "#E9D5FF", GradientDirection.LeftToRight, "Blush Petal"),
+    CardGradient("#D9F99D", "#A5F3FC", GradientDirection.TopToBottom, "Spring Dew"),
+
+    // -- Dark & Premium --
+    CardGradient("#1E1B4B", "#581C87", GradientDirection.TopToBottom, "Midnight Plum"),
+    CardGradient("#0F172A", "#1E3A5F", GradientDirection.DiagonalTopLeftToBottomRight, "Deep Navy"),
+    CardGradient("#18181B", "#3F3F46", GradientDirection.TopToBottom, "Charcoal"),
+    CardGradient("#1E293B", "#0F766E", GradientDirection.LeftToRight, "Dark Emerald"),
+    CardGradient("#312E81", "#BE185D", GradientDirection.DiagonalTopRightToBottomLeft, "Neon Night"),
+    CardGradient("#020617", "#7C3AED", GradientDirection.TopToBottom, "Void Purple"),
+
+    // -- Nature Inspired --
+    CardGradient("#059669", "#34D399", GradientDirection.TopToBottom, "Forest"),
+    CardGradient("#0EA5E9", "#67E8F9", GradientDirection.LeftToRight, "Glacier"),
+    CardGradient("#D97706", "#FCD34D", GradientDirection.DiagonalTopLeftToBottomRight, "Golden Hour"),
+    CardGradient("#DC2626", "#FB923C", GradientDirection.TopToBottom, "Autumn"),
+    CardGradient("#7C3AED", "#2DD4BF", GradientDirection.DiagonalTopLeftToBottomRight, "Aurora"),
+    CardGradient("#0284C7", "#22D3EE", GradientDirection.LeftToRight, "Lagoon"),
 )
 
 /**
@@ -898,25 +891,4 @@ private fun getDirectionArrow(direction: GradientDirection): String = when (dire
     GradientDirection.DiagonalTopRightToBottomLeft -> "↙"
 }
 
-/**
- * Check if a color is light (for determining check icon color)
- */
-private fun isLightColor(hexColor: String): Boolean {
-    return try {
-        val color = android.graphics.Color.parseColor(hexColor)
-        val red = android.graphics.Color.red(color)
-        val green = android.graphics.Color.green(color)
-        val blue = android.graphics.Color.blue(color)
-        
-        // Calculate perceived brightness (HSP Color Model)
-        val brightness = Math.sqrt(
-            red * red * 0.299 +
-            green * green * 0.587 +
-            blue * blue * 0.114
-        )
-        
-        brightness > 130
-    } catch (e: Exception) {
-        false
-    }
-}
+// isLightColor is imported from com.technitedminds.wallet.ui.theme.ColorUtils

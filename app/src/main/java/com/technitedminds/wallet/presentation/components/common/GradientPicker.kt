@@ -16,9 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -155,17 +154,18 @@ private fun GradientSection(
             fontWeight = FontWeight.Medium
         )
         
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.height(((gradients.size / 3 + 1) * 80).dp)
+            maxItemsInEachRow = 3,
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            items(gradients) { gradient ->
+            gradients.forEach { gradient ->
                 GradientOption(
                     gradient = gradient,
                     isSelected = selectedGradient == gradient,
-                    onClick = { onGradientSelected(gradient) }
+                    onClick = { onGradientSelected(gradient) },
                 )
             }
         }
@@ -440,17 +440,19 @@ private fun GradientDirectionPicker(
             fontWeight = FontWeight.Medium
         )
         
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.height(120.dp)
+            maxItemsInEachRow = 2,
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            items(GradientDirection.entries) { direction ->
+            GradientDirection.entries.forEach { direction ->
                 DirectionOption(
                     direction = direction,
                     isSelected = selectedDirection == direction,
-                    onClick = { onDirectionSelected(direction) }
+                    onClick = { onDirectionSelected(direction) },
+                    modifier = Modifier.weight(1f),
                 )
             }
         }

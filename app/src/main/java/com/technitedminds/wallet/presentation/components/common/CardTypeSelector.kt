@@ -7,16 +7,54 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.DirectionsTransit
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.HealthAndSafety
+import androidx.compose.material.icons.filled.Hotel
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Label
+import androidx.compose.material.icons.filled.LocalOffer
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Stars
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,14 +65,15 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.technitedminds.wallet.domain.model.CardType
+import androidx.core.graphics.toColorInt
 import com.technitedminds.wallet.domain.model.CardGradient
+import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.presentation.constants.AppConstants
 import com.technitedminds.wallet.ui.theme.Glass
 import com.technitedminds.wallet.ui.theme.WalletSpring
+import com.technitedminds.wallet.ui.theme.contrastText
 
 /**
  * Card type selector component with visual icons, descriptions, and gradient selection
@@ -258,116 +297,185 @@ private fun CardTypeOption(
 }
 
 /**
- * Custom card type creation dialog
+ * Modern custom card type creation dialog with:
+ * - Scrollable content (colors fully accessible)
+ * - Live preview card with auto text color
+ * - Character counter on name field
+ * - PremiumButton actions with spring physics
  */
 @Composable
 private fun CustomCardTypeDialog(
     onTypeCreated: (CardType.Custom) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     var typeName by remember { mutableStateOf("") }
-    var selectedColor by remember { mutableStateOf("#757575") }
-    
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
+    var selectedColor by remember { mutableStateOf("#6366F1") }
+
+    val nameMaxLength = 25
+    val isValid = typeName.isNotBlank() && typeName.length <= nameMaxLength
+
+    val parsedColor = remember(selectedColor) {
+        runCatching { Color(selectedColor.toColorInt()) }
+            .getOrElse { Color(0xFF6366F1) }
+    }
+    val textOnColor = remember(parsedColor) {
+        parsedColor.contrastText()
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true,
+        ),
+    ) {
+        Surface(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(AppConstants.Dimensions.PADDING_LARGE),
-            shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_LARGE)
+                .fillMaxWidth(0.92f)
+                .padding(vertical = 24.dp),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+            shadowElevation = 12.dp,
         ) {
-            Column(
-                modifier = Modifier.padding(AppConstants.Dimensions.PADDING_EXTRA_LARGE),
-                verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
-            ) {
-                Text(
-                    text = AppConstants.UIText.CREATE_CUSTOM_CARD_TYPE,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                
-                // Type name input
-                OutlinedTextField(
-                    value = typeName,
-                    onValueChange = { typeName = it },
-                    label = { Text(AppConstants.UIText.CARD_TYPE_NAME) },
-                    placeholder = { Text(AppConstants.UIText.CARD_TYPE_NAME_PLACEHOLDER) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-                
-                // Color picker
-                ColorPicker(
-                    selectedColor = selectedColor,
-                    onColorSelected = { selectedColor = it },
-                    showCustomColorOption = true
-                )
-                
-                // Preview
-                if (typeName.isNotBlank()) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // -- Header --
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text(
-                        text = AppConstants.UIText.PREVIEW_TEXT,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Medium
+                        text = AppConstants.UIText.CREATE_CUSTOM_CARD_TYPE,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
                     )
-                    
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                }
+
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                )
+
+                // -- Scrollable Content --
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, fill = false)
+                        .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                ) {
+                    // Live preview card
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(100.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                     ) {
-                        Row(
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(AppConstants.Dimensions.PADDING_MEDIUM),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM)
+                                .fillMaxSize()
+                                .background(parsedColor)
+                                .padding(20.dp),
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(AppConstants.Dimensions.CARD_TYPE_SELECTOR_BUTTON_HEIGHT)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(
-                                        Color(android.graphics.Color.parseColor(selectedColor))
-                                    ),
-                                contentAlignment = Alignment.Center
+                            Row(
+                                modifier = Modifier.align(Alignment.CenterStart),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.CreditCard,
                                     contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_SMALL)
+                                    tint = textOnColor.copy(alpha = 0.8f),
+                                    modifier = Modifier.size(32.dp),
                                 )
+                                Column {
+                                    Text(
+                                        text = typeName.ifBlank { "Card Type" },
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = textOnColor,
+                                    )
+                                    Text(
+                                        text = "Custom card type",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = textOnColor.copy(alpha = 0.7f),
+                                    )
+                                }
                             }
-                            
-                            Text(
-                                text = typeName,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Medium
-                            )
                         }
                     }
+
+                    // Name field with character counter
+                    PremiumTextField(
+                        value = typeName,
+                        onValueChange = { if (it.length <= nameMaxLength) typeName = it },
+                        label = AppConstants.UIText.CARD_TYPE_NAME,
+                        leadingIcon = Icons.Default.Label,
+                        trailingIcon = {
+                            Text(
+                                text = "${typeName.length}/$nameMaxLength",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (typeName.length > nameMaxLength) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                            )
+                        },
+                        isError = typeName.length > nameMaxLength,
+                        errorMessage = if (typeName.length > nameMaxLength) "Name is too long" else null,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+
+                    // Color picker (has its own header label inside)
+                    ColorPicker(
+                        selectedColor = selectedColor,
+                        onColorSelected = { selectedColor = it },
+                        showCustomColorOption = true,
+                    )
                 }
-                
-                // Buttons
+
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                )
+
+                // -- Actions --
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL, Alignment.End)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(AppConstants.DialogText.CANCEL_BUTTON)
-                    }
-                    
-                    Button(
+                    PremiumButton(
+                        onClick = onDismiss,
+                        text = "Cancel",
+                        variant = PremiumButtonVariant.Secondary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    PremiumButton(
                         onClick = {
-                            if (typeName.isNotBlank()) {
+                            if (isValid) {
                                 onTypeCreated(CardType.Custom(typeName.trim(), selectedColor))
                             }
                         },
-                        enabled = typeName.isNotBlank()
-                    ) {
-                        Text(AppConstants.UIText.CREATE)
-                    }
+                        text = AppConstants.UIText.CREATE,
+                        icon = Icons.Default.Add,
+                        enabled = isValid,
+                        variant = PremiumButtonVariant.Primary,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }
@@ -631,8 +739,8 @@ private fun GradientPreview(
  * Creates a Compose Brush from CardGradient
  */
 private fun createGradientBrush(gradient: CardGradient): androidx.compose.ui.graphics.Brush {
-    val startColor = Color(android.graphics.Color.parseColor(gradient.startColor))
-    val endColor = Color(android.graphics.Color.parseColor(gradient.endColor))
+    val startColor = Color(gradient.startColor.toColorInt())
+    val endColor = Color(gradient.endColor.toColorInt())
     
     return when (gradient.direction) {
         com.technitedminds.wallet.domain.model.GradientDirection.TopToBottom -> androidx.compose.ui.graphics.Brush.verticalGradient(

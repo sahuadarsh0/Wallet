@@ -6,9 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsRun
@@ -49,21 +46,21 @@ fun IconPicker(
             fontWeight = FontWeight.Medium
         )
         
-        // Icons grid
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(6),
+        // Icons — FlowRow so it scrolls naturally with parent
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.height(200.dp)
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            items(predefinedIcons) { icon ->
+            predefinedIcons.forEach { icon ->
                 IconOption(
                     icon = icon,
                     isSelected = selectedIcon == icon,
                     onClick = {
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                         onIconSelected(icon)
-                    }
+                    },
                 )
             }
         }

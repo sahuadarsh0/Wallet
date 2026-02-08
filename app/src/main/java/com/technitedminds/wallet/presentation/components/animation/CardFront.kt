@@ -60,6 +60,7 @@ import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.presentation.components.common.resolveCategoryName
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
 import com.technitedminds.wallet.presentation.constants.AppConstants
+import com.technitedminds.wallet.ui.theme.gradientContrastText
 import java.io.File
 
 /**
@@ -75,7 +76,13 @@ fun CardFront(
     onShare: ((CardSharingOption) -> Unit)? = null
 ) {
     val context = LocalContext.current
-    
+
+    // Auto-detect text color based on gradient surface
+    val gradient = card.getGradient()
+    val cardTextColor = remember(gradient) {
+        gradientContrastText(gradient.startColor, gradient.endColor)
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -171,7 +178,7 @@ fun CardFront(
                             fontWeight = FontWeight.Medium,
                             letterSpacing = 2.sp
                         ),
-                        color = Color.White,
+                        color = cardTextColor,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                 }
@@ -186,7 +193,7 @@ fun CardFront(
                     } else {
                         MaterialTheme.typography.titleMedium
                     },
-                    color = Color.White,
+                    color = cardTextColor,
                     fontWeight = FontWeight.Bold,
                     maxLines = if (isCompact) 1 else 2,
                     overflow = TextOverflow.Ellipsis
@@ -198,7 +205,7 @@ fun CardFront(
                         Text(
                             text = holderName,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.9f),
+                            color = cardTextColor.copy(alpha = 0.9f),
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }
@@ -208,7 +215,7 @@ fun CardFront(
                         Text(
                             text = String.format(AppConstants.UIText.VALID_THRU_LABEL, expiryDate),
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.8f),
+                            color = cardTextColor.copy(alpha = 0.8f),
                             modifier = Modifier.padding(top = 2.dp)
                         )
                     }
