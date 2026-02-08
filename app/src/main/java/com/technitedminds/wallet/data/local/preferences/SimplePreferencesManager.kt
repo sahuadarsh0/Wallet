@@ -276,6 +276,31 @@ class SimplePreferencesManager @Inject constructor(
         }
     }
     
+    // Rate limiting preferences
+    suspend fun setFailedPinAttempts(attempts: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[FAILED_PIN_ATTEMPTS] = attempts
+        }
+    }
+    
+    suspend fun getFailedPinAttempts(): Int {
+        return context.dataStore.data.map { preferences ->
+            preferences[FAILED_PIN_ATTEMPTS] ?: 0
+        }.first()
+    }
+    
+    suspend fun setLockoutUntilEpoch(epoch: Long) {
+        context.dataStore.edit { preferences ->
+            preferences[LOCKOUT_UNTIL_EPOCH] = epoch
+        }
+    }
+    
+    suspend fun getLockoutUntilEpoch(): Long {
+        return context.dataStore.data.map { preferences ->
+            preferences[LOCKOUT_UNTIL_EPOCH] ?: 0L
+        }.first()
+    }
+    
     // Clear all security-related preferences (for data wipe)
     suspend fun clearSecurityPreferences() {
         context.dataStore.edit { preferences ->
@@ -290,23 +315,6 @@ class SimplePreferencesManager @Inject constructor(
             preferences.remove(FAILED_PIN_ATTEMPTS)
             preferences.remove(LOCKOUT_UNTIL_EPOCH)
         }
-    }
-
-    // Failed PIN attempt tracking (rate limiting)
-    suspend fun setFailedPinAttempts(count: Int) {
-        context.dataStore.edit { it[FAILED_PIN_ATTEMPTS] = count }
-    }
-
-    suspend fun getFailedPinAttempts(): Int {
-        return context.dataStore.data.first()[FAILED_PIN_ATTEMPTS] ?: 0
-    }
-
-    suspend fun setLockoutUntilEpoch(epoch: Long) {
-        context.dataStore.edit { it[LOCKOUT_UNTIL_EPOCH] = epoch }
-    }
-
-    suspend fun getLockoutUntilEpoch(): Long {
-        return context.dataStore.data.first()[LOCKOUT_UNTIL_EPOCH] ?: 0L
     }
     
     // App lifecycle preferences

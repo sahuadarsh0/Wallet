@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Badge
@@ -36,7 +37,6 @@ import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.Hotel
 import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.School
@@ -422,7 +422,7 @@ private fun CustomCardTypeDialog(
                         value = typeName,
                         onValueChange = { if (it.length <= nameMaxLength) typeName = it },
                         label = AppConstants.UIText.CARD_TYPE_NAME,
-                        leadingIcon = Icons.Default.Label,
+                        leadingIcon = Icons.AutoMirrored.Filled.Label,
                         trailingIcon = {
                             Text(
                                 text = "${typeName.length}/$nameMaxLength",

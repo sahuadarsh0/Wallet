@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Backspace
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
@@ -310,7 +310,7 @@ private fun SetupContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = mode.onCancel) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Cancel", tint = Color.White)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Cancel", tint = Color.White)
             }
         }
 
@@ -603,7 +603,7 @@ private fun PhysicsKeypad(
                 Spacer(Modifier.size(72.dp))
             }
             KeypadButton("0", { onDigitClick('0') }, 10 * WalletTiming.STAGGER_DELAY_MS)
-            KeypadIconButton(Icons.Default.Backspace, "Delete", onDeleteClick, 11 * WalletTiming.STAGGER_DELAY_MS)
+            KeypadIconButton(Icons.AutoMirrored.Filled.Backspace, "Delete", onDeleteClick, 11 * WalletTiming.STAGGER_DELAY_MS)
         }
     }
 }

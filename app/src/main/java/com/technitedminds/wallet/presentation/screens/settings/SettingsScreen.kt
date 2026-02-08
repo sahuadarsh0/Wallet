@@ -71,9 +71,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalClipboardManager
+import android.content.ClipData
+import android.content.ClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -81,7 +81,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.data.local.preferences.ThemeMode
 import com.technitedminds.wallet.presentation.components.common.ConfirmationDialog
@@ -105,7 +105,7 @@ fun SettingsScreen(
     val lockState by appLockViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
-    val clipboardManager = LocalClipboardManager.current
+    val clipboardManager = context.getSystemService(ClipboardManager::class.java)
     
     // Local state for dialogs
     var showPrivacyPolicy by remember { mutableStateOf(false) }
@@ -494,7 +494,7 @@ fun SettingsScreen(
             code = code,
             onDismiss = { showRecoveryCodeDisplay = null },
             onCopy = {
-                clipboardManager.setText(AnnotatedString(code))
+                clipboardManager?.setPrimaryClip(ClipData.newPlainText("Recovery Code", code))
                 Toast.makeText(context, AppConstants.SecurityLabels.CODE_COPIED, Toast.LENGTH_SHORT).show()
             }
         )

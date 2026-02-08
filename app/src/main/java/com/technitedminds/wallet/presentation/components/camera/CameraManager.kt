@@ -2,7 +2,14 @@ package com.technitedminds.wallet.presentation.components.camera
 
 import android.content.Context
 import android.util.Log
-import androidx.camera.core.*
+import androidx.camera.core.AspectRatio
+import androidx.camera.core.Camera
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
@@ -12,7 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import javax.inject.Inject
@@ -227,15 +234,19 @@ class CameraManager @Inject constructor() {
         previewView: PreviewView,
         config: CameraConfiguration
     ) {
+        val resolutionSelector = ResolutionSelector.Builder()
+            .setAspectRatioStrategy(config.toAspectRatioStrategy())
+            .build()
+
         val preview = Preview.Builder()
-            .setTargetAspectRatio(config.aspectRatio)
+            .setResolutionSelector(resolutionSelector)
             .build()
             .also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
+                it.surfaceProvider = previewView.surfaceProvider
             }
         
         imageCapture = ImageCapture.Builder()
-            .setTargetAspectRatio(config.aspectRatio)
+            .setResolutionSelector(resolutionSelector)
             .setFlashMode(config.flashMode)
             .setCaptureMode(config.captureMode)
             .setJpegQuality(config.jpegQuality)
@@ -270,8 +281,14 @@ data class CameraConfiguration(
     val flashMode: Int = ImageCapture.FLASH_MODE_OFF,
     val lensFacing: Int = CameraSelector.LENS_FACING_BACK,
     val captureMode: Int = ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY,
-    val jpegQuality: Int = 95
-)
+    val jpegQuality: Int = 95,
+) {
+    /** Maps the legacy [aspectRatio] int to the new [AspectRatioStrategy]. */
+    fun toAspectRatioStrategy(): AspectRatioStrategy = when (aspectRatio) {
+        AspectRatio.RATIO_16_9 -> AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY
+        else -> AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY
+    }
+}
 
 /**
  * Camera capabilities data class
