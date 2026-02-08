@@ -17,6 +17,7 @@ import com.technitedminds.wallet.presentation.components.sharing.CardSharingOpti
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingConfig
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingResult
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,6 +25,7 @@ import javax.inject.Inject
 /**
  * ViewModel for the Card Detail screen that manages card viewing, editing, and deletion.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CardDetailViewModel @Inject constructor(
     private val getCardsUseCase: GetCardsUseCase,

@@ -11,8 +11,9 @@ import androidx.core.content.FileProvider
 import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.domain.service.CardImageGenerator
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,6 +32,8 @@ class CardSharingManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val cardImageGenerator: CardImageGenerator
 ) {
+    /** Application-scoped coroutine scope for fire-and-forget cleanup work. */
+    private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     
     /**
      * Share card based on the sharing option and card type
@@ -287,7 +290,7 @@ class CardSharingManager @Inject constructor(
             context.startActivity(chooserIntent)
             
             // Schedule cleanup after sharing
-            GlobalScope.launch(Dispatchers.IO) {
+            cleanupScope.launch {
                 delay(5000) // Wait 5 seconds after sharing
                 cleanupTempFiles()
             }

@@ -210,6 +210,7 @@ object AppConstants {
     // Dialog and UI Text Constants
     object DialogText {
         const val PRIVACY_POLICY_TITLE = "Privacy Policy"
+        const val TERMS_OF_SERVICE_TITLE = "Terms of Service"
         const val OPEN_SOURCE_LICENSES_TITLE = "Open Source Licenses"
         const val CLEAN_UP_STORAGE_TITLE = "Clean Up Storage"
         const val RESET_CATEGORIES_TITLE = "Reset Default Categories"
@@ -229,14 +230,37 @@ object AppConstants {
         // Privacy policy content
         const val PRIVACY_POLICY_CONTENT = """CardVault Privacy Policy
 
-• CardVault is completely offline - no data is transmitted over the network
-• All card data is stored locally on your device in encrypted format
-• No analytics, tracking, or data collection is performed
-• Camera permission is used only for card scanning
-• Storage permission is used only for backup/restore functionality
-• Your data never leaves your device unless you explicitly export it
+• Offline First: CardVault operates completely offline. No personal data, card details, or images are ever transmitted to external servers.
+• Local Storage: All data is stored locally on your device in an encrypted database.
+• Biometric Data: Biometric authentication (fingerprint/face) is handled entirely by the Android system. CardVault receives only a success/failure signal and never accesses your raw biometric data.
+• App Lock: Your 4-digit PIN is hashed securely using PBKDF2 and stored locally. It is never transmitted.
+• On-Device Intelligence: Text recognition (OCR) is performed on-device using Google ML Kit. No image data is sent to the cloud for processing.
+• Permissions:
+  - Camera: Used exclusively for scanning cards.
+  - Storage: Used only for backup/restore functionality if enabled.
 
 For questions, contact: privacy@cardvault.app"""
+
+        // Terms of Service content
+        const val TERMS_OF_SERVICE_CONTENT = """CardVault Terms of Service
+
+1. Acceptance of Terms
+By using CardVault, you agree to these terms. If you do not agree, please do not use the app.
+
+2. Usage
+CardVault is a tool for securely storing your personal card information. You are responsible for ensuring the accuracy of the data you enter.
+
+3. Data Security
+While we employ industry-standard encryption (AES-256) and security practices (Biometrics, PIN), no digital storage method is 100% secure. You acknowledge that you use the app at your own risk.
+
+4. Data Loss
+Since CardVault is offline-first, we do not have a cloud backup of your data. If you lose your device or uninstall the app without a backup, your data cannot be recovered by us. You are solely responsible for managing your backups.
+
+5. Limitation of Liability
+Technited Minds is not liable for any damages or losses resulting from the use of this app, including but not limited to data loss or unauthorized access due to device compromise.
+
+6. Changes
+We may update these terms from time to time. Continued use of the app constitutes acceptance of any changes."""
 
         // Open source licenses content
         const val OPEN_SOURCE_LICENSES_CONTENT = """CardVault uses the following open source libraries:
@@ -504,6 +528,8 @@ Full license texts are available in the app's source code."""
 For questions, contact: privacy@cardvault.app"""
         const val PRIVACY_POLICY_SUBTITLE = "View our privacy policy"
         const val PRIVACY_POLICY_TITLE = "Privacy Policy"
+        const val TERMS_OF_SERVICE_SUBTITLE = "Read our terms of service"
+        const val TERMS_OF_SERVICE_TITLE = "Terms of Service"
         const val PROCESSING = "Processing..."
         const val PROCESSING_CARD_IMAGES_MESSAGE = "Processing card images..."
         const val PROCESSING_CARD_IMAGES_WITH_OCR_MESSAGE = "Processing card images and extracting text..."
@@ -553,6 +579,37 @@ For questions, contact: privacy@cardvault.app"""
         const val WATERMARK_TEXT_LABEL = "Watermark text"
         const val WHAT_TO_SHARE_LABEL = "What to share:"
         const val YOUR_CARDS = "Your Cards"
+    }
+
+    // Security / App Lock Labels
+    object SecurityLabels {
+        const val PRIVACY_AND_SECURITY = "Privacy & Security"
+        const val APP_LOCK = "App Lock"
+        const val APP_LOCK_SUBTITLE = "Require PIN to open CardVault"
+        const val BIOMETRIC_UNLOCK = "Biometric Unlock"
+        const val BIOMETRIC_UNLOCK_SUBTITLE = "Use fingerprint or face to unlock"
+        const val BIOMETRIC_NOT_AVAILABLE = "No biometric hardware detected"
+        const val SET_PIN = "Set PIN"
+        const val CHANGE_PIN = "Change PIN"
+        const val SET_PIN_SUBTITLE = "Create a 4-digit PIN to lock the app"
+        const val CHANGE_PIN_SUBTITLE = "Update your 4-digit PIN"
+        const val BACKUP_CODE = "Backup Code"
+        const val BACKUP_CODE_SUBTITLE = "View or regenerate your recovery code"
+        const val LOCK_TIMEOUT = "Lock Timeout"
+        const val LOCK_TIMEOUT_SUBTITLE = "How quickly the app locks after leaving"
+        const val TIMEOUT_IMMEDIATE = "Immediate"
+        const val TIMEOUT_1_MIN = "After 1 minute"
+        const val TIMEOUT_5_MIN = "After 5 minutes"
+        const val TIMEOUT_15_MIN = "After 15 minutes"
+        const val RECOVERY_CODE_TITLE = "Your Recovery Code"
+        const val RECOVERY_CODE_MESSAGE = "Save this code in a safe place. You will need it if you forget your PIN. It will only be shown once."
+        const val ENTER_NEW_PIN = "Enter New PIN"
+        const val CONFIRM_NEW_PIN = "Confirm PIN"
+        const val PIN_MISMATCH = "PINs do not match"
+        const val PIN_SET_SUCCESS = "PIN set successfully"
+        const val COPY_CODE = "Copy Code"
+        const val CODE_COPIED = "Recovery code copied"
+        const val DONE = "Done"
     }
 
     // Default Values

@@ -9,21 +9,29 @@ com.technitedminds.wallet/
 ├── MainActivity.kt              # @AndroidEntryPoint entry point
 ├── WalletApplication.kt         # @HiltAndroidApp application class
 ├── data/                        # Data layer implementations
-│   ├── local/database/         # Room entities, DAOs, converters
-│   ├── local/files/            # ImageFileManager
-│   ├── local/preferences/      # Proto DataStore
-│   ├── repository/             # Repository implementations
+│   ├── local/                  # Local data sources
+│   │   ├── cache/             # Caching implementations
+│   │   ├── database/          # Room entities, DAOs, converters
+│   │   ├── files/             # File storage management
+│   │   ├── preferences/       # Proto DataStore
+│   │   ├── security/          # Security-related data handling
+│   │   └── storage/           # General storage utilities
 │   ├── mapper/                 # Entity ↔ Domain mapping
-│   └── ocr/                    # ML Kit text recognition
+│   ├── ocr/                    # ML Kit text recognition
+│   ├── repository/             # Repository implementations
+│   └── service/                # Data services
 ├── domain/                      # Business logic layer
 │   ├── model/                  # Domain models
 │   ├── repository/             # Repository interfaces
+│   ├── service/                # Domain services
 │   ├── usecase/                # Business logic use cases
 │   └── util/                   # Domain utilities
 ├── presentation/                # UI layer
-│   ├── screens/                # Feature screens
 │   ├── components/             # Reusable composables
-│   └── navigation/             # Navigation setup
+│   ├── constants/              # UI constants
+│   ├── navigation/             # Navigation setup
+│   ├── screens/                # Feature screens
+│   └── utils/                  # UI-specific utilities
 ├── di/                          # Hilt modules
 ├── ui/theme/                    # M3 theming
 └── utils/                       # Extensions

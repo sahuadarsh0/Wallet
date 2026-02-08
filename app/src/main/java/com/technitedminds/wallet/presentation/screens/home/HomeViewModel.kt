@@ -73,37 +73,28 @@ class HomeViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    // UI State
+    // UI State — uses nested typed combine to avoid unchecked casts
     val uiState = combine(
-        filteredCards,
-        categories,
-        isRefreshing,
-        searchQuery,
-        selectedCategory,
-        selectedCardType,
-        isGridView
-    ) { flows ->
-        val cards = flows[0] as List<Card>
-        val categories = flows[1] as List<Category>
-        val refreshing = flows[2] as Boolean
-        val query = flows[3] as String
-        val category = flows[4] as String?
-        val cardType = flows[5] as CardType?
-        val gridView = flows[6] as Boolean
-        
+        combine(filteredCards, categories, isRefreshing) { cards, cats, refreshing ->
+            Triple(cards, cats, refreshing)
+        },
+        combine(searchQuery, selectedCategory, selectedCardType, isGridView) { query, category, cardType, gridView ->
+            HomeFilterState(query, category, cardType, gridView)
+        }
+    ) { (cards, cats, refreshing), filter ->
         HomeUiState(
             cards = cards,
             filteredCards = cards,
-            categories = categories,
+            categories = cats,
             isLoading = false,
             isRefreshing = refreshing,
-            searchQuery = query,
-            selectedCategory = category,
-            selectedCategoryId = category,
-            selectedCardType = cardType,
-            isGridView = gridView,
-            isGridLayout = gridView,
-            isEmpty = cards.isEmpty() && query.isBlank() && category == null && cardType == null
+            searchQuery = filter.query,
+            selectedCategory = filter.category,
+            selectedCategoryId = filter.category,
+            selectedCardType = filter.cardType,
+            isGridView = filter.gridView,
+            isGridLayout = filter.gridView,
+            isEmpty = cards.isEmpty() && filter.query.isBlank() && filter.category == null && filter.cardType == null
         )
     }.stateIn(
         scope = viewModelScope,
@@ -196,6 +187,16 @@ class HomeViewModel @Inject constructor(
         }
     }
 }
+
+/**
+ * Intermediate holder for filter-related state to avoid vararg combine.
+ */
+private data class HomeFilterState(
+    val query: String,
+    val category: String?,
+    val cardType: CardType?,
+    val gridView: Boolean,
+)
 
 /**
  * UI state for the Home screen

@@ -75,7 +75,7 @@ import com.technitedminds.wallet.ui.theme.WalletSpring
 import com.technitedminds.wallet.ui.theme.WalletTiming
 import com.technitedminds.wallet.ui.theme.gradientContrastText
 import kotlinx.coroutines.delay
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.domain.model.GradientDirection

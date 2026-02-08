@@ -2,12 +2,13 @@ package com.technitedminds.wallet.presentation.components.camera
 
 import android.content.Context
 import android.util.Log
-import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
@@ -108,14 +109,17 @@ fun CameraPreviewWithCapture(
             val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
             val provider = cameraProviderFuture.get()
 
+            // Build resolution selector for the chosen aspect ratio
+            val resolutionSelector = getResolutionSelector(aspectRatio)
+
             // Build preview
             val preview = Preview.Builder()
-                .setTargetAspectRatio(getAspectRatio(aspectRatio))
+                .setResolutionSelector(resolutionSelector)
                 .build()
 
             // Build image capture
             val capture = ImageCapture.Builder()
-                .setTargetAspectRatio(getAspectRatio(aspectRatio))
+                .setResolutionSelector(resolutionSelector)
                 .setFlashMode(flashMode)
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
                 .build()
@@ -359,14 +363,16 @@ private fun captureImage(
 }
 
 /**
- * Converts CardAspectRatio to CameraX AspectRatio
+ * Builds a [ResolutionSelector] for the given [CardAspectRatio].
  */
-private fun getAspectRatio(cardAspectRatio: CardAspectRatio): Int {
-    return when (cardAspectRatio) {
-        CardAspectRatio.RATIO_16_9 -> AspectRatio.RATIO_16_9
-        CardAspectRatio.RATIO_4_3 -> AspectRatio.RATIO_4_3
-        else -> AspectRatio.RATIO_4_3 // Default for card scanning
+private fun getResolutionSelector(cardAspectRatio: CardAspectRatio): ResolutionSelector {
+    val strategy = when (cardAspectRatio) {
+        CardAspectRatio.RATIO_16_9 -> AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY
+        else -> AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY // Default for card scanning
     }
+    return ResolutionSelector.Builder()
+        .setAspectRatioStrategy(strategy)
+        .build()
 }
 
 /**

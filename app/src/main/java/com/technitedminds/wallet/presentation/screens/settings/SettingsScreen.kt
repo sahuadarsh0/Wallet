@@ -1,25 +1,94 @@
 package com.technitedminds.wallet.presentation.screens.settings
 
+import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Pin
+import androidx.compose.material.icons.filled.PrivacyTip
+import androidx.compose.material.icons.filled.RestoreFromTrash
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.SettingsBrightness
+import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import android.content.ClipData
+import android.content.ClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.data.local.preferences.ThemeMode
 import com.technitedminds.wallet.presentation.components.common.ConfirmationDialog
 import com.technitedminds.wallet.presentation.constants.AppConstants
+import com.technitedminds.wallet.presentation.screens.security.AppLockScreen
+import com.technitedminds.wallet.presentation.screens.security.AppLockViewModel
+import com.technitedminds.wallet.presentation.screens.security.PinScreenMode
 import com.technitedminds.wallet.ui.theme.WalletTheme
 
 /**
@@ -29,15 +98,22 @@ import com.technitedminds.wallet.ui.theme.WalletTheme
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
-    viewModel: SettingsViewModel = hiltViewModel()
+    viewModel: SettingsViewModel = hiltViewModel(),
+    appLockViewModel: AppLockViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val lockState by appLockViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    val clipboardManager = context.getSystemService(ClipboardManager::class.java)
     
     // Local state for dialogs
     var showPrivacyPolicy by remember { mutableStateOf(false) }
+    var showTermsOfService by remember { mutableStateOf(false) }
     var showOpenSourceLicenses by remember { mutableStateOf(false) }
+    var showPinSetup by remember { mutableStateOf(false) }
+    var showRecoveryCodeDisplay by remember { mutableStateOf<String?>(null) }
+    var showTimeoutPicker by remember { mutableStateOf(false) }
     
     Scaffold(
         topBar = {
@@ -113,6 +189,89 @@ fun SettingsScreen(
                 )
             }
             
+            // Privacy & Security Section
+            SettingsSection(
+                title = AppConstants.SecurityLabels.PRIVACY_AND_SECURITY,
+                icon = Icons.Default.Security
+            ) {
+                // App Lock toggle
+                SettingsToggleItem(
+                    title = AppConstants.SecurityLabels.APP_LOCK,
+                    subtitle = AppConstants.SecurityLabels.APP_LOCK_SUBTITLE,
+                    icon = Icons.Default.Lock,
+                    checked = lockState.isLockEnabled,
+                    onCheckedChange = { enabled ->
+                        if (enabled && !lockState.pinConfigured) {
+                            // Must set PIN before enabling
+                            showPinSetup = true
+                        } else {
+                            appLockViewModel.toggleAppLock(enabled)
+                        }
+                    }
+                )
+
+                // Biometric toggle (only when lock is enabled + hardware available)
+                if (lockState.isLockEnabled && lockState.pinConfigured) {
+                    SettingsToggleItem(
+                        title = AppConstants.SecurityLabels.BIOMETRIC_UNLOCK,
+                        subtitle = if (lockState.biometricAvailable)
+                            AppConstants.SecurityLabels.BIOMETRIC_UNLOCK_SUBTITLE
+                        else
+                            AppConstants.SecurityLabels.BIOMETRIC_NOT_AVAILABLE,
+                        icon = Icons.Default.Fingerprint,
+                        checked = lockState.canUseBiometric,
+                        enabled = lockState.biometricAvailable,
+                        onCheckedChange = { appLockViewModel.toggleBiometric(it) }
+                    )
+                }
+
+                // Set / Change PIN
+                if (lockState.isLockEnabled) {
+                    SettingsItem(
+                        title = if (lockState.pinConfigured)
+                            AppConstants.SecurityLabels.CHANGE_PIN
+                        else
+                            AppConstants.SecurityLabels.SET_PIN,
+                        subtitle = if (lockState.pinConfigured)
+                            AppConstants.SecurityLabels.CHANGE_PIN_SUBTITLE
+                        else
+                            AppConstants.SecurityLabels.SET_PIN_SUBTITLE,
+                        icon = Icons.Default.Pin,
+                        onClick = { showPinSetup = true }
+                    )
+                }
+
+                // Backup code
+                if (lockState.isLockEnabled && lockState.pinConfigured) {
+                    SettingsItem(
+                        title = AppConstants.SecurityLabels.BACKUP_CODE,
+                        subtitle = AppConstants.SecurityLabels.BACKUP_CODE_SUBTITLE,
+                        icon = Icons.Default.Key,
+                        onClick = {
+                            appLockViewModel.regenerateRecoveryCode { code ->
+                                showRecoveryCodeDisplay = code
+                            }
+                        }
+                    )
+                }
+
+                // Lock timeout
+                if (lockState.isLockEnabled && lockState.pinConfigured) {
+                    SettingsItem(
+                        title = AppConstants.SecurityLabels.LOCK_TIMEOUT,
+                        subtitle = when (lockState.lockTimeout) {
+                            0 -> AppConstants.SecurityLabels.TIMEOUT_IMMEDIATE
+                            1 -> AppConstants.SecurityLabels.TIMEOUT_1_MIN
+                            5 -> AppConstants.SecurityLabels.TIMEOUT_5_MIN
+                            15 -> AppConstants.SecurityLabels.TIMEOUT_15_MIN
+                            else -> "After ${lockState.lockTimeout} minutes"
+                        },
+                        icon = Icons.Default.Timer,
+                        onClick = { showTimeoutPicker = true }
+                    )
+                }
+            }
+
             // Category Management Section
             SettingsSection(
                 title = AppConstants.StatisticsLabels.CATEGORY_MANAGEMENT,
@@ -186,6 +345,13 @@ fun SettingsScreen(
                     icon = Icons.Default.PrivacyTip,
                     onClick = { showPrivacyPolicy = true }
                 )
+
+                SettingsItem(
+                    title = AppConstants.DialogText.TERMS_OF_SERVICE_TITLE,
+                    subtitle = AppConstants.UIText.TERMS_OF_SERVICE_SUBTITLE,
+                    icon = Icons.Default.Description,
+                    onClick = { showTermsOfService = true }
+                )
                 
                 SettingsItem(
                     title = AppConstants.DialogText.OPEN_SOURCE_LICENSES_TITLE,
@@ -235,6 +401,25 @@ fun SettingsScreen(
             }
         )
     }
+
+    // Terms of Service dialog
+    if (showTermsOfService) {
+        AlertDialog(
+            onDismissRequest = { showTermsOfService = false },
+            title = { Text(AppConstants.DialogText.TERMS_OF_SERVICE_TITLE) },
+            text = {
+                Text(
+                    text = AppConstants.DialogText.TERMS_OF_SERVICE_CONTENT,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showTermsOfService = false }) {
+                    Text(AppConstants.DialogText.CLOSE_BUTTON)
+                }
+            }
+        )
+    }
     
     // Open Source Licenses dialog
     if (showOpenSourceLicenses) {
@@ -277,6 +462,54 @@ fun SettingsScreen(
             )
             viewModel.clearCleanupResult()
         }
+    }
+    
+    // PIN setup — reuses the same full-screen PIN screen in Setup mode
+    if (showPinSetup) {
+        Dialog(
+            onDismissRequest = { showPinSetup = false },
+            properties = DialogProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = false,
+                usePlatformDefaultWidth = false,
+            ),
+        ) {
+            AppLockScreen(
+                mode = PinScreenMode.Setup(
+                    onPinConfirmed = { pin ->
+                        showPinSetup = false
+                        appLockViewModel.setupNewPin(pin) { code ->
+                            showRecoveryCodeDisplay = code
+                        }
+                    },
+                    onCancel = { showPinSetup = false },
+                ),
+            )
+        }
+    }
+    
+    // Recovery code display dialog
+    showRecoveryCodeDisplay?.let { code ->
+        RecoveryCodeDisplayDialog(
+            code = code,
+            onDismiss = { showRecoveryCodeDisplay = null },
+            onCopy = {
+                clipboardManager?.setPrimaryClip(ClipData.newPlainText("Recovery Code", code))
+                Toast.makeText(context, AppConstants.SecurityLabels.CODE_COPIED, Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+    
+    // Timeout picker dialog
+    if (showTimeoutPicker) {
+        TimeoutPickerDialog(
+            currentTimeout = lockState.lockTimeout,
+            onSelect = { minutes ->
+                appLockViewModel.updateLockTimeout(minutes)
+                showTimeoutPicker = false
+            },
+            onDismiss = { showTimeoutPicker = false }
+        )
     }
 }
 
@@ -507,6 +740,207 @@ private fun ThemeSelector(
             }
         }
     }
+}
+
+/**
+ * Settings toggle item with switch
+ */
+@Composable
+private fun SettingsToggleItem(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled) { onCheckedChange(!checked) }
+            .padding(vertical = AppConstants.Dimensions.PADDING_SMALL),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(AppConstants.Dimensions.SETTINGS_ITEM_ICON_SIZE),
+            tint = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
+                   else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+        )
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = if (enabled) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+            )
+        }
+
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            enabled = enabled,
+        )
+    }
+}
+
+/**
+ * Recovery code display dialog — shown once after PIN setup
+ */
+@Composable
+private fun RecoveryCodeDisplayDialog(
+    code: String,
+    onDismiss: () -> Unit,
+    onCopy: () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
+    ) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(MaterialTheme.colorScheme.tertiaryContainer, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Default.Key,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                Text(
+                    AppConstants.SecurityLabels.RECOVERY_CODE_TITLE,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    AppConstants.SecurityLabels.RECOVERY_CODE_MESSAGE,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+
+                Spacer(Modifier.height(20.dp))
+
+                // Code display
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = code,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        letterSpacing = 2.sp,
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
+
+                Spacer(Modifier.height(20.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = onCopy,
+                        modifier = Modifier.weight(1f).height(44.dp),
+                        shape = RoundedCornerShape(10.dp),
+                    ) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(AppConstants.SecurityLabels.COPY_CODE, style = MaterialTheme.typography.labelMedium)
+                    }
+
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f).height(44.dp),
+                        shape = RoundedCornerShape(10.dp),
+                    ) {
+                        Text(AppConstants.SecurityLabels.DONE, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Lock timeout picker dialog
+ */
+@Composable
+private fun TimeoutPickerDialog(
+    currentTimeout: Int,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val options = listOf(
+        0 to AppConstants.SecurityLabels.TIMEOUT_IMMEDIATE,
+        1 to AppConstants.SecurityLabels.TIMEOUT_1_MIN,
+        5 to AppConstants.SecurityLabels.TIMEOUT_5_MIN,
+        15 to AppConstants.SecurityLabels.TIMEOUT_15_MIN,
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(AppConstants.SecurityLabels.LOCK_TIMEOUT) },
+        text = {
+            Column {
+                options.forEach { (minutes, label) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(minutes) }
+                            .padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        RadioButton(
+                            selected = currentTimeout == minutes,
+                            onClick = { onSelect(minutes) },
+                        )
+                        Text(label, style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(AppConstants.DialogText.CANCEL_BUTTON)
+            }
+        },
+    )
 }
 
 /**
