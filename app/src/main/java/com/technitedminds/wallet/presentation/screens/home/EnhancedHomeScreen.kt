@@ -1,9 +1,18 @@
 package com.technitedminds.wallet.presentation.screens.home
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
@@ -21,7 +30,9 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -46,6 +57,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,9 +66,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.technitedminds.wallet.presentation.components.animation.liquidPress
+import com.technitedminds.wallet.ui.theme.WalletSpring
+import com.technitedminds.wallet.ui.theme.WalletTiming
+import com.technitedminds.wallet.ui.theme.gradientContrastText
+import kotlinx.coroutines.delay
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.domain.model.Card
@@ -69,6 +87,7 @@ import com.technitedminds.wallet.presentation.components.common.PremiumChip
 import com.technitedminds.wallet.presentation.components.common.PremiumFloatingActionButton
 import com.technitedminds.wallet.presentation.components.common.PremiumLoadingIndicator
 import com.technitedminds.wallet.presentation.components.common.PremiumTextField
+import com.technitedminds.wallet.presentation.components.common.gradientShadow
 import com.technitedminds.wallet.presentation.components.common.getIcon
 import com.technitedminds.wallet.presentation.constants.AppConstants
 
@@ -443,26 +462,36 @@ private fun EnhancedCardsSection(
                             columns = GridCells.Fixed(2),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(bottom = 80.dp)
+                            contentPadding = PaddingValues(bottom = 80.dp),
                         ) {
-                            items(cards) { card ->
-                                EnhancedCardGridItem(
-                                    card = card,
-                                    onClick = { onCardClick(card) }
-                                )
+                            itemsIndexed(
+                                items = cards,
+                                key = { _, card -> card.id },
+                            ) { index, card ->
+                                SpringStaggerItem(index = index) {
+                                    EnhancedCardGridItem(
+                                        card = card,
+                                        onClick = { onCardClick(card) },
+                                    )
+                                }
                             }
                         }
                     } else {
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(1),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(bottom = 80.dp)
+                            contentPadding = PaddingValues(bottom = 80.dp),
                         ) {
-                            items(cards) { card ->
-                                EnhancedCardListItem(
-                                    card = card,
-                                    onClick = { onCardClick(card) }
-                                )
+                            itemsIndexed(
+                                items = cards,
+                                key = { _, card -> card.id },
+                            ) { index, card ->
+                                SpringStaggerItem(index = index) {
+                                    EnhancedCardListItem(
+                                        card = card,
+                                        onClick = { onCardClick(card) },
+                                    )
+                                }
                             }
                         }
                     }
@@ -476,51 +505,61 @@ private fun EnhancedCardsSection(
 private fun EnhancedCardGridItem(
     card: Card,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
+    val gradient = card.getGradient()
+    val gradientColors = getCardGradientColors(card)
+    val textColor = gradientContrastText(gradient.startColor, gradient.endColor)
+
     PremiumCard(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(120.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .height(120.dp)
+            .gradientShadow(
+                colors = gradientColors.toList(),
+                shadowElevation = 8.dp,
+                cornerRadius = 16.dp,
+            )
+            .liquidPress(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(brush = getCardGradientBrush(card))
-                .padding(16.dp)
+                .padding(16.dp),
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween
+                verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
+                    verticalAlignment = Alignment.Top,
                 ) {
                     Text(
                         text = card.name,
                         style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
                         ),
-                        color = Color.White,
-                        maxLines = 2
+                        color = textColor,
+                        maxLines = 2,
                     )
-                    
+
                     Icon(
                         imageVector = card.type.getIcon(),
                         contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.8f),
-                        modifier = Modifier.size(20.dp)
+                        tint = textColor.copy(alpha = 0.8f),
+                        modifier = Modifier.size(20.dp),
                     )
                 }
-                
+
                 Text(
                     text = card.type.getDisplayName(),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.9f)
+                    color = textColor.copy(alpha = 0.9f),
                 )
             }
         }
@@ -534,6 +573,7 @@ private fun EnhancedCardListItem(
     modifier: Modifier = Modifier
 ) {
     val gradient = card.getGradient()
+    val gradientColors = getCardGradientColors(card)
     val primaryColor = try {
         Color(android.graphics.Color.parseColor(gradient.startColor))
     } catch (e: Exception) {
@@ -542,15 +582,22 @@ private fun EnhancedCardListItem(
     
     PremiumCard(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .gradientShadow(
+                colors = gradientColors.toList(),
+                shadowElevation = 6.dp,
+                cornerRadius = 14.dp,
+            )
+            .liquidPress(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Card type icon with background using card's gradient color
             Box(
@@ -603,30 +650,50 @@ private fun EnhancedCardListItem(
 
 @Composable
 private fun EmptyCardsState(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
+    // Breathing pulse on the icon
+    val infiniteTransition = rememberInfiniteTransition(label = "empty_pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 1200,
+                easing = FastOutSlowInEasing,
+            ),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "empty_pulse_scale",
+    )
+
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
+        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE),
     ) {
         Icon(
             imageVector = Icons.Default.CreditCard,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-            modifier = Modifier.size(64.dp)
+            modifier = Modifier
+                .size(64.dp)
+                .graphicsLayer {
+                    scaleX = pulseScale
+                    scaleY = pulseScale
+                },
         )
-        
+
         Text(
             text = "No cards yet",
             style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        
+
         Text(
             text = "Tap the + button to add your first card",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = AppConstants.AnimationValues.ALPHA_NEAR_OPAQUE)
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = AppConstants.AnimationValues.ALPHA_NEAR_OPAQUE),
         )
     }
 }
@@ -638,17 +705,7 @@ private fun EmptyCardsState(
 private fun getCardGradientBrush(card: Card): Brush {
     val gradient = card.getGradient()
     
-    val startColor = try {
-        Color(android.graphics.Color.parseColor(gradient.startColor))
-    } catch (e: Exception) {
-        Color(android.graphics.Color.parseColor(Card.getDefaultGradientForType(card.type).startColor))
-    }
-    
-    val endColor = try {
-        Color(android.graphics.Color.parseColor(gradient.endColor))
-    } catch (e: Exception) {
-        Color(android.graphics.Color.parseColor(Card.getDefaultGradientForType(card.type).endColor))
-    }
+    val (startColor, endColor) = getCardGradientColors(card)
     
     // Apply gradient direction
     return when (gradient.direction) {
@@ -664,5 +721,58 @@ private fun getCardGradientBrush(card: Card): Brush {
                 start = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, 0f),
                 end = androidx.compose.ui.geometry.Offset(0f, Float.POSITIVE_INFINITY)
             )
+    }
+}
+
+private fun getCardGradientColors(card: Card): Pair<Color, Color> {
+    val gradient = card.getGradient()
+    val startColor = try {
+        Color(android.graphics.Color.parseColor(gradient.startColor))
+    } catch (e: Exception) {
+        Color(android.graphics.Color.parseColor(Card.getDefaultGradientForType(card.type).startColor))
+    }
+
+    val endColor = try {
+        Color(android.graphics.Color.parseColor(gradient.endColor))
+    } catch (e: Exception) {
+        Color(android.graphics.Color.parseColor(Card.getDefaultGradientForType(card.type).endColor))
+    }
+    return startColor to endColor
+}
+
+/**
+ * Spring-staggered entrance wrapper. Each item fades + scales in with a
+ * per-index delay, using spring physics for natural overshoot.
+ */
+@Composable
+private fun SpringStaggerItem(
+    index: Int,
+    content: @Composable () -> Unit,
+) {
+    var visible by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (visible) 1f else 0.85f,
+        animationSpec = WalletSpring.bouncy(),
+        label = "stagger_scale",
+    )
+    val alpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = WalletSpring.gentle(),
+        label = "stagger_alpha",
+    )
+
+    LaunchedEffect(Unit) {
+        delay(index.toLong() * WalletTiming.STAGGER_DELAY_MS)
+        visible = true
+    }
+
+    Box(
+        modifier = Modifier.graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+            this.alpha = alpha
+        },
+    ) {
+        content()
     }
 }

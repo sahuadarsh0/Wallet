@@ -31,6 +31,8 @@ import androidx.core.graphics.ColorUtils
 import com.technitedminds.wallet.domain.model.Category
 import com.technitedminds.wallet.presentation.components.common.*
 import com.technitedminds.wallet.presentation.constants.AppConstants
+import com.technitedminds.wallet.ui.theme.WalletSpring
+import com.technitedminds.wallet.ui.theme.contrastText
 import com.technitedminds.wallet.utils.asDisplayName
 
 /**
@@ -273,7 +275,7 @@ private fun CategoryPreviewSection(
                     Icon(
                         painter = rememberVectorPainter(image = iconVector),
                         contentDescription = null,
-                        tint = if (parsedColor.luminance() > 0.5f) Color.Black else Color.White,
+                        tint = parsedColor.contrastText(),
                         modifier = Modifier.size(48.dp)
                     )
                 }

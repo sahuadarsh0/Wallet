@@ -80,10 +80,14 @@ import com.technitedminds.wallet.presentation.components.common.LoadingIndicator
 import com.technitedminds.wallet.presentation.components.common.LoadingOverlay
 import com.technitedminds.wallet.presentation.components.common.PremiumCard
 import com.technitedminds.wallet.presentation.components.common.PremiumTextField
+import com.technitedminds.wallet.presentation.components.common.gradientShadow
 import com.technitedminds.wallet.presentation.components.common.resolveCategoryName
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingDialog
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
+import com.technitedminds.wallet.presentation.components.animation.liquidDrag
+import com.technitedminds.wallet.presentation.components.animation.liquidPress
 import com.technitedminds.wallet.presentation.constants.AppConstants
+import com.technitedminds.wallet.ui.theme.gradientContrastText
 
 /**
  * Card detail screen with full-screen card display, editing, and management options.
@@ -122,14 +126,10 @@ fun CardDetailScreen(
         }
     }
 
-    // Show loading if card is null
+    // While the local DB emits the first value, render an empty box so the
+    // navigation transition animates smoothly instead of flashing a spinner.
     if (card == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            LoadingIndicatorWithText(AppConstants.UIText.LOADING_CARD_DETAIL)
-        }
+        Box(modifier = Modifier.fillMaxSize())
         return
     }
 
@@ -392,26 +392,17 @@ private fun CardDisplaySection(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(220.dp)
+                .liquidDrag(maxOffset = 16.dp),
         )
 
         Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_LARGE))
 
         // Instructions
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_EXTRA_SMALL)
-        ) {
-            Text(
-                text = AppConstants.UIText.FLIP_INSTRUCTION,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = AppConstants.UIText.QUICK_SHARE_INSTRUCTION,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        Text(
+            text = AppConstants.UIText.FLIP_INSTRUCTION,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -796,45 +787,55 @@ private fun GradientPreviewButton(
     gradient: CardGradient,
     cardType: com.technitedminds.wallet.domain.model.CardType,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
+    val textColor = gradientContrastText(gradient.startColor, gradient.endColor)
+    val shadowColors = listOf(
+        Color(android.graphics.Color.parseColor(gradient.startColor)),
+        Color(android.graphics.Color.parseColor(gradient.endColor)),
+    )
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .height(80.dp)
+            .gradientShadow(
+                colors = shadowColors,
+                shadowElevation = 8.dp,
+                cornerRadius = 12.dp,
+            )
+            .liquidPress()
             .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = createGradientBrush(gradient)
-                )
+                .background(brush = createGradientBrush(gradient)),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column {
                     Text(
                         text = gradient.name ?: "Custom Gradient",
                         style = MaterialTheme.typography.titleSmall,
-                        color = Color.White
+                        color = textColor,
                     )
                     Text(
                         text = "Tap to change",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.8f)
+                        color = textColor.copy(alpha = 0.8f),
                     )
                 }
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = "Edit gradient",
-                    tint = Color.White
+                    tint = textColor,
                 )
             }
         }

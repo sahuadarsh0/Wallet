@@ -15,8 +15,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
@@ -33,7 +34,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -47,9 +47,12 @@ import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -65,9 +68,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.domain.model.Category
 import com.technitedminds.wallet.presentation.components.common.getIconFromName
+import com.technitedminds.wallet.presentation.components.common.PremiumFloatingActionButton
 import com.technitedminds.wallet.presentation.constants.AppConstants
+import com.technitedminds.wallet.presentation.components.animation.liquidPress
+import com.technitedminds.wallet.ui.theme.WalletSpring
+import com.technitedminds.wallet.ui.theme.WalletTiming
 import com.technitedminds.wallet.ui.theme.WalletTheme
 import com.technitedminds.wallet.utils.asDisplayName
+import kotlinx.coroutines.delay
 
 
 /**
@@ -116,14 +124,11 @@ fun CategoriesScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = viewModel::showCreateCategoryDialog
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = AppConstants.UIText.ADD_CATEGORY
-                )
-            }
+            PremiumFloatingActionButton(
+                onClick = viewModel::showCreateCategoryDialog,
+                icon = Icons.Default.Add,
+                contentDescription = AppConstants.UIText.ADD_CATEGORY
+            )
         },
         modifier = modifier
     ) { paddingValues ->
@@ -150,18 +155,25 @@ fun CategoriesScreen(
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(AppConstants.Dimensions.PADDING_LARGE),
-                        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL)
+                        contentPadding = PaddingValues(
+                            start = AppConstants.Dimensions.PADDING_LARGE,
+                            end = AppConstants.Dimensions.PADDING_LARGE,
+                            top = AppConstants.Dimensions.PADDING_LARGE,
+                            bottom = 80.dp, // room for floating pill nav
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL),
                     ) {
-                        items(
+                        itemsIndexed(
                             items = uiState.categories,
-                            key = { it.id }
-                        ) { category ->
-                            CategoryItem(
-                                category = category,
-                                onEdit = { viewModel.showEditCategoryDialog(category) },
-                                onDelete = { viewModel.showDeleteConfirmation(category) }
-                            )
+                            key = { _, cat -> cat.id },
+                        ) { index, category ->
+                            CategoryStaggerItem(index = index) {
+                                CategoryItem(
+                                    category = category,
+                                    onEdit = { viewModel.showEditCategoryDialog(category) },
+                                    onDelete = { viewModel.showDeleteConfirmation(category) },
+                                )
+                            }
                         }
                     }
                 }
@@ -330,7 +342,9 @@ private fun CategoryItem(
     }
 
     ElevatedCard(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .liquidPress(),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(6.dp)
@@ -500,6 +514,42 @@ private fun DeleteConfirmationDialog(
             }
         }
     )
+}
+
+/**
+ * Spring-staggered entrance for category list items.
+ */
+@Composable
+private fun CategoryStaggerItem(
+    index: Int,
+    content: @Composable () -> Unit,
+) {
+    var visible by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (visible) 1f else 0.85f,
+        animationSpec = WalletSpring.bouncy(),
+        label = "cat_stagger_scale",
+    )
+    val alpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = WalletSpring.gentle(),
+        label = "cat_stagger_alpha",
+    )
+
+    LaunchedEffect(Unit) {
+        delay(index.toLong() * 60)
+        visible = true
+    }
+
+    Box(
+        modifier = Modifier.graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+            this.alpha = alpha
+        },
+    ) {
+        content()
+    }
 }
 
 /**

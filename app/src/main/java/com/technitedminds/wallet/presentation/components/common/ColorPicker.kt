@@ -6,9 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -50,21 +47,21 @@ fun ColorPicker(
             fontWeight = FontWeight.Medium
         )
         
-        // Predefined colors grid
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(8),
+        // Predefined colors — FlowRow so it scrolls with parent
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
             horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL),
             verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL),
-            modifier = Modifier.height(AppConstants.Dimensions.CARD_TYPE_OPTION_HEIGHT)
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            items(predefinedColors) { colorHex ->
+            predefinedColors.forEach { colorHex ->
                 ColorOption(
                     colorHex = colorHex,
                     isSelected = selectedColor == colorHex,
                     onClick = {
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                         onColorSelected(colorHex)
-                    }
+                    },
                 )
             }
         }
