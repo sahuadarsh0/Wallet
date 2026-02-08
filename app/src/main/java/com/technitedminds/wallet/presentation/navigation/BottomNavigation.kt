@@ -1,6 +1,18 @@
 package com.technitedminds.wallet.presentation.navigation
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Home
@@ -8,101 +20,223 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.*
+import androidx.compose.material3.Badge
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.technitedminds.wallet.presentation.constants.AppConstants
+import com.technitedminds.wallet.ui.theme.Glass
+import com.technitedminds.wallet.ui.theme.GlassSurface
+import com.technitedminds.wallet.ui.theme.WalletSpring
 
 /**
- * Bottom navigation bar for main app screens
+ * Floating pill-shaped bottom navigation bar with spring-animated
+ * selection indicator, glass morphism background, and haptic feedback.
  */
 @Composable
 fun WalletBottomNavigation(
     navController: NavController,
     modifier: Modifier = Modifier,
-    categoryCount: Int = 0
+    categoryCount: Int = 0,
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    
-    NavigationBar(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surfaceContainer
+    val haptic = LocalHapticFeedback.current
+
+    // Entrance spring — pill bounces in from below
+    var appeared by remember { mutableStateOf(false) }
+    val entranceTranslateY by animateFloatAsState(
+        targetValue = if (appeared) 0f else 120f,
+        animationSpec = WalletSpring.bouncy(),
+        label = "pill_entrance",
+    )
+    val entranceAlpha by animateFloatAsState(
+        targetValue = if (appeared) 1f else 0f,
+        animationSpec = WalletSpring.gentle(),
+        label = "pill_alpha",
+    )
+    LaunchedEffect(Unit) { appeared = true }
+
+    Box(
+        modifier = modifier
+            .graphicsLayer {
+                translationY = entranceTranslateY
+                alpha = entranceAlpha
+            }
+            .padding(bottom = 20.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        bottomNavItems.forEach { item ->
-            val isSelected = currentRoute == item.route
-            
-            NavigationBarItem(
-                icon = {
-                    BadgedBox(
-                        badge = {
-                            if (item.route == NavigationDestinations.Categories.route && categoryCount > 0) {
-                                Badge {
-                                    Text(
-                                        text = categoryCount.toString(),
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
+        GlassSurface(
+            shape = RoundedCornerShape(Glass.PillCornerRadius),
+            useElevated = true,
+            modifier = Modifier
+                .shadow(
+                    elevation = 12.dp,
+                    shape = RoundedCornerShape(Glass.PillCornerRadius),
+                    ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                ),
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                bottomNavItems.forEach { item ->
+                    val isSelected = currentRoute == item.route
+
+                    PillNavItem(
+                        icon = if (isSelected) item.selectedIcon else item.unselectedIcon,
+                        label = item.label,
+                        isSelected = isSelected,
+                        badgeCount = if (item.route == NavigationDestinations.Categories.route) categoryCount else 0,
+                        onClick = {
+                            if (currentRoute != item.route) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                navController.navigate(item.route) {
+                                    popUpTo(NavigationDestinations.Home.route) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
                             }
-                        }
-                    ) {
-                        Icon(
-                            imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
-                            contentDescription = item.label,
-                            modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_LARGE)
-                        )
-                    }
-                },
-                label = {
-                    Text(
-                        text = item.label,
-                        style = MaterialTheme.typography.labelMedium
+                        },
                     )
-                },
-                selected = isSelected,
-                onClick = {
-                    if (currentRoute != item.route) {
-                        navController.navigate(item.route) {
-                            // Pop up to the start destination to avoid building up a large stack
-                            popUpTo(NavigationDestinations.Home.route) {
-                                saveState = true
-                            }
-                            // Avoid multiple copies of the same destination when reselecting the same item
-                            launchSingleTop = true
-                            // Restore state when reselecting a previously selected item
-                            restoreState = true
-                        }
-                    }
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                )
-            )
+                }
+            }
         }
     }
 }
 
-/**
- * Bottom navigation item data class
- */
+@Composable
+private fun PillNavItem(
+    icon: ImageVector,
+    label: String,
+    isSelected: Boolean,
+    badgeCount: Int,
+    onClick: () -> Unit,
+) {
+    // Spring-animated selection scale
+    val iconScale by animateFloatAsState(
+        targetValue = if (isSelected) 1.15f else 1f,
+        animationSpec = WalletSpring.bouncy(),
+        label = "nav_icon_scale",
+    )
+
+    // Press dip
+    var isPressed by remember { mutableStateOf(false) }
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.85f else 1f,
+        animationSpec = WalletSpring.bouncy(),
+        label = "nav_press_scale",
+    )
+
+    // Selection indicator size
+    val indicatorSize by animateDpAsState(
+        targetValue = if (isSelected) 48.dp else 0.dp,
+        animationSpec = WalletSpring.snappy(),
+        label = "nav_indicator",
+    )
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(56.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) {
+                isPressed = true
+                onClick()
+            }
+            .graphicsLayer {
+                scaleX = iconScale * pressScale
+                scaleY = iconScale * pressScale
+            },
+    ) {
+        // Selected indicator background
+        if (indicatorSize > 0.dp) {
+            Box(
+                modifier = Modifier
+                    .size(indicatorSize)
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = CircleShape,
+                    ),
+            )
+        }
+
+        // Icon
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            modifier = Modifier.size(24.dp),
+        )
+
+        // Badge
+        if (badgeCount > 0) {
+            val badgeScale by animateFloatAsState(
+                targetValue = 1f,
+                animationSpec = WalletSpring.bouncy(),
+                label = "badge_scale",
+            )
+            Badge(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 4.dp, y = (-4).dp)
+                    .graphicsLayer {
+                        scaleX = badgeScale
+                        scaleY = badgeScale
+                    },
+            ) {
+                Text(
+                    text = badgeCount.toString(),
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            }
+        }
+    }
+
+    // Reset press state
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            kotlinx.coroutines.delay(100)
+            isPressed = false
+        }
+    }
+}
+
+// --- Data ---
+
 private data class BottomNavItem(
     val route: String,
     val label: String,
     val selectedIcon: ImageVector,
-    val unselectedIcon: ImageVector
+    val unselectedIcon: ImageVector,
 )
 
-/**
- * List of bottom navigation items - using the predefined destinations
- */
 private val bottomNavItems = NavigationDestinations.getBottomNavDestinations().map { destination ->
     BottomNavItem(
         route = destination.route,
@@ -123,7 +257,7 @@ private val bottomNavItems = NavigationDestinations.getBottomNavDestinations().m
             NavigationDestinations.Categories -> Icons.Outlined.Category
             NavigationDestinations.Settings -> Icons.Outlined.Settings
             else -> Icons.Outlined.Home
-        }
+        },
     )
 }
 

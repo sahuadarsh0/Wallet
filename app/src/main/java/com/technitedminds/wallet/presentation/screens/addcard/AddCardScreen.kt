@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import com.technitedminds.wallet.ui.theme.WalletSpring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -185,37 +186,34 @@ fun AddCardScreen(
             AnimatedContent(
                 targetState = currentStep,
                 transitionSpec = {
-                    val slideDuration = AppConstants.Animation.SLIDE_IN_DURATION_BASE
-                    val easing = EaseOutCubic
-                    
                     // Determine direction by comparing step ordinals
                     val isForward = targetState.ordinal > initialState.ordinal
                     
                     if (isForward) {
-                        // Forward navigation: slide in from right, slide out to left
+                        // Forward: spring slide in from right with overshoot
                         slideInHorizontally(
                             initialOffsetX = { it },
-                            animationSpec = tween(slideDuration, easing = easing)
+                            animationSpec = WalletSpring.gentle()
                         ) + fadeIn(
-                            animationSpec = tween(slideDuration, easing = easing)
+                            animationSpec = tween(300)
                         ) togetherWith slideOutHorizontally(
-                            targetOffsetX = { -it },
-                            animationSpec = tween(slideDuration, easing = easing)
+                            targetOffsetX = { -it / 3 },
+                            animationSpec = WalletSpring.gentle()
                         ) + fadeOut(
-                            animationSpec = tween(slideDuration, easing = easing)
+                            animationSpec = tween(200)
                         )
                     } else {
-                        // Backward navigation: slide in from left, slide out to right
+                        // Backward: spring slide in from left with overshoot
                         slideInHorizontally(
                             initialOffsetX = { -it },
-                            animationSpec = tween(slideDuration, easing = easing)
+                            animationSpec = WalletSpring.gentle()
                         ) + fadeIn(
-                            animationSpec = tween(slideDuration, easing = easing)
+                            animationSpec = tween(300)
                         ) togetherWith slideOutHorizontally(
-                            targetOffsetX = { it },
-                            animationSpec = tween(slideDuration, easing = easing)
+                            targetOffsetX = { it / 3 },
+                            animationSpec = WalletSpring.gentle()
                         ) + fadeOut(
-                            animationSpec = tween(slideDuration, easing = easing)
+                            animationSpec = tween(200)
                         )
                     }
                 },

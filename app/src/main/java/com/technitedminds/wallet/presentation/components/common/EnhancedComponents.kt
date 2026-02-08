@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -29,6 +30,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.BorderStroke
+import com.technitedminds.wallet.ui.theme.GlassSurface
+import com.technitedminds.wallet.ui.theme.Glass
+import com.technitedminds.wallet.ui.theme.WalletSpring
 
 /**
  * Enhanced floating action button with premium animations and haptic feedback
@@ -45,13 +49,19 @@ fun PremiumFloatingActionButton(
     val haptic = LocalHapticFeedback.current
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "fab_scale"
+        targetValue = if (isPressed) 0.88f else 1f,
+        animationSpec = WalletSpring.bouncy(),
+        label = "fab_scale",
     )
+
+    // Entrance spring — FAB bounces in on first composition
+    var appeared by remember { mutableStateOf(false) }
+    val entranceScale by animateFloatAsState(
+        targetValue = if (appeared) 1f else 0f,
+        animationSpec = WalletSpring.bouncy(),
+        label = "fab_entrance",
+    )
+    LaunchedEffect(Unit) { appeared = true }
 
     FloatingActionButton(
         onClick = {
@@ -59,7 +69,10 @@ fun PremiumFloatingActionButton(
             onClick()
         },
         modifier = modifier
-            .scale(scale)
+            .graphicsLayer {
+                scaleX = scale * entranceScale
+                scaleY = scale * entranceScale
+            }
             .size(64.dp),
         containerColor = containerColor,
         contentColor = contentColor,
@@ -90,12 +103,9 @@ fun PremiumCard(
     val haptic = LocalHapticFeedback.current
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
-        ),
-        label = "card_scale"
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = WalletSpring.snappy(),
+        label = "card_scale",
     )
 
     Card(
@@ -138,9 +148,9 @@ fun AnimatedSectionHeader(
     AnimatedVisibility(
         visible = visible,
         enter = slideInVertically(
-            initialOffsetY = { -it },
-            animationSpec = tween(600, easing = EaseOutCubic)
-        ) + fadeIn(animationSpec = tween(600))
+            initialOffsetY = { -it / 2 },
+            animationSpec = WalletSpring.gentle(),
+        ) + fadeIn(animationSpec = tween(400))
     ) {
         Row(
             modifier = modifier
@@ -279,12 +289,9 @@ fun PremiumButton(
     val haptic = LocalHapticFeedback.current
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
-        ),
-        label = "button_scale"
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = WalletSpring.snappy(),
+        label = "button_scale",
     )
 
     val colors = when (variant) {
@@ -392,26 +399,30 @@ fun PremiumChip(
     val haptic = LocalHapticFeedback.current
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
-        ),
-        label = "chip_scale"
+        targetValue = if (isPressed) 0.90f else 1f,
+        animationSpec = WalletSpring.snappy(),
+        label = "chip_scale",
+    )
+
+    // Overshoot bounce on selection change
+    val selectionScale by animateFloatAsState(
+        targetValue = if (selected) 1f else 1f,
+        animationSpec = WalletSpring.bouncy(),
+        label = "chip_selection_scale",
     )
 
     val backgroundColor by animateColorAsState(
         targetValue = if (selected) MaterialTheme.colorScheme.primary
                      else MaterialTheme.colorScheme.surfaceVariant,
-        animationSpec = tween(300),
-        label = "chip_background"
+        animationSpec = WalletSpring.snappy(),
+        label = "chip_background",
     )
 
     val contentColor by animateColorAsState(
         targetValue = if (selected) MaterialTheme.colorScheme.onPrimary
                      else MaterialTheme.colorScheme.onSurfaceVariant,
-        animationSpec = tween(300),
-        label = "chip_content"
+        animationSpec = WalletSpring.snappy(),
+        label = "chip_content",
     )
 
     Surface(
@@ -419,7 +430,10 @@ fun PremiumChip(
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onClick()
         },
-        modifier = modifier.scale(scale),
+        modifier = modifier.graphicsLayer {
+            scaleX = scale * selectionScale
+            scaleY = scale * selectionScale
+        },
         shape = RoundedCornerShape(20.dp),
         color = backgroundColor,
         border = if (!selected) BorderStroke(
@@ -485,7 +499,7 @@ fun PremiumLoadingIndicator(
 fun PremiumDivider(
     modifier: Modifier = Modifier,
     thickness: androidx.compose.ui.unit.Dp = 1.dp,
-    startIndent: androidx.compose.ui.unit.Dp = 0.dp
+    startIndent: androidx.compose.ui.unit.Dp = 0.dp,
 ) {
     Box(
         modifier = modifier
@@ -499,9 +513,48 @@ fun PremiumDivider(
                         MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
                         MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
                         MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                        Color.Transparent
-                    )
-                )
-            )
+                        Color.Transparent,
+                    ),
+                ),
+            ),
+    )
+}
+
+/**
+ * Glass morphism card variant — semi-transparent background with iridescent border.
+ * Uses spring physics for press animation.
+ */
+@Composable
+fun GlassPremiumCard(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    val haptic = LocalHapticFeedback.current
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = WalletSpring.snappy(),
+        label = "glass_card_scale",
+    )
+
+    GlassSurface(
+        modifier = modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onClick()
+                    }
+                } else Modifier,
+            ),
+        content = content,
     )
 }

@@ -1,8 +1,7 @@
 package com.technitedminds.wallet.presentation.components.common
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -14,11 +13,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.technitedminds.wallet.presentation.constants.AppConstants
+import com.technitedminds.wallet.ui.theme.WalletSpring
 
 /**
  * Enhanced step progress indicator with animations for the Add Card Flow.
@@ -124,17 +125,21 @@ private fun StepCircle(
     val isCompleted = stepIndex < currentStep
     val isCurrent = stepIndex == currentStep
 
+    // Spring scale bounce when becoming active
+    val activeScale by animateFloatAsState(
+        targetValue = if (isCurrent) 1f else if (isCompleted) 0.95f else 0.85f,
+        animationSpec = WalletSpring.bouncy(),
+        label = "step_scale",
+    )
+
     // Animate circle background color
     val circleColor by animateColorAsState(
         targetValue = when {
             isCompleted || isCurrent -> MaterialTheme.colorScheme.primary
             else -> MaterialTheme.colorScheme.surfaceVariant
         },
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
-        ),
-        label = "step_circle_color"
+        animationSpec = WalletSpring.snappy(),
+        label = "step_circle_color",
     )
 
     // Animate content color
@@ -143,15 +148,16 @@ private fun StepCircle(
             isCompleted || isCurrent -> MaterialTheme.colorScheme.onPrimary
             else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         },
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
-        ),
-        label = "step_content_color"
+        animationSpec = WalletSpring.snappy(),
+        label = "step_content_color",
     )
 
     Box(
         modifier = modifier
+            .graphicsLayer {
+                scaleX = activeScale
+                scaleY = activeScale
+            }
             .clip(CircleShape)
             .background(circleColor),
         contentAlignment = Alignment.Center
@@ -198,11 +204,8 @@ private fun StepConnector(
         } else {
             MaterialTheme.colorScheme.surfaceVariant
         },
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
-        ),
-        label = "connector_line_color"
+        animationSpec = WalletSpring.gentle(),
+        label = "connector_line_color",
     )
 
     Box(

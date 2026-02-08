@@ -1,10 +1,12 @@
 package com.technitedminds.wallet.presentation.components.common
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -19,8 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -29,6 +33,8 @@ import androidx.compose.ui.window.Dialog
 import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.domain.model.CardGradient
 import com.technitedminds.wallet.presentation.constants.AppConstants
+import com.technitedminds.wallet.ui.theme.Glass
+import com.technitedminds.wallet.ui.theme.WalletSpring
 
 /**
  * Card type selector component with visual icons, descriptions, and gradient selection
@@ -420,12 +426,28 @@ private fun CardTypeOptionWithGradient(
     isSelected: Boolean,
     gradient: CardGradient?,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
+    // Spring bounce on press
+    var isPressed by remember { mutableStateOf(false) }
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.94f else 1f,
+        animationSpec = WalletSpring.bouncy(),
+        label = "type_press_scale",
+    )
+
+    // Selection overshoot scale
+    val selectionScale by animateFloatAsState(
+        targetValue = if (isSelected) 1f else 1f,
+        animationSpec = WalletSpring.bouncy(),
+        label = "type_selection_scale",
+    )
+
+    val borderBrush = if (isSelected) Glass.colors.border else null
     val borderColor by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-        animationSpec = tween(200),
-        label = "border_color"
+        animationSpec = WalletSpring.snappy(),
+        label = "border_color",
     )
     
     val backgroundColor by animateColorAsState(
@@ -434,19 +456,42 @@ private fun CardTypeOptionWithGradient(
         } else {
             MaterialTheme.colorScheme.surface
         },
-        animationSpec = tween(200),
-        label = "background_color"
+        animationSpec = WalletSpring.snappy(),
+        label = "background_color",
     )
     
     Card(
         modifier = modifier
             .fillMaxWidth()
             .height(AppConstants.Dimensions.CARD_TYPE_OPTION_HEIGHT)
-            .border(
-                width = if (isSelected) AppConstants.Dimensions.CARD_TYPE_OPTION_BORDER_WIDTH_SELECTED else AppConstants.Dimensions.CARD_TYPE_OPTION_BORDER_WIDTH,
-                color = borderColor,
-                shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_NORMAL)
+            .graphicsLayer {
+                scaleX = pressScale * selectionScale
+                scaleY = pressScale * selectionScale
+            }
+            .then(
+                if (borderBrush != null) {
+                    Modifier.border(
+                        width = AppConstants.Dimensions.CARD_TYPE_OPTION_BORDER_WIDTH_SELECTED,
+                        brush = borderBrush,
+                        shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_NORMAL),
+                    )
+                } else {
+                    Modifier.border(
+                        width = AppConstants.Dimensions.CARD_TYPE_OPTION_BORDER_WIDTH,
+                        color = borderColor,
+                        shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_NORMAL),
+                    )
+                },
             )
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        isPressed = true
+                        tryAwaitRelease()
+                        isPressed = false
+                    },
+                )
+            }
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_NORMAL)

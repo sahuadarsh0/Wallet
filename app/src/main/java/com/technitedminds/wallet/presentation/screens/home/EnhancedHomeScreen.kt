@@ -1,9 +1,12 @@
 package com.technitedminds.wallet.presentation.screens.home
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
@@ -21,7 +24,9 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -46,6 +51,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,9 +60,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.technitedminds.wallet.ui.theme.WalletSpring
+import com.technitedminds.wallet.ui.theme.WalletTiming
+import kotlinx.coroutines.delay
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.domain.model.Card
@@ -443,26 +453,36 @@ private fun EnhancedCardsSection(
                             columns = GridCells.Fixed(2),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(bottom = 80.dp)
+                            contentPadding = PaddingValues(bottom = 80.dp),
                         ) {
-                            items(cards) { card ->
-                                EnhancedCardGridItem(
-                                    card = card,
-                                    onClick = { onCardClick(card) }
-                                )
+                            itemsIndexed(
+                                items = cards,
+                                key = { _, card -> card.id },
+                            ) { index, card ->
+                                SpringStaggerItem(index = index) {
+                                    EnhancedCardGridItem(
+                                        card = card,
+                                        onClick = { onCardClick(card) },
+                                    )
+                                }
                             }
                         }
                     } else {
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(1),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
-                            contentPadding = PaddingValues(bottom = 80.dp)
+                            contentPadding = PaddingValues(bottom = 80.dp),
                         ) {
-                            items(cards) { card ->
-                                EnhancedCardListItem(
-                                    card = card,
-                                    onClick = { onCardClick(card) }
-                                )
+                            itemsIndexed(
+                                items = cards,
+                                key = { _, card -> card.id },
+                            ) { index, card ->
+                                SpringStaggerItem(index = index) {
+                                    EnhancedCardListItem(
+                                        card = card,
+                                        onClick = { onCardClick(card) },
+                                    )
+                                }
                             }
                         }
                     }
@@ -664,5 +684,42 @@ private fun getCardGradientBrush(card: Card): Brush {
                 start = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, 0f),
                 end = androidx.compose.ui.geometry.Offset(0f, Float.POSITIVE_INFINITY)
             )
+    }
+}
+
+/**
+ * Spring-staggered entrance wrapper. Each item fades + scales in with a
+ * per-index delay, using spring physics for natural overshoot.
+ */
+@Composable
+private fun SpringStaggerItem(
+    index: Int,
+    content: @Composable () -> Unit,
+) {
+    var visible by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (visible) 1f else 0.85f,
+        animationSpec = WalletSpring.bouncy(),
+        label = "stagger_scale",
+    )
+    val alpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = WalletSpring.gentle(),
+        label = "stagger_alpha",
+    )
+
+    LaunchedEffect(Unit) {
+        delay(index.toLong() * WalletTiming.STAGGER_DELAY_MS)
+        visible = true
+    }
+
+    Box(
+        modifier = Modifier.graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+            this.alpha = alpha
+        },
+    ) {
+        content()
     }
 }
