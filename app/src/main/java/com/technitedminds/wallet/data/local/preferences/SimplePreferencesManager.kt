@@ -6,10 +6,12 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -36,7 +38,15 @@ class SimplePreferencesManager @Inject constructor(
         private val CARD_FLIP_ANIMATION_ENABLED = booleanPreferencesKey("card_flip_animation_enabled")
         private val SHOW_CARD_NUMBERS = booleanPreferencesKey("show_card_numbers")
         private val BIOMETRIC_AUTH_ENABLED = booleanPreferencesKey("biometric_auth_enabled")
+        private val APP_LOCK_ENABLED = booleanPreferencesKey("app_lock_enabled")
         private val APP_LOCK_TIMEOUT = intPreferencesKey("app_lock_timeout")
+        private val PIN_HASH = stringPreferencesKey("pin_hash")
+        private val PIN_SALT = stringPreferencesKey("pin_salt")
+        private val RECOVERY_CODE_HASH = stringPreferencesKey("recovery_code_hash")
+        private val RECOVERY_CODE_SALT = stringPreferencesKey("recovery_code_salt")
+        private val LAST_UNLOCK_EPOCH = longPreferencesKey("last_unlock_epoch")
+        private val FAILED_PIN_ATTEMPTS = intPreferencesKey("failed_pin_attempts")
+        private val LOCKOUT_UNTIL_EPOCH = longPreferencesKey("lockout_until_epoch")
         private val FIRST_LAUNCH = booleanPreferencesKey("first_launch")
         private val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         private val STORAGE_CLEANUP_LAST_RUN = stringPreferencesKey("storage_cleanup_last_run")
@@ -186,8 +196,117 @@ class SimplePreferencesManager @Inject constructor(
     
     fun getAppLockTimeout(): Flow<Int> {
         return context.dataStore.data.map { preferences ->
-            preferences[APP_LOCK_TIMEOUT] ?: 5 // Default 5 minutes
+            preferences[APP_LOCK_TIMEOUT] ?: 0 // Default 0 = immediate
         }
+    }
+    
+    // App lock enable/disable
+    suspend fun setAppLockEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[APP_LOCK_ENABLED] = enabled
+        }
+    }
+    
+    fun isAppLockEnabled(): Flow<Boolean> {
+        return context.dataStore.data.map { preferences ->
+            preferences[APP_LOCK_ENABLED] ?: false
+        }
+    }
+    
+    // PIN hash storage
+    suspend fun setPinHash(hash: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PIN_HASH] = hash
+        }
+    }
+    
+    fun getPinHash(): Flow<String?> {
+        return context.dataStore.data.map { preferences ->
+            preferences[PIN_HASH]
+        }
+    }
+    
+    suspend fun setPinSalt(salt: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PIN_SALT] = salt
+        }
+    }
+    
+    fun getPinSalt(): Flow<String?> {
+        return context.dataStore.data.map { preferences ->
+            preferences[PIN_SALT]
+        }
+    }
+    
+    // Recovery code hash storage
+    suspend fun setRecoveryCodeHash(hash: String) {
+        context.dataStore.edit { preferences ->
+            preferences[RECOVERY_CODE_HASH] = hash
+        }
+    }
+    
+    fun getRecoveryCodeHash(): Flow<String?> {
+        return context.dataStore.data.map { preferences ->
+            preferences[RECOVERY_CODE_HASH]
+        }
+    }
+    
+    suspend fun setRecoveryCodeSalt(salt: String) {
+        context.dataStore.edit { preferences ->
+            preferences[RECOVERY_CODE_SALT] = salt
+        }
+    }
+    
+    fun getRecoveryCodeSalt(): Flow<String?> {
+        return context.dataStore.data.map { preferences ->
+            preferences[RECOVERY_CODE_SALT]
+        }
+    }
+    
+    // Last unlock timestamp
+    suspend fun setLastUnlockEpoch(epoch: Long) {
+        context.dataStore.edit { preferences ->
+            preferences[LAST_UNLOCK_EPOCH] = epoch
+        }
+    }
+    
+    fun getLastUnlockEpoch(): Flow<Long> {
+        return context.dataStore.data.map { preferences ->
+            preferences[LAST_UNLOCK_EPOCH] ?: 0L
+        }
+    }
+    
+    // Clear all security-related preferences (for data wipe)
+    suspend fun clearSecurityPreferences() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(APP_LOCK_ENABLED)
+            preferences.remove(BIOMETRIC_AUTH_ENABLED)
+            preferences.remove(PIN_HASH)
+            preferences.remove(PIN_SALT)
+            preferences.remove(RECOVERY_CODE_HASH)
+            preferences.remove(RECOVERY_CODE_SALT)
+            preferences.remove(LAST_UNLOCK_EPOCH)
+            preferences.remove(APP_LOCK_TIMEOUT)
+            preferences.remove(FAILED_PIN_ATTEMPTS)
+            preferences.remove(LOCKOUT_UNTIL_EPOCH)
+        }
+    }
+
+    // Failed PIN attempt tracking (rate limiting)
+    suspend fun setFailedPinAttempts(count: Int) {
+        context.dataStore.edit { it[FAILED_PIN_ATTEMPTS] = count }
+    }
+
+    suspend fun getFailedPinAttempts(): Int {
+        return context.dataStore.data.first()[FAILED_PIN_ATTEMPTS] ?: 0
+    }
+
+    suspend fun setLockoutUntilEpoch(epoch: Long) {
+        context.dataStore.edit { it[LOCKOUT_UNTIL_EPOCH] = epoch }
+    }
+
+    suspend fun getLockoutUntilEpoch(): Long {
+        return context.dataStore.data.first()[LOCKOUT_UNTIL_EPOCH] ?: 0L
     }
     
     // App lifecycle preferences
@@ -256,7 +375,8 @@ class SimplePreferencesManager @Inject constructor(
             preferences[CARD_FLIP_ANIMATION_ENABLED] = true
             preferences[CAMERA_FLASH_ENABLED] = false
             preferences[OCR_CONFIDENCE_THRESHOLD] = 70
-            preferences[APP_LOCK_TIMEOUT] = 5
+            preferences[APP_LOCK_TIMEOUT] = 0
+            preferences[APP_LOCK_ENABLED] = false
             preferences[SHOW_CARD_NUMBERS] = false
             preferences[BIOMETRIC_AUTH_ENABLED] = false
             preferences[AUTO_BACKUP_ENABLED] = false
