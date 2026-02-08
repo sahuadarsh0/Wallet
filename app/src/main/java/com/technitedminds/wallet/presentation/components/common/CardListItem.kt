@@ -34,6 +34,7 @@ import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.presentation.constants.AppConstants
 import com.technitedminds.wallet.ui.theme.WalletSpring
+import com.technitedminds.wallet.ui.theme.gradientContrastText
 import java.io.File
 import androidx.core.graphics.toColorInt
 
@@ -89,6 +90,11 @@ fun CardListItem(
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .gradientShadow(
+                colors = getCardGradientColors(card).toList(),
+                shadowElevation = 6.dp,
+                cornerRadius = AppConstants.Dimensions.CORNER_RADIUS_NORMAL,
+            )
             .graphicsLayer {
                 scaleX = pressScale
                 scaleY = pressScale
@@ -292,6 +298,11 @@ fun GridCardItem(
     Card(
         modifier = modifier
             .aspectRatio(aspectRatio)
+            .gradientShadow(
+                colors = getCardGradientColors(card).toList(),
+                shadowElevation = 8.dp,
+                cornerRadius = AppConstants.Dimensions.CORNER_RADIUS_NORMAL,
+            )
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = {
@@ -344,34 +355,39 @@ fun GridCardItem(
                 )
             }
             
+            // Auto contrast text
+            val gradient = card.getGradient()
+            val cardText = gradientContrastText(gradient.startColor, gradient.endColor)
+            val chipBg = if (cardText == Color.White) Color.Black.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.7f)
+
             // Content overlay
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(AppConstants.Dimensions.PADDING_MEDIUM),
-                verticalArrangement = Arrangement.SpaceBetween
+                verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 // Card type
                 Surface(
-                    color = Color.White.copy(alpha = AppConstants.AnimationValues.ALPHA_ALMOST_OPAQUE),
-                    shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_COMPACT)
+                    color = chipBg,
+                    shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_COMPACT),
                 ) {
                     Text(
                         text = card.type.getDisplayName(),
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.Black,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        color = cardText,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     )
                 }
-                
+
                 // Card name
                 Text(
                     text = card.name,
                     style = MaterialTheme.typography.titleSmall,
-                    color = Color.White,
+                    color = cardText,
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
@@ -391,4 +407,20 @@ private fun getCardTypeColor(card: Card): Color {
         // Fallback to type default if custom color is invalid
         Color(card.type.getDefaultColor().toColorInt())
     }
+}
+
+private fun getCardGradientColors(card: Card): Pair<Color, Color> {
+    val gradient = card.getGradient()
+    val startColor = try {
+        Color(android.graphics.Color.parseColor(gradient.startColor))
+    } catch (e: Exception) {
+        Color(android.graphics.Color.parseColor(Card.getDefaultGradientForType(card.type).startColor))
+    }
+
+    val endColor = try {
+        Color(android.graphics.Color.parseColor(gradient.endColor))
+    } catch (e: Exception) {
+        Color(android.graphics.Color.parseColor(Card.getDefaultGradientForType(card.type).endColor))
+    }
+    return startColor to endColor
 }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,11 +16,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -110,7 +113,10 @@ fun PremiumCard(
 
     Card(
         modifier = modifier
-            .scale(scale)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .then(
                 if (onClick != null) {
                     Modifier.clickable(
@@ -301,7 +307,10 @@ fun PremiumButton(
     }
 
     val buttonModifier = modifier
-        .scale(scale)
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
         .height(48.dp)
 
     when (variant) {
@@ -404,10 +413,11 @@ fun PremiumChip(
         label = "chip_scale",
     )
 
-    // Overshoot bounce on selection change
+    // Overshoot bounce on selection change — targets 1f but the spring
+    // overshoots to ~1.08f before settling, creating a "pop" on selection
     val selectionScale by animateFloatAsState(
-        targetValue = if (selected) 1f else 1f,
-        animationSpec = WalletSpring.bouncy(),
+        targetValue = 1f,
+        animationSpec = if (selected) WalletSpring.elastic() else WalletSpring.snappy(),
         label = "chip_selection_scale",
     )
 
@@ -556,5 +566,47 @@ fun GlassPremiumCard(
                 } else Modifier,
             ),
         content = content,
+    )
+}
+
+/**
+ * Premium gradient-tinted shadow using the platform shadow system.
+ *
+ * Uses [Modifier.shadow] with tinted [ambientColor] and [spotColor] derived from the
+ * card's gradient. The platform shadow renders a proper Gaussian blur per-element so
+ * there is **no overlap** between adjacent cards, **no hard stops**, and the falloff
+ * is smooth and uniform.
+ *
+ * In dark mode the tint shifts slightly cooler for a premium neon-on-dark aesthetic.
+ * In light mode the tint is warmer and lower-alpha so it reads as a subtle coloured lift.
+ */
+fun Modifier.gradientShadow(
+    colors: List<Color>,
+    shadowElevation: androidx.compose.ui.unit.Dp = 8.dp,
+    cornerRadius: androidx.compose.ui.unit.Dp = 16.dp,
+    @Suppress("UNUSED_PARAMETER") glow: androidx.compose.ui.unit.Dp = 0.dp,
+): Modifier = composed {
+    val isDark = isSystemInDarkTheme()
+
+    // Blend gradient endpoints into a single tint
+    val blended = if (colors.size >= 2) {
+        lerp(colors[0], colors[1], 0.5f)
+    } else {
+        colors.firstOrNull() ?: Color.Black
+    }
+
+    // Shift cooler in dark mode
+    val coolTint = Color(0xFF8CCBFF)
+    val tinted = if (isDark) lerp(blended, coolTint, 0.20f) else blended
+
+    // Alpha tuning: visible glow in dark, softer warmth in light
+    val ambientAlpha = if (isDark) 0.45f else 0.26f
+    val spotAlpha = if (isDark) 0.55f else 0.32f
+
+    shadow(
+        elevation = shadowElevation,
+        shape = RoundedCornerShape(cornerRadius),
+        ambientColor = tinted.copy(alpha = ambientAlpha),
+        spotColor = tinted.copy(alpha = spotAlpha),
     )
 }

@@ -8,12 +8,11 @@ import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -21,9 +20,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import com.technitedminds.wallet.domain.model.Card
-import com.technitedminds.wallet.presentation.components.sharing.CardSharingDialog
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
 import com.technitedminds.wallet.presentation.constants.AppConstants
+import com.technitedminds.wallet.presentation.components.common.gradientShadow
 import com.technitedminds.wallet.ui.theme.WalletSpring
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -54,14 +53,6 @@ fun FlippableCard(
     val density = LocalDensity.current.density
     val hapticFeedback = LocalHapticFeedback.current
 
-    var showSharingDialog by remember { mutableStateOf(false) }
-    var pendingShareOption by remember { mutableStateOf<CardSharingOption?>(null) }
-
-    val handleShareClick: (CardSharingOption) -> Unit = { option ->
-        pendingShareOption = option
-        showSharingDialog = true
-    }
-
     // --- Magnetic drag rotation state ---
     val rotation = remember { Animatable(0f) }
     val dragStartFace = remember { mutableFloatStateOf(0f) }
@@ -76,6 +67,8 @@ fun FlippableCard(
         animationSpec = WalletSpring.snappy(),
         label = "card_press_scale",
     )
+
+    val gradientColors = remember(card) { getCardGradientColors(card) }
 
     Box(
         modifier = modifier
@@ -183,15 +176,21 @@ fun FlippableCard(
         if (!isBackVisible) {
             // Front side
             Card(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .gradientShadow(
+                        colors = gradientColors.toList(),
+                        shadowElevation = if (isCompact) 6.dp else 10.dp,
+                        cornerRadius = cornerRadius,
+                    ),
                 shape = RoundedCornerShape(cornerRadius),
                 elevation = CardDefaults.cardElevation(defaultElevation = elevation),
             ) {
                 CardFront(
                     card = card,
                     isCompact = isCompact,
-                    showShareButton = showShareButtons,
-                    onShare = if (onShare != null) handleShareClick else null,
+                    showShareButton = false,
+                    onShare = null,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -200,6 +199,11 @@ fun FlippableCard(
             Card(
                 modifier = Modifier
                     .fillMaxSize()
+                    .gradientShadow(
+                        colors = gradientColors.toList(),
+                        shadowElevation = if (isCompact) 6.dp else 10.dp,
+                        cornerRadius = cornerRadius,
+                    )
                     .graphicsLayer { rotationY = 180f },
                 shape = RoundedCornerShape(cornerRadius),
                 elevation = CardDefaults.cardElevation(defaultElevation = elevation),
@@ -207,8 +211,8 @@ fun FlippableCard(
                 CardBack(
                     card = card,
                     isCompact = isCompact,
-                    showShareButton = showShareButtons,
-                    onShare = if (onShare != null) handleShareClick else null,
+                    showShareButton = false,
+                    onShare = null,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -235,34 +239,23 @@ fun FlippableCard(
             )
         }
 
-        // Share both sides button
-        if (showShareButtons && onShare != null && !isCompact && card.backImagePath.isNotBlank()) {
-            ShareBothSidesButton(
-                onShare = { handleShareClick(CardSharingOption.BothSides) },
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(AppConstants.Dimensions.SPACING_SMALL),
-            )
-        }
+    }
+}
+
+private fun getCardGradientColors(card: Card): Pair<Color, Color> {
+    val gradient = card.getGradient()
+    val startColor = try {
+        Color(android.graphics.Color.parseColor(gradient.startColor))
+    } catch (e: Exception) {
+        Color(android.graphics.Color.parseColor(Card.getDefaultGradientForType(card.type).startColor))
     }
 
-    // Sharing dialog
-    if (showShareButtons && onShare != null && !isCompact) {
-        CardSharingDialog(
-            card = card,
-            isVisible = showSharingDialog,
-            onDismiss = {
-                showSharingDialog = false
-                pendingShareOption = null
-            },
-            initialOption = pendingShareOption,
-            onShare = { option, _ ->
-                onShare(option)
-                showSharingDialog = false
-                pendingShareOption = null
-            },
-        )
+    val endColor = try {
+        Color(android.graphics.Color.parseColor(gradient.endColor))
+    } catch (e: Exception) {
+        Color(android.graphics.Color.parseColor(Card.getDefaultGradientForType(card.type).endColor))
     }
+    return startColor to endColor
 }
 
 /**
@@ -279,7 +272,7 @@ private fun FlipIndicator(
             .size(AppConstants.Dimensions.ICON_SIZE_EXTRA_LARGE)
             .clickable { onFlip() },
         shape = androidx.compose.foundation.shape.CircleShape,
-        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = AppConstants.AnimationValues.ALPHA_HIGH),
+        color = MaterialTheme.colorScheme.inverseSurface.copy(alpha = AppConstants.AnimationValues.ALPHA_HIGH),
     ) {
         Box(
             contentAlignment = Alignment.Center,
@@ -288,43 +281,7 @@ private fun FlipIndicator(
             Text(
                 text = if (isFlipped) "F" else "B",
                 style = MaterialTheme.typography.labelMedium,
-                color = androidx.compose.ui.graphics.Color.White,
-            )
-        }
-    }
-}
-
-/**
- * Share both sides button
- */
-@Composable
-private fun ShareBothSidesButton(
-    onShare: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier.clickable { onShare() },
-        shape = RoundedCornerShape(AppConstants.Dimensions.CORNER_RADIUS_LARGE),
-        color = androidx.compose.ui.graphics.Color.Black.copy(alpha = AppConstants.AnimationValues.ALPHA_HIGH),
-    ) {
-        Row(
-            modifier = Modifier.padding(
-                horizontal = AppConstants.Dimensions.SPACING_MEDIUM,
-                vertical = 6.dp,
-            ),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_EXTRA_SMALL),
-        ) {
-            Icon(
-                imageVector = Icons.Default.Share,
-                contentDescription = AppConstants.ContentDescriptions.SHARE_BOTH_SIDES,
-                tint = androidx.compose.ui.graphics.Color.White,
-                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_SMALL),
-            )
-            Text(
-                text = AppConstants.UIText.BOTH_SIDES,
-                style = MaterialTheme.typography.labelSmall,
-                color = androidx.compose.ui.graphics.Color.White,
+                color = MaterialTheme.colorScheme.inverseOnSurface,
             )
         }
     }
@@ -354,38 +311,4 @@ fun EnhancedFlippableCard(
         onCardClick = onCardClick,
         onCardLongPress = onCardLongPress,
     )
-}
-
-/**
- * Card controls overlay — kept for backward compat but
- * controls are now built into [FlippableCard] directly.
- */
-@Composable
-private fun CardControls(
-    card: Card,
-    isFlipped: Boolean,
-    onFlip: () -> Unit,
-    onShare: ((CardSharingOption) -> Unit)?,
-    showShareButtons: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    Box(modifier = modifier) {
-        if (card.backImagePath.isNotBlank()) {
-            FlipIndicator(
-                isFlipped = isFlipped,
-                onFlip = onFlip,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(AppConstants.Dimensions.SPACING_SMALL),
-            )
-        }
-        if (showShareButtons && onShare != null && card.backImagePath.isNotBlank()) {
-            ShareBothSidesButton(
-                onShare = { onShare(CardSharingOption.BothSides) },
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(AppConstants.Dimensions.SPACING_SMALL),
-            )
-        }
-    }
 }

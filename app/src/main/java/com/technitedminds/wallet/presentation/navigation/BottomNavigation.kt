@@ -195,10 +195,12 @@ private fun PillNavItem(
             modifier = Modifier.size(24.dp),
         )
 
-        // Badge
+        // Badge — entrance animation from 0 to 1
         if (badgeCount > 0) {
+            var badgeAppeared by remember { mutableStateOf(false) }
+            LaunchedEffect(Unit) { badgeAppeared = true }
             val badgeScale by animateFloatAsState(
-                targetValue = 1f,
+                targetValue = if (badgeAppeared) 1f else 0f,
                 animationSpec = WalletSpring.bouncy(),
                 label = "badge_scale",
             )

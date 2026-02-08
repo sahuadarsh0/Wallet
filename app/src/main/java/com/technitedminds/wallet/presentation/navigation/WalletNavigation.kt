@@ -1,5 +1,13 @@
 package com.technitedminds.wallet.presentation.navigation
 
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -17,6 +25,12 @@ import com.technitedminds.wallet.presentation.screens.home.EnhancedHomeScreen
 import com.technitedminds.wallet.presentation.screens.settings.SettingsScreen
 import com.technitedminds.wallet.presentation.constants.AppConstants
 
+// Smooth easing curves for jerk-free screen transitions
+private val EaseOut = CubicBezierEasing(0.16f, 1f, 0.3f, 1f)
+private val EaseIn = CubicBezierEasing(0.6f, 0f, 0.84f, 0f)
+private const val ENTER_MS = 380
+private const val EXIT_MS = 280
+
 /**
  * Main navigation component for the CardVault app
  */
@@ -32,7 +46,25 @@ fun WalletNavigation(
         modifier = modifier
     ) {
         // Home screen - using enhanced version
-        composable(NavigationDestinations.Home.route) {
+        composable(
+            route = NavigationDestinations.Home.route,
+            exitTransition = {
+                if (targetState.destination.route == NavigationDestinations.CardDetail.route) {
+                    fadeOut(tween(EXIT_MS, easing = EaseIn)) +
+                        scaleOut(targetScale = 0.96f, animationSpec = tween(EXIT_MS, easing = EaseIn))
+                } else {
+                    null
+                }
+            },
+            popEnterTransition = {
+                if (initialState.destination.route == NavigationDestinations.CardDetail.route) {
+                    fadeIn(tween(ENTER_MS, easing = EaseOut)) +
+                        scaleIn(initialScale = 0.96f, animationSpec = tween(ENTER_MS, easing = EaseOut))
+                } else {
+                    null
+                }
+            },
+        ) {
             EnhancedHomeScreen(
                 onCardClick = { card ->
                     navController.navigateToDetail(NavigationDestinations.CardDetail.createRoute(card.id))
@@ -98,7 +130,29 @@ fun WalletNavigation(
         // Card detail screen
         composable(
             route = NavigationDestinations.CardDetail.route,
-            arguments = NavigationDestinations.CardDetail.arguments
+            arguments = NavigationDestinations.CardDetail.arguments,
+            enterTransition = {
+                slideInVertically(
+                    initialOffsetY = { it / 5 },
+                    animationSpec = tween(ENTER_MS, easing = EaseOut),
+                ) + fadeIn(tween(ENTER_MS, easing = EaseOut)) +
+                    scaleIn(initialScale = 0.95f, animationSpec = tween(ENTER_MS, easing = EaseOut))
+            },
+            exitTransition = {
+                fadeOut(tween(EXIT_MS, easing = EaseIn)) +
+                    scaleOut(targetScale = 0.97f, animationSpec = tween(EXIT_MS, easing = EaseIn))
+            },
+            popEnterTransition = {
+                fadeIn(tween(ENTER_MS, easing = EaseOut)) +
+                    scaleIn(initialScale = 0.97f, animationSpec = tween(ENTER_MS, easing = EaseOut))
+            },
+            popExitTransition = {
+                slideOutVertically(
+                    targetOffsetY = { it / 5 },
+                    animationSpec = tween(EXIT_MS, easing = EaseIn),
+                ) + fadeOut(tween(EXIT_MS, easing = EaseIn)) +
+                    scaleOut(targetScale = 0.95f, animationSpec = tween(EXIT_MS, easing = EaseIn))
+            },
         ) { backStackEntry ->
             val cardId = backStackEntry.arguments?.getString(NavigationParams.CARD_ID) ?: ""
             

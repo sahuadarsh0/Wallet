@@ -1,6 +1,10 @@
 package com.technitedminds.wallet.presentation.components.common
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -11,12 +15,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.foundation.BorderStroke
 import com.technitedminds.wallet.presentation.constants.AppConstants
 
 /**
@@ -99,28 +107,61 @@ private fun ConfirmationDialogContent(
             Tuple4(infoContainer, onInfoContainer, Icons.Default.Info, infoColor)
         }
     }
+
+    // Animation state
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { isVisible = true }
+
+    val scaleAnimation by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0.8f,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessMedium),
+        label = "dialog_scale"
+    )
+
+    val alphaAnimation by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        animationSpec = tween(durationMillis = 300),
+        label = "dialog_alpha"
+    )
     
     Card(
         modifier = modifier
-            .fillMaxWidth()
+            .fillMaxWidth(0.9f)
+            .graphicsLayer {
+                scaleX = scaleAnimation
+                scaleY = scaleAnimation
+                alpha = alphaAnimation
+            }
             .padding(16.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
     ) {
         Column(
             modifier = Modifier.padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Icon
-            Icon(
-                imageVector = icon ?: defaultIcon,
-                contentDescription = null,
-                tint = confirmButtonColor,
-                modifier = Modifier.size(48.dp)
-            )
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Icon background circle
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .background(
+                        color = confirmButtonColor.copy(alpha = 0.1f),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon ?: defaultIcon,
+                    contentDescription = null,
+                    tint = confirmButtonColor,
+                    modifier = Modifier.size(36.dp)
+                )
+            }
             
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -140,40 +181,59 @@ private fun ConfirmationDialogContent(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                lineHeight = 20.sp
             )
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             
-            // Buttons
+            // Buttons (side by side)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Cancel button
+                // Cancel button (secondary action)
                 OutlinedButton(
                     onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onSurface
-                    )
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    border = BorderStroke(
+                        width = 1.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    ),
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text(dismissText)
+                    Text(
+                        dismissText,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
                 
-                // Confirm button
+                // Confirm button (primary action)
                 Button(
                     onClick = {
                         onConfirm()
                         onDismiss()
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = confirmButtonColor,
                         contentColor = Color.White
-                    )
+                    ),
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text(confirmText)
+                    Text(
+                        confirmText,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }
@@ -222,8 +282,8 @@ fun CardDeleteConfirmationDialog(
         onConfirm = onConfirm,
         onDismiss = onDismiss,
         type = ConfirmationType.DELETE,
-        confirmText = "Delete Card",
-        dismissText = "Keep Card",
+        confirmText = "Delete",
+        dismissText = "Keep",
         modifier = modifier
     )
 }

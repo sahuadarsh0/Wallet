@@ -25,6 +25,12 @@ object WalletSpring {
         dampingRatio = Spring.DampingRatioNoBouncy,
         stiffness = Spring.StiffnessHigh,
     )
+
+    /** Slow, gooey settle — liquid drag release, wobble-back effects */
+    fun <T> liquid() = spring<T>(dampingRatio = 0.6f, stiffness = 100f)
+
+    /** Visible overshoot, stretchy — elastic press, breathing pulse */
+    fun <T> elastic() = spring<T>(dampingRatio = 0.4f, stiffness = 150f)
 }
 
 /**
