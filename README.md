@@ -10,10 +10,15 @@ This project is built from the ground up using modern Android development practi
 - **🛡️ Advanced Security:**
   - **App Lock:** Secure the app with a 4-digit PIN, hashed locally using **PBKDF2 with HmacSHA256** and unique salts.
   - **Biometric Unlock:** Seamless integration with Android BiometricPrompt (Fingerprint/Face unlock).
+  - **Secure Onboarding:** Guided initial setup for PIN creation and security configuration.
   - **Rate Limiting:** Exponential backoff for failed PIN attempts to prevent brute-force attacks.
   - **Recovery System:** 16-character human-readable recovery codes for PIN resets.
   - **Auto Data Wipe:** Optional security feature to wipe all local data after maximum failed PIN attempts.
-- **📱 Modern UI/UX:** A beautiful and intuitive interface built entirely with **Jetpack Compose** and **Material Design 3**, featuring smooth 60fps animations, including a realistic 3D card flip effect.
+- **📱 Modern UI/UX:**
+  - **Glassmorphic Design:** A modern, frosted-glass aesthetic implemented with custom shaders and composables.
+  - **Physics-based Animations:** Fluid, natural interactions driven by physics constants for a premium feel.
+  - **3D Card Flip:** Realistic 3D card flip effects for viewing card details.
+  - **Material Design 3:** Built entirely with the latest Material Design components and theming.
 - **📸 Smart Card Scanning:** Add cards quickly using your camera. On-device **ML Kit** recognizes and extracts card details for textual cards (credit/debit), with manual fallback options.
 - **🎨 Flexible Organization:** Group your cards into default or custom-created categories (e.g., 'Work', 'Travel', 'Memberships'), each with a distinct color theme and icon.
 - **💳 Dual Card Processing:** Handles both textual cards (Credit/Debit with OCR processing) and image-only cards (15+ types) with appropriate workflows.
@@ -28,11 +33,12 @@ This project follows the official Android architecture recommendations, employin
 
 - **Core Language:** [Kotlin](https://kotlinlang.org/) (100%)
 - **UI Toolkit:** [Jetpack Compose](https://developer.android.com/jetpack/compose) (latest BOM)
-  - **Theming:** Material Design 3
+  - **Theming:** Material Design 3 & Custom Glassmorphism
   - **Navigation:** [Compose Navigation](https://developer.android.com/jetpack/compose/navigation) with type-safe arguments via `kotlinx.serialization`
-  - **Animations:** Compose Animation APIs for fluid transitions and effects
+  - **Animations:** Compose Animation APIs & Physics-based interactions
 - **Architecture:**
   - **Pattern:** Clean Architecture (MVVM & Unidirectional Data Flow)
+  - **Layers:** Presentation, Domain, Data (See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for details)
   - **Frameworks:** [Jetpack ViewModel](https://developer.android.com/topic/libraries/architecture/viewmodel), [Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-overview.html), and [Flow](https://developer.android.com/kotlin/flow)
 - **Dependency Injection:** [Hilt](https://dagger.dev/hilt/) for managing dependencies across the application
 - **Data Persistence:**
@@ -53,44 +59,18 @@ This project follows the official Android architecture recommendations, employin
 
 ## 🏗️ Project Structure
 
+For a detailed breakdown of the project structure, including package organization and layer responsibilities, please refer to [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md).
+
 ```
 com.technitedminds.wallet/
-├── MainActivity.kt               # Main entry point with AppPhase state machine ✅
-├── WalletApplication.kt          # Application class with @HiltAndroidApp ✅
-├── ui/
-│   └── theme/                    # Material Design 3 theming ✅
-├── data/                         # Data Layer - COMPLETE ✅
-│   ├── local/
-│   │   ├── database/             # Room database (Cards, Categories) ✅
-│   │   ├── files/                # File system operations ✅
-│   │   ├── preferences/          # SimplePreferencesManager (DataStore) ✅
-│   │   ├── security/             # Security Core ✅
-│   │   │   ├── PinHasher.kt      # PBKDF2 hashing utility
-│   │   │   ├── RecoveryCodeManager.kt # Recovery code generation/hashing
-│   │   │   └── AppLockRepository.kt # Security state & rate limiting
-│   │   └── storage/              # StorageManager (Cleanup & Stats) ✅
-│   ├── ocr/                      # ML Kit implementation ✅
-│   └── repository/               # Repository implementations ✅
-├── domain/                       # Domain Layer - COMPLETE ✅
-│   ├── model/                    # Domain models (Card, CardType, Category) ✅
-│   ├── repository/               # Repository interfaces ✅
-│   └── usecase/                  # Business logic use cases ✅
-├── presentation/                 # Presentation Layer - COMPLETE ✅
-│   ├── screens/                  # Feature screens ✅
-│   │   ├── home/                 # EnhancedHomeScreen with stats & filters
-│   │   ├── addcard/              # Multi-step AddCard wizard
-│   │   ├── camera/               # Dedicated CameraScreen
-│   │   ├── carddetail/           # 3D Flip CardDetail view
-│   │   ├── categories/           # Category management UI
-│   │   ├── security/             # AppLockScreen & BiometricAuthManager
-│   │   └── settings/             # Redesigned SettingsScreen
-│   ├── components/               # Premium UI Component Library ✅
-│   │   ├── animation/            # Staggered entrance & liquid animations
-│   │   ├── camera/               # Multi-aspect ratio overlays
-│   │   └── common/               # PremiumCard, PremiumTextField, etc.
-│   └── navigation/               # Navigation setup (Compose & NavHost) ✅
-├── di/                           # Hilt DI Modules (Security, Database, etc.) ✅
-└── utils/                        # Utility classes and extensions ✅
+├── MainActivity.kt               # Main entry point with AppPhase state machine
+├── WalletApplication.kt          # Application class with @HiltAndroidApp
+├── ui/theme/                     # Material 3 & Glassmorphism theming
+├── data/                         # Data Layer (Repositories, Room, File System)
+├── domain/                       # Domain Layer (Models, Use Cases, Interfaces)
+├── presentation/                 # Presentation Layer (Screens, ViewModels, Components)
+├── di/                           # Hilt DI Modules
+└── utils/                        # Utility classes
 ```
 
 ## 🚀 Getting Started
@@ -129,29 +109,6 @@ CardVault supports 15+ card types with unique gradient designs:
 
 - **OCR-Enabled:** Credit and Debit cards with automatic field extraction.
 - **Image-Only:** Transport, Gift, Loyalty, Membership, Insurance, ID, Voucher, Event, Business, Library, Hotel, Student, Access cards.
-
-## 📋 Implementation Status
-
-### ✅ Complete Features
-- **Security Core:** PIN hashing, Biometric unlock, Rate limiting, Recovery codes.
-- **Clean Architecture:** Fully implemented MVVM with UDF and Hilt.
-- **Premium UI:** Redesigned screens with staggered animations and liquid effects.
-- **Smart OCR:** On-device text recognition using Google ML Kit.
-- **Flexible Storage:** Automatic image optimization and comprehensive storage cleanup.
-- **Privacy First:** 100% offline operation with no network dependencies.
-- **Terms & Privacy:** Updated legal documentation integrated into the UI.
-
-### 🔄 Recently Completed
-- **Security Module:** Implemented `AppLockRepository`, `PinHasher`, and `RecoveryCodeManager`.
-- **UI Redesign:** Added `PremiumCard`, `PremiumTextField`, and `EnhancedHomeScreen`.
-- **App Lifecycle:** Implemented re-locking on app resume and initial startup.
-- **Legal Update:** Refreshed Privacy Policy and added Terms of Service.
-
-### 🚧 Next Steps
-- **Advanced Encryption:** Integrate Google Tink for full database encryption.
-- **Backup & Restore:** Implement encrypted local backup/restore functionality.
-- **Testing:** Comprehensive unit and integration testing suite.
-- **UI Polish:** Finalizing accessibility features and screen reader support.
 
 ## 📄 License
 
