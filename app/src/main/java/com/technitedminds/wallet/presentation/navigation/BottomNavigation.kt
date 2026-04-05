@@ -8,19 +8,19 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.AddCard
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,13 +47,14 @@ import com.technitedminds.wallet.ui.theme.WalletSpring
 
 /**
  * Floating pill-shaped bottom navigation bar with spring-animated
- * selection indicator, glass morphism background, and haptic feedback.
+ * selection indicator, glass morphism background, haptic feedback,
+ * and a prominent center "Add" action button.
  */
 @Composable
 fun WalletBottomNavigation(
     navController: NavController,
+    onAddClick: () -> Unit,
     modifier: Modifier = Modifier,
-    categoryCount: Int = 0,
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -79,7 +80,8 @@ fun WalletBottomNavigation(
                 translationY = entranceTranslateY
                 alpha = entranceAlpha
             }
-            .padding(bottom = 20.dp),
+            .navigationBarsPadding()
+            .padding(bottom = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
         GlassSurface(
@@ -98,29 +100,114 @@ fun WalletBottomNavigation(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                bottomNavItems.forEach { item ->
-                    val isSelected = currentRoute == item.route
-
-                    PillNavItem(
-                        icon = if (isSelected) item.selectedIcon else item.unselectedIcon,
-                        label = item.label,
-                        isSelected = isSelected,
-                        badgeCount = if (item.route == NavigationDestinations.Categories.route) categoryCount else 0,
-                        onClick = {
-                            if (currentRoute != item.route) {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                navController.navigate(item.route) {
-                                    popUpTo(NavigationDestinations.Home.route) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
+                // Home tab
+                val homeItem = bottomNavItems.first()
+                val isHomeSelected = currentRoute == homeItem.route
+                PillNavItem(
+                    icon = if (isHomeSelected) homeItem.selectedIcon else homeItem.unselectedIcon,
+                    label = homeItem.label,
+                    isSelected = isHomeSelected,
+                    onClick = {
+                        if (currentRoute != homeItem.route) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            navController.navigate(homeItem.route) {
+                                popUpTo(NavigationDestinations.Home.route) {
+                                    saveState = true
                                 }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                        },
-                    )
-                }
+                        }
+                    },
+                )
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                // Center Add button
+                CenterAddButton(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onAddClick()
+                    },
+                )
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                // Settings tab
+                val settingsItem = bottomNavItems.last()
+                val isSettingsSelected = currentRoute == settingsItem.route
+                PillNavItem(
+                    icon = if (isSettingsSelected) settingsItem.selectedIcon else settingsItem.unselectedIcon,
+                    label = settingsItem.label,
+                    isSelected = isSettingsSelected,
+                    onClick = {
+                        if (currentRoute != settingsItem.route) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            navController.navigate(settingsItem.route) {
+                                popUpTo(NavigationDestinations.Home.route) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    },
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun CenterAddButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var isPressed by remember { mutableStateOf(false) }
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.85f else 1f,
+        animationSpec = WalletSpring.bouncy(),
+        label = "add_press_scale",
+    )
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .size(52.dp)
+            .shadow(
+                elevation = 6.dp,
+                shape = CircleShape,
+                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+            )
+            .background(
+                color = MaterialTheme.colorScheme.primary,
+                shape = CircleShape,
+            )
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+            ) {
+                isPressed = true
+                onClick()
+            }
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            },
+    ) {
+        Icon(
+            imageVector = Icons.Default.AddCard,
+            contentDescription = AppConstants.ContentDescriptions.ADD_CARD,
+            tint = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.size(26.dp),
+        )
+    }
+
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            kotlinx.coroutines.delay(100)
+            isPressed = false
         }
     }
 }
@@ -130,7 +217,6 @@ private fun PillNavItem(
     icon: ImageVector,
     label: String,
     isSelected: Boolean,
-    badgeCount: Int,
     onClick: () -> Unit,
 ) {
     // Spring-animated selection scale
@@ -195,30 +281,6 @@ private fun PillNavItem(
             modifier = Modifier.size(24.dp),
         )
 
-        // Badge — entrance animation from 0 to 1
-        if (badgeCount > 0) {
-            var badgeAppeared by remember { mutableStateOf(false) }
-            LaunchedEffect(Unit) { badgeAppeared = true }
-            val badgeScale by animateFloatAsState(
-                targetValue = if (badgeAppeared) 1f else 0f,
-                animationSpec = WalletSpring.bouncy(),
-                label = "badge_scale",
-            )
-            Badge(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 4.dp, y = (-4).dp)
-                    .graphicsLayer {
-                        scaleX = badgeScale
-                        scaleY = badgeScale
-                    },
-            ) {
-                Text(
-                    text = badgeCount.toString(),
-                    style = MaterialTheme.typography.labelSmall,
-                )
-            }
-        }
     }
 
     // Reset press state
@@ -244,19 +306,16 @@ private val bottomNavItems = NavigationDestinations.getBottomNavDestinations().m
         route = destination.route,
         label = when (destination) {
             NavigationDestinations.Home -> AppConstants.NavigationLabels.HOME
-            NavigationDestinations.Categories -> AppConstants.NavigationLabels.CATEGORIES
             NavigationDestinations.Settings -> AppConstants.NavigationLabels.SETTINGS
             else -> destination.route.replaceFirstChar { it.uppercase() }
         },
         selectedIcon = when (destination) {
             NavigationDestinations.Home -> Icons.Filled.Home
-            NavigationDestinations.Categories -> Icons.Filled.Category
             NavigationDestinations.Settings -> Icons.Filled.Settings
             else -> Icons.Filled.Home
         },
         unselectedIcon = when (destination) {
             NavigationDestinations.Home -> Icons.Outlined.Home
-            NavigationDestinations.Categories -> Icons.Outlined.Category
             NavigationDestinations.Settings -> Icons.Outlined.Settings
             else -> Icons.Outlined.Home
         },

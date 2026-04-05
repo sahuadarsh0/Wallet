@@ -1,16 +1,14 @@
 package com.technitedminds.wallet.presentation.screens.addcard
 
+import android.app.Activity
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import com.technitedminds.wallet.presentation.components.animation.liquidPress
-import com.technitedminds.wallet.ui.theme.WalletSpring
-import com.technitedminds.wallet.ui.theme.gradientContrastText
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,35 +19,36 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Contactless
+import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Scanner
-import androidx.compose.material.icons.automirrored.filled.Notes
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -59,17 +58,16 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -77,31 +75,45 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.domain.model.CardGradient
 import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.domain.model.GradientDirection
-import com.technitedminds.wallet.presentation.components.common.CardTypeSelector
-import com.technitedminds.wallet.presentation.components.common.GradientPickerDialog
-import com.technitedminds.wallet.presentation.components.common.PrivacyNoticeCard
-import com.technitedminds.wallet.presentation.components.common.StepProgressIndicator
-import com.technitedminds.wallet.presentation.components.common.OCRStatusCard
-import com.technitedminds.wallet.presentation.components.common.ManualEntryCard
-import com.technitedminds.wallet.presentation.components.common.PremiumTextField
+import com.technitedminds.wallet.presentation.components.animation.CardFront
+import com.technitedminds.wallet.presentation.components.animation.EnhancedSlideInItem
+import com.technitedminds.wallet.presentation.components.animation.liquidPress
 import com.technitedminds.wallet.presentation.components.common.AnimatedSectionHeader
+import com.technitedminds.wallet.presentation.components.common.CardTypeSelector
+import com.technitedminds.wallet.presentation.components.common.CvvEntryDialog
+import com.technitedminds.wallet.presentation.components.common.GlassPremiumCard
+import com.technitedminds.wallet.presentation.components.common.GradientPickerDialog
+import com.technitedminds.wallet.presentation.components.common.LoadingOverlay
+import com.technitedminds.wallet.presentation.components.common.NfcScanningSheet
+import com.technitedminds.wallet.presentation.components.common.PremiumButton
+import com.technitedminds.wallet.presentation.components.common.PremiumButtonVariant
 import com.technitedminds.wallet.presentation.components.common.PremiumCard
+import com.technitedminds.wallet.presentation.components.common.PremiumTextField
+import com.technitedminds.wallet.presentation.components.common.StepProgressIndicator
 import com.technitedminds.wallet.presentation.components.common.gradientShadow
 import com.technitedminds.wallet.presentation.constants.AppConstants
-import com.technitedminds.wallet.presentation.components.common.CompactLoadingIndicator
-import com.technitedminds.wallet.presentation.components.common.LoadingOverlay
-import com.technitedminds.wallet.presentation.components.animation.AnimatedSection
+import com.technitedminds.wallet.ui.theme.Glass
+import com.technitedminds.wallet.ui.theme.GlassSurface
+import com.technitedminds.wallet.ui.theme.WalletSpring
+import com.technitedminds.wallet.ui.theme.gradientContrastText
+import java.io.File
 
-/**
- * Add card screen with step-by-step workflow for card creation.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddCardScreen(
@@ -112,31 +124,40 @@ fun AddCardScreen(
     capturedFrontImagePath: String? = null,
     capturedBackImagePath: String? = null,
     capturedExtractedData: Map<String, String> = emptyMap(),
+    nfcCardReaderManager: NfcCardReaderManager? = null,
     viewModel: AddCardViewModel = hiltViewModel()
 ) {
     val currentStep by viewModel.currentStep.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isFormValid by viewModel.isFormValid.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val activity = context as? Activity
+    val nfcReadState by nfcCardReaderManager?.state?.collectAsStateWithLifecycle()
+        ?: remember { mutableStateOf(NfcReadState.Idle as NfcReadState) }
 
-    // Handle captured images from camera
+    LaunchedEffect(nfcReadState) {
+        when (val state = nfcReadState) {
+            is NfcReadState.Success -> viewModel.onNfcCardRead(state.data)
+            is NfcReadState.Error -> viewModel.onNfcError(state.message)
+            else -> {}
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { activity?.let { nfcCardReaderManager?.stopReading(it) } }
+    }
+
     LaunchedEffect(capturedFrontImagePath, capturedBackImagePath, capturedExtractedData) {
         if (capturedFrontImagePath != null) {
-            val currentState = viewModel.captureState.value
             val currentFrontPath = viewModel.uiState.value.frontImagePath
-            
-            // Handle front image capture
             if (capturedFrontImagePath != currentFrontPath) {
                 viewModel.setFrontImagePath(capturedFrontImagePath)
-                // If extracted data is available, set it
                 if (capturedExtractedData.isNotEmpty()) {
                     viewModel.setExtractedData(capturedExtractedData)
                 }
             }
-            
-            // Handle back image capture
             if (capturedBackImagePath != null && capturedBackImagePath != viewModel.uiState.value.backImagePath) {
                 viewModel.setBackImagePath(capturedBackImagePath)
-                // Update extracted data if available
                 if (capturedExtractedData.isNotEmpty()) {
                     viewModel.setExtractedData(capturedExtractedData)
                 }
@@ -144,13 +165,27 @@ fun AddCardScreen(
         }
     }
 
-    // Handle events
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
                 is AddCardEvent.CardSaved -> onCardSaved(event.card)
             }
         }
+    }
+
+    // Derive ambient gradient from selected card type
+    val selectedCardType by viewModel.selectedCardType.collectAsStateWithLifecycle()
+    val selectedGradientForBg by viewModel.selectedGradient.collectAsStateWithLifecycle()
+    val typeGradient = remember(selectedCardType, selectedGradientForBg) {
+        selectedGradientForBg ?: selectedCardType?.let { Card.getDefaultGradientForType(it) }
+    }
+    val ambientStart = remember(typeGradient) {
+        try { typeGradient?.let { Color(android.graphics.Color.parseColor(it.startColor)) } ?: Color.Transparent }
+        catch (e: Exception) { Color.Transparent }
+    }
+    val ambientEnd = remember(typeGradient) {
+        try { typeGradient?.let { Color(android.graphics.Color.parseColor(it.endColor)) } ?: Color.Transparent }
+        catch (e: Exception) { Color.Transparent }
     }
 
     Scaffold(
@@ -174,79 +209,77 @@ fun AddCardScreen(
         },
         modifier = modifier
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            ambientStart.copy(alpha = 0.05f),
+                            Color.Transparent,
+                            ambientEnd.copy(alpha = 0.03f),
+                        )
+                    )
+                )
         ) {
-            // Progress indicator
-            StepProgressIndicator(
-                currentStep = currentStep.ordinal,
-                modifier = Modifier.padding(16.dp)
-            )
+            Column(modifier = Modifier.fillMaxSize()) {
+                StepProgressIndicator(
+                    currentStep = currentStep.ordinal,
+                    modifier = Modifier.padding(16.dp)
+                )
 
-            // Step content with direction-aware animations
-            AnimatedContent(
-                targetState = currentStep,
-                transitionSpec = {
-                    // Determine direction by comparing step ordinals
-                    val isForward = targetState.ordinal > initialState.ordinal
-                    
-                    if (isForward) {
-                        // Forward: spring slide in from right with overshoot
-                        slideInHorizontally(
-                            initialOffsetX = { it },
-                            animationSpec = WalletSpring.gentle()
-                        ) + fadeIn(
-                            animationSpec = tween(300)
-                        ) togetherWith slideOutHorizontally(
-                            targetOffsetX = { -it / 3 },
-                            animationSpec = WalletSpring.gentle()
-                        ) + fadeOut(
-                            animationSpec = tween(200)
-                        )
-                    } else {
-                        // Backward: spring slide in from left with overshoot
-                        slideInHorizontally(
-                            initialOffsetX = { -it },
-                            animationSpec = WalletSpring.gentle()
-                        ) + fadeIn(
-                            animationSpec = tween(300)
-                        ) togetherWith slideOutHorizontally(
-                            targetOffsetX = { it / 3 },
-                            animationSpec = WalletSpring.gentle()
-                        ) + fadeOut(
-                            animationSpec = tween(200)
-                        )
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f),
-                label = AppConstants.UIText.STEP_CONTENT_LABEL
-            ) { step ->
-                when (step) {
-                    AddCardStep.TYPE_SELECTION -> {
-                        TypeSelectionStep(
+                AnimatedContent(
+                    targetState = currentStep,
+                    transitionSpec = {
+                        val isForward = targetState.ordinal > initialState.ordinal
+                        if (isForward) {
+                            slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = WalletSpring.gentle()
+                            ) + fadeIn(tween(300)) togetherWith slideOutHorizontally(
+                                targetOffsetX = { -it / 3 },
+                                animationSpec = WalletSpring.gentle()
+                            ) + fadeOut(tween(200))
+                        } else {
+                            slideInHorizontally(
+                                initialOffsetX = { -it },
+                                animationSpec = WalletSpring.gentle()
+                            ) + fadeIn(tween(300)) togetherWith slideOutHorizontally(
+                                targetOffsetX = { it / 3 },
+                                animationSpec = WalletSpring.gentle()
+                            ) + fadeOut(tween(200))
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f),
+                    label = AppConstants.UIText.STEP_CONTENT_LABEL
+                ) { step ->
+                    when (step) {
+                        AddCardStep.TYPE_SELECTION -> TypeSelectionStep(
                             onCardTypeSelected = viewModel::selectCardType,
                             modifier = Modifier.fillMaxSize()
                         )
-                    }
-                    AddCardStep.CAMERA_CAPTURE -> {
-                        CameraCaptureStep(
+                        AddCardStep.CAMERA_CAPTURE -> CameraCaptureStep(
                             cardType = viewModel.selectedCardType.collectAsStateWithLifecycle().value ?: CardType.Credit,
                             captureState = viewModel.captureState.collectAsStateWithLifecycle().value,
+                            frontImagePath = uiState.frontImagePath,
+                            backImagePath = uiState.backImagePath,
                             onCameraCapture = onCameraCapture,
                             onExtractedData = viewModel::setExtractedData,
                             onFrontImagePath = viewModel::setFrontImagePath,
                             onBackImagePath = viewModel::setBackImagePath,
                             onOpenCameraForFront = viewModel::openCameraForFront,
                             onOpenCameraForBack = viewModel::openCameraForBack,
+                            isNfcAvailable = activity?.let { nfcCardReaderManager?.isNfcAvailable(it) } == true,
+                            onNfcScan = {
+                                viewModel.startNfcScan()
+                                activity?.let { nfcCardReaderManager?.startReading(it) }
+                            },
                             modifier = Modifier.fillMaxSize()
                         )
-                    }
-                    AddCardStep.FORM_DETAILS -> {
-                        FormDetailsStep(
+                        AddCardStep.FORM_DETAILS -> FormDetailsStep(
                             viewModel = viewModel,
                             modifier = Modifier.fillMaxSize()
                         )
@@ -256,30 +289,45 @@ fun AddCardScreen(
         }
     }
 
-    // Error dialog
     uiState.error?.let { error ->
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { viewModel.clearError() },
             title = { Text("Error") },
             text = { Text(error) },
             confirmButton = {
-                Button(onClick = { viewModel.clearError() }) {
-                    Text("OK")
-                }
+                Button(onClick = { viewModel.clearError() }) { Text("OK") }
             }
         )
     }
 
-    // Loading overlay during save operation
-    LoadingOverlay(
-        isVisible = uiState.isSaving,
-        text = AppConstants.UIText.SAVING_CARD
-    )
+    LoadingOverlay(isVisible = uiState.isSaving, text = AppConstants.UIText.SAVING_CARD)
+
+    if (uiState.showNfcScanning) {
+        NfcScanningSheet(
+            nfcReadState = nfcReadState,
+            onCancel = {
+                viewModel.cancelNfcScan()
+                activity?.let { nfcCardReaderManager?.stopReading(it) }
+            },
+            onRetry = {
+                nfcCardReaderManager?.resetState()
+                activity?.let { nfcCardReaderManager?.startReading(it) }
+            },
+        )
+    }
+
+    if (uiState.showCvvDialog) {
+        CvvEntryDialog(
+            cardScheme = uiState.nfcCardScheme,
+            maskedCardNumber = uiState.nfcMaskedNumber,
+            onCvvConfirmed = viewModel::onCvvEntered,
+            onSkip = viewModel::skipCvvEntry,
+        )
+    }
 }
 
-/**
- * Top app bar for add card screen
- */
+// ─── Top Bar ─────────────────────────────────────────────────────────────────
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddCardTopBar(
@@ -300,30 +348,21 @@ private fun AddCardTopBar(
             )
         },
         navigationIcon = {
-            IconButton(
-                onClick = if (canGoBack) onPreviousStep else onNavigateBack
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = AppConstants.ContentDescriptions.BACK
-                )
+            IconButton(onClick = if (canGoBack) onPreviousStep else onNavigateBack) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, AppConstants.ContentDescriptions.BACK)
             }
         },
         actions = {
             IconButton(onClick = onNavigateBack) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = AppConstants.DialogText.CANCEL_BUTTON
-                )
+                Icon(Icons.Default.Close, AppConstants.DialogText.CANCEL_BUTTON)
             }
         },
         modifier = modifier
     )
 }
 
-/**
- * Bottom bar with navigation controls
- */
+// ─── Bottom Bar (GlassSurface + PremiumButton) ──────────────────────────────
+
 @Composable
 private fun AddCardBottomBar(
     currentStep: AddCardStep,
@@ -334,9 +373,11 @@ private fun AddCardBottomBar(
     onSkipCamera: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shadowElevation = AppConstants.Dimensions.SPACING_SMALL
+    if (currentStep == AddCardStep.TYPE_SELECTION) return
+
+    GlassSurface(
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        modifier = modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
@@ -345,48 +386,38 @@ private fun AddCardBottomBar(
             horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM)
         ) {
             when (currentStep) {
-                AddCardStep.TYPE_SELECTION -> {
-                    // No bottom bar actions needed
-                }
+                AddCardStep.TYPE_SELECTION -> {}
                 AddCardStep.CAMERA_CAPTURE -> {
-                    OutlinedButton(
+                    PremiumButton(
                         onClick = onSkipCamera,
+                        text = AppConstants.UIText.SKIP_CAMERA,
+                        variant = PremiumButtonVariant.Secondary,
                         modifier = Modifier.weight(1f)
-                    ) {
-                        Text(AppConstants.UIText.SKIP_CAMERA)
-                    }
-                    Button(
+                    )
+                    PremiumButton(
                         onClick = onNextStep,
+                        text = AppConstants.UIText.CONTINUE,
+                        variant = PremiumButtonVariant.Primary,
                         modifier = Modifier.weight(1f)
-                    ) {
-                        Text(AppConstants.UIText.CONTINUE)
-                    }
+                    )
                 }
                 AddCardStep.FORM_DETAILS -> {
-                    Button(
+                    PremiumButton(
                         onClick = onSaveCard,
+                        text = AppConstants.UIText.SAVE_CARD,
                         enabled = isFormValid && !isLoading,
+                        icon = if (isLoading) null else Icons.Default.Check,
+                        variant = PremiumButtonVariant.Primary,
                         modifier = Modifier.fillMaxWidth()
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_SMALL),
-                                strokeWidth = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT
-                            )
-                            Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
-                        }
-                        Text(AppConstants.UIText.SAVE_CARD)
-                    }
+                    )
                 }
             }
         }
     }
 }
 
+// ─── Step 1: Type Selection ──────────────────────────────────────────────────
 
-/**
- * Type selection step
- */
 @Composable
 private fun TypeSelectionStep(
     onCardTypeSelected: (CardType) -> Unit,
@@ -397,141 +428,296 @@ private fun TypeSelectionStep(
             .fillMaxSize()
             .padding(AppConstants.Dimensions.PADDING_LARGE)
     ) {
-        Text(
-            text = AppConstants.UIText.ADD_CARD_TYPE_PROMPT,
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(bottom = AppConstants.Dimensions.PADDING_EXTRA_LARGE)
-        )
+        EnhancedSlideInItem(visible = true, index = 0, baseDelay = 80) {
+            AnimatedSectionHeader(
+                title = AppConstants.UIText.ADD_CARD_TYPE_PROMPT,
+                icon = Icons.Default.CreditCard,
+                subtitle = "Choose the type of card you want to store"
+            )
+        }
 
-        CardTypeSelector(
-            selectedType = CardType.Credit, // Dummy selection for UI
-            onTypeSelected = onCardTypeSelected,
-            showCustomOption = true,
-            showGradientPicker = true,
-            selectedGradient = null,
-            onGradientSelected = { gradient ->
-                // Handle gradient selection
-                // This would be passed to the ViewModel
-            }
-        )
+        Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_LARGE))
+
+        EnhancedSlideInItem(visible = true, index = 1, baseDelay = 80) {
+            CardTypeSelector(
+                onTypeSelected = onCardTypeSelected,
+                showCustomOption = true,
+                modifier = Modifier.weight(1f),
+            )
+        }
     }
 }
 
-/**
- * Camera capture step with front-first capture flow
- */
+// ─── Step 2: Camera Capture ──────────────────────────────────────────────────
+
 @Composable
 private fun CameraCaptureStep(
     cardType: CardType,
     captureState: CaptureState,
+    frontImagePath: String?,
+    backImagePath: String?,
     onCameraCapture: (CardType) -> Unit,
     onExtractedData: (Map<String, String>) -> Unit,
     onFrontImagePath: (String) -> Unit,
     onBackImagePath: (String) -> Unit,
     onOpenCameraForFront: () -> Unit,
     onOpenCameraForBack: () -> Unit,
+    isNfcAvailable: Boolean = false,
+    onNfcScan: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val showNfcOption = isNfcAvailable && cardType.supportsNfc()
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(AppConstants.Dimensions.PADDING_LARGE),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
     ) {
-        // Large camera icon (120dp) with primary color
-        Icon(
-            imageVector = Icons.Default.CameraAlt,
-            contentDescription = null,
-            modifier = Modifier.size(AppConstants.Dimensions.CAMERA_ICON_SIZE_LARGE),
-            tint = MaterialTheme.colorScheme.primary
-        )
-
-        Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_EXTRA_LARGE))
-
-        // Contextual title based on capture state and card type
-        Text(
-            text = when (captureState) {
-                CaptureState.AWAITING_FRONT -> {
-                    String.format(AppConstants.UIText.POSITION_FRONT_OF_CARD_PROMPT, cardType.getDisplayName())
-                }
-                CaptureState.FRONT_CAPTURED -> {
-                    String.format(AppConstants.UIText.POSITION_BACK_OF_CARD_PROMPT, cardType.getDisplayName())
-                }
-                CaptureState.BACK_CAPTURED -> {
-                    String.format(AppConstants.UIText.CAPTURE_CARD_PROMPT_TITLE, cardType.getDisplayName())
-                }
-            },
-            style = MaterialTheme.typography.headlineSmall,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
-
         Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_LARGE))
 
-        // Contextual instructions based on card type
-        Text(
-            text = when {
-                captureState == CaptureState.AWAITING_FRONT && cardType.supportsOCR() -> {
-                    "We'll automatically extract card details from the front image."
-                }
-                captureState == CaptureState.AWAITING_FRONT -> {
-                    "Take a clear photo of the front of your ${cardType.getDisplayName().lowercase()}."
-                }
-                captureState == CaptureState.FRONT_CAPTURED && cardType.supportsOCR() -> {
-                    "Now capture the back side. We'll extract the CVV and other details."
-                }
-                captureState == CaptureState.FRONT_CAPTURED -> {
-                    "Now capture the back side of your ${cardType.getDisplayName().lowercase()}."
-                }
-                else -> {
-                    AppConstants.UIText.CAPTURE_CARD_PROMPT_SUBTITLE
-                }
-            },
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        // Additional instructions for textual cards
-        if (cardType.supportsOCR() && captureState == CaptureState.AWAITING_FRONT) {
-            Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_MEDIUM))
-            Text(
-                text = AppConstants.UIText.CAPTURE_INSTRUCTIONS,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+        // Capture progress panel
+        EnhancedSlideInItem(visible = true, index = 0, baseDelay = 80) {
+            CaptureProgressPanel(
+                captureState = captureState,
+                frontImagePath = frontImagePath,
+                backImagePath = backImagePath,
+                isOcrCapable = cardType.supportsOCR(),
+                modifier = Modifier.fillMaxWidth()
             )
         }
 
-        Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_EXTRA_LARGE))
+        // Contextual instruction
+        EnhancedSlideInItem(visible = true, index = 1, baseDelay = 80) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = when (captureState) {
+                        CaptureState.AWAITING_FRONT -> String.format(AppConstants.UIText.POSITION_FRONT_OF_CARD_PROMPT, cardType.getDisplayName())
+                        CaptureState.FRONT_CAPTURED -> String.format(AppConstants.UIText.POSITION_BACK_OF_CARD_PROMPT, cardType.getDisplayName())
+                        CaptureState.BACK_CAPTURED -> String.format(AppConstants.UIText.CAPTURE_CARD_PROMPT_TITLE, cardType.getDisplayName())
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center
+                )
 
-        // Open Camera Button
-        Button(
-            onClick = { onCameraCapture(cardType) },
+                Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_SMALL))
+
+                Text(
+                    text = when {
+                        captureState == CaptureState.AWAITING_FRONT && cardType.supportsOCR() ->
+                            "We'll automatically extract card details from the front image."
+                        captureState == CaptureState.AWAITING_FRONT ->
+                            "Take a clear photo of the front of your ${cardType.getDisplayName().lowercase()}."
+                        captureState == CaptureState.FRONT_CAPTURED && cardType.supportsOCR() ->
+                            "Now capture the back side. We'll extract the CVV and other details."
+                        captureState == CaptureState.FRONT_CAPTURED ->
+                            "Now capture the back side of your ${cardType.getDisplayName().lowercase()}."
+                        else -> AppConstants.UIText.CAPTURE_CARD_PROMPT_SUBTITLE
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Action buttons
+        EnhancedSlideInItem(visible = true, index = 2, baseDelay = 80) {
+            if (showNfcOption) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM),
+                ) {
+                    PremiumButton(
+                        onClick = { onCameraCapture(cardType) },
+                        text = when (captureState) {
+                            CaptureState.AWAITING_FRONT -> AppConstants.UIText.OPEN_CAMERA
+                            CaptureState.FRONT_CAPTURED -> AppConstants.UIText.CAPTURE_BACK
+                            CaptureState.BACK_CAPTURED -> AppConstants.UIText.OPEN_CAMERA
+                        },
+                        icon = Icons.Default.CameraAlt,
+                        variant = PremiumButtonVariant.Primary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    PremiumButton(
+                        onClick = onNfcScan,
+                        text = AppConstants.NfcText.SCAN_WITH_NFC,
+                        icon = Icons.Default.Contactless,
+                        variant = PremiumButtonVariant.Secondary,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            } else {
+                PremiumButton(
+                    onClick = { onCameraCapture(cardType) },
+                    text = when (captureState) {
+                        CaptureState.AWAITING_FRONT -> "Capture Front"
+                        CaptureState.FRONT_CAPTURED -> "Capture Back"
+                        CaptureState.BACK_CAPTURED -> "Recapture"
+                    },
+                    icon = Icons.Default.CameraAlt,
+                    variant = PremiumButtonVariant.Primary,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_MEDIUM))
+    }
+}
+
+// ─── Capture Progress Panel ──────────────────────────────────────────────────
+
+@Composable
+private fun CaptureProgressPanel(
+    captureState: CaptureState,
+    frontImagePath: String?,
+    backImagePath: String?,
+    isOcrCapable: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    GlassPremiumCard(modifier = modifier) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = AppConstants.Dimensions.PADDING_EXTRA_LARGE)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.CameraAlt,
-                contentDescription = null,
-                modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
-            )
-            Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
-            Text(
-                text = when (captureState) {
-                    CaptureState.AWAITING_FRONT -> "Capture Front"
-                    CaptureState.FRONT_CAPTURED -> "Capture Back"
-                    CaptureState.BACK_CAPTURED -> "Recapture"
+            // OCR indicator for smart cards
+            if (isOcrCapable) {
+                GlassSurface(
+                    shape = RoundedCornerShape(Glass.PillCornerRadius),
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = "OCR available",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            text = "AI will extract card details",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
-            )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CaptureSlot(
+                    label = "Front",
+                    imagePath = frontImagePath,
+                    isCaptured = captureState != CaptureState.AWAITING_FRONT,
+                    isActive = captureState == CaptureState.AWAITING_FRONT,
+                    modifier = Modifier.weight(1f)
+                )
+                CaptureSlot(
+                    label = "Back",
+                    imagePath = backImagePath,
+                    isCaptured = captureState == CaptureState.BACK_CAPTURED,
+                    isActive = captureState == CaptureState.FRONT_CAPTURED,
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }
 
-/**
- * Form details step with OCR result handling and manual entry
- */
+@Composable
+private fun CaptureSlot(
+    label: String,
+    imagePath: String?,
+    isCaptured: Boolean,
+    isActive: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val borderColor = when {
+        isCaptured -> MaterialTheme.colorScheme.primary
+        isActive -> MaterialTheme.colorScheme.outline
+        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+    }
+    val contentAlpha = if (isCaptured || isActive) 1f else 0.4f
+
+    Card(
+        modifier = modifier.height(120.dp),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(
+            width = if (isCaptured) 2.dp else 1.5.dp,
+            color = borderColor
+        ),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        )
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isCaptured && imagePath != null) {
+                val imageFile = File(imagePath)
+                if (imageFile.exists()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(imageFile)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "$label captured",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                    // Green check overlay
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.3f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = "Captured",
+                            tint = Color.White,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+            } else {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.CameraAlt,
+                        contentDescription = "Capture photo",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha),
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha)
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ─── Step 3: Form Details ────────────────────────────────────────────────────
+
 @Composable
 private fun FormDetailsStep(
     viewModel: AddCardViewModel,
@@ -547,13 +733,11 @@ private fun FormDetailsStep(
     val selectedGradient by viewModel.selectedGradient.collectAsStateWithLifecycle()
     val showGradientPicker by viewModel.showGradientPicker.collectAsStateWithLifecycle()
 
-    // OCR extracted fields state (editable)
     var cardNumber by remember { mutableStateOf(extractedData["cardNumber"] ?: "") }
     var expiryDate by remember { mutableStateOf(extractedData["expiryDate"] ?: "") }
     var cardholderName by remember { mutableStateOf(extractedData["cardholderName"] ?: "") }
     var cvv by remember { mutableStateOf(extractedData["cvv"] ?: "") }
 
-    // Update local state when extracted data changes
     LaunchedEffect(extractedData) {
         cardNumber = extractedData["cardNumber"] ?: cardNumber
         expiryDate = extractedData["expiryDate"] ?: expiryDate
@@ -561,39 +745,121 @@ private fun FormDetailsStep(
         cvv = extractedData["cvv"] ?: cvv
     }
 
-    // Note: ViewModel is updated directly via updateCardNumber, updateExpiryDate, etc.
-    // in the PremiumTextField onValueChange callbacks below
-
     val hasOCRData = extractedData.isNotEmpty()
     val isTextualCard = selectedCardType?.supportsOCR() == true
+
+    // Build live preview card from current form state
+    val previewCard = remember(cardName, selectedCardType, cardNumber, expiryDate, cardholderName, selectedGradient, selectedCategory) {
+        Card(
+            id = "preview",
+            name = cardName.ifBlank { "Your Card" },
+            type = selectedCardType ?: CardType.Credit,
+            categoryId = selectedCategory ?: "",
+            frontImagePath = "",
+            backImagePath = "",
+            extractedData = buildMap {
+                if (cardNumber.isNotBlank()) put("cardNumber", cardNumber)
+                if (expiryDate.isNotBlank()) put("expiryDate", expiryDate)
+                if (cardholderName.isNotBlank()) put("cardholderName", cardholderName)
+            },
+            customGradient = selectedGradient,
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis()
+        )
+    }
 
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
+            .imePadding()
             .padding(AppConstants.Dimensions.PADDING_LARGE),
         verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
     ) {
-        // OCR Status Card (for textual cards)
-        if (isTextualCard) {
-            item {
-                AnimatedSection(index = 0) {
-                    if (hasOCRData) {
-                        OCRStatusCard(
-                            extractedFieldCount = extractedData.size
+        // Live card preview (hero element)
+        item {
+            EnhancedSlideInItem(visible = true, index = 0, baseDelay = 80) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CreditCard,
+                            contentDescription = "Live preview",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp)
                         )
-                    } else {
-                        ManualEntryCard()
+                        Text(
+                            text = "Live Preview",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    val gradientForShadow = selectedGradient ?: Card.getDefaultGradientForType(selectedCardType ?: CardType.Credit)
+                    val shadowColors = listOf(
+                        Color(android.graphics.Color.parseColor(gradientForShadow.startColor)),
+                        Color(android.graphics.Color.parseColor(gradientForShadow.endColor)),
+                    )
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .gradientShadow(
+                                colors = shadowColors,
+                                shadowElevation = 8.dp,
+                                cornerRadius = 12.dp,
+                            ),
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        CardFront(
+                            card = previewCard,
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
                 }
             }
         }
 
-        // Card Details Section: Name and Category
+        // OCR status pill (for textual cards)
+        if (isTextualCard) {
+            item {
+                EnhancedSlideInItem(visible = true, index = 1, baseDelay = 80) {
+                    GlassSurface(
+                        shape = RoundedCornerShape(Glass.PillCornerRadius),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (hasOCRData) Icons.Default.AutoAwesome else Icons.Default.Edit,
+                                contentDescription = if (hasOCRData) "OCR detected" else "Manual entry",
+                                tint = if (hasOCRData) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (hasOCRData) "${extractedData.size} fields auto-detected" else "Enter card details manually",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (hasOCRData) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Card Details section -- GlassPremiumCard (primary section)
         item {
-            AnimatedSection(index = if (isTextualCard) 1 else 0) {
-                PremiumCard(
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
+            val idx = if (isTextualCard) 2 else 1
+            EnhancedSlideInItem(visible = true, index = idx, baseDelay = 80) {
+                GlassPremiumCard(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -603,8 +869,6 @@ private fun FormDetailsStep(
                             icon = Icons.Default.CreditCard,
                             subtitle = "Name and category for your card"
                         )
-                        
-                        // Card name field
                         PremiumTextField(
                             value = cardName,
                             onValueChange = viewModel::updateCardName,
@@ -612,8 +876,6 @@ private fun FormDetailsStep(
                             leadingIcon = Icons.Default.Badge,
                             modifier = Modifier.fillMaxWidth()
                         )
-                        
-                        // Category selection
                         CategoryDropdown(
                             categories = categories,
                             selectedCategoryId = selectedCategory,
@@ -625,12 +887,12 @@ private fun FormDetailsStep(
             }
         }
 
-        // Card Information Section (for textual cards only)
+        // Card Information section (OCR) -- standard PremiumCard (secondary)
         if (isTextualCard) {
             item {
-                AnimatedSection(index = 2) {
+                EnhancedSlideInItem(visible = true, index = 3, baseDelay = 80) {
                     PremiumCard(
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
@@ -638,14 +900,13 @@ private fun FormDetailsStep(
                         ) {
                             AnimatedSectionHeader(
                                 title = AppConstants.UIText.CARD_INFORMATION,
-                                icon = Icons.Default.Scanner,
+                                icon = Icons.Default.Shield,
                                 subtitle = "Card number, expiry and security details"
                             )
-                            
-                            // Card Number
+
                             PremiumTextField(
                                 value = cardNumber,
-                                onValueChange = { 
+                                onValueChange = {
                                     val formatted = formatCardNumberInput(it)
                                     cardNumber = formatted
                                     viewModel.updateCardNumber(formatted)
@@ -655,23 +916,18 @@ private fun FormDetailsStep(
                                 leadingIcon = Icons.Default.Payment,
                                 trailingIcon = if (hasOCRData && extractedData.containsKey("cardNumber")) {
                                     {
-                                        Icon(
-                                            imageVector = Icons.Default.AutoAwesome,
-                                            contentDescription = AppConstants.UIText.AUTO_DETECTED,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
-                                        )
+                                        Icon(Icons.Default.AutoAwesome, AppConstants.UIText.AUTO_DETECTED,
+                                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM))
                                     }
                                 } else null,
                                 isError = uiState.cardNumberError != null,
                                 errorMessage = uiState.cardNumberError,
                                 modifier = Modifier.fillMaxWidth()
                             )
-                            
-                            // Expiry Date
+
                             PremiumTextField(
                                 value = expiryDate,
-                                onValueChange = { 
+                                onValueChange = {
                                     val formatted = formatExpiryInput(it)
                                     expiryDate = formatted
                                     viewModel.updateExpiryDate(formatted)
@@ -681,23 +937,18 @@ private fun FormDetailsStep(
                                 leadingIcon = Icons.Default.DateRange,
                                 trailingIcon = if (hasOCRData && extractedData.containsKey("expiryDate")) {
                                     {
-                                        Icon(
-                                            imageVector = Icons.Default.AutoAwesome,
-                                            contentDescription = AppConstants.UIText.AUTO_DETECTED,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
-                                        )
+                                        Icon(Icons.Default.AutoAwesome, AppConstants.UIText.AUTO_DETECTED,
+                                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM))
                                     }
                                 } else null,
                                 isError = uiState.expiryDateError != null,
                                 errorMessage = uiState.expiryDateError,
                                 modifier = Modifier.fillMaxWidth()
                             )
-                            
-                            // Cardholder Name
+
                             PremiumTextField(
                                 value = cardholderName,
-                                onValueChange = { 
+                                onValueChange = {
                                     val uppercased = it.uppercase()
                                     cardholderName = uppercased
                                     viewModel.updateCardholderName(uppercased)
@@ -707,23 +958,18 @@ private fun FormDetailsStep(
                                 leadingIcon = Icons.Default.Person,
                                 trailingIcon = if (hasOCRData && extractedData.containsKey("cardholderName")) {
                                     {
-                                        Icon(
-                                            imageVector = Icons.Default.AutoAwesome,
-                                            contentDescription = AppConstants.UIText.AUTO_DETECTED,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
-                                        )
+                                        Icon(Icons.Default.AutoAwesome, AppConstants.UIText.AUTO_DETECTED,
+                                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM))
                                     }
                                 } else null,
                                 isError = uiState.cardholderNameError != null,
                                 errorMessage = uiState.cardholderNameError,
                                 modifier = Modifier.fillMaxWidth()
                             )
-                            
-                            // CVV
+
                             PremiumTextField(
                                 value = cvv,
-                                onValueChange = { 
+                                onValueChange = {
                                     if (it.length <= 4 && it.all { char -> char.isDigit() }) {
                                         cvv = it
                                         viewModel.updateCvv(it)
@@ -734,22 +980,17 @@ private fun FormDetailsStep(
                                 leadingIcon = Icons.Default.Security,
                                 trailingIcon = if (hasOCRData && extractedData.containsKey("cvv")) {
                                     {
-                                        Icon(
-                                            imageVector = Icons.Default.AutoAwesome,
-                                            contentDescription = AppConstants.UIText.AUTO_DETECTED,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM)
-                                        )
+                                        Icon(Icons.Default.AutoAwesome, AppConstants.UIText.AUTO_DETECTED,
+                                            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM))
                                     }
                                 } else null,
                                 isError = uiState.cvvError != null,
                                 errorMessage = uiState.cvvError,
                                 modifier = Modifier.fillMaxWidth()
                             )
-                            
-                            // Clear all OCR data button
+
                             if (hasOCRData) {
-                                OutlinedButton(
+                                PremiumButton(
                                     onClick = {
                                         cardNumber = ""
                                         expiryDate = ""
@@ -757,16 +998,11 @@ private fun FormDetailsStep(
                                         cvv = ""
                                         viewModel.clearOCRData()
                                     },
+                                    text = AppConstants.UIText.CLEAR_ALL_AND_ENTER_MANUALLY,
+                                    icon = Icons.Default.Clear,
+                                    variant = PremiumButtonVariant.Secondary,
                                     modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Clear,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_BUTTON_ICON_SIZE)
-                                    )
-                                    Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
-                                    Text(AppConstants.UIText.CLEAR_ALL_AND_ENTER_MANUALLY)
-                                }
+                                )
                             }
                         }
                     }
@@ -774,41 +1010,36 @@ private fun FormDetailsStep(
             }
         }
 
-        // Appearance Section (for ALL card types)
+        // Appearance section -- Unwrapped (gradient preview is its own visual)
         item {
-            val appearanceIndex = if (isTextualCard) 3 else 2
-            AnimatedSection(index = appearanceIndex) {
-                PremiumCard(
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        AnimatedSectionHeader(
-                            title = "Appearance",
-                            icon = Icons.Default.Palette,
-                            subtitle = "Customize your card's visual style"
-                        )
-                        
-                        AppearanceSection(
-                            cardType = selectedCardType ?: CardType.Credit,
-                            selectedGradient = selectedGradient,
-                            onEditGradient = { viewModel.showGradientPicker() },
-                            modifier = Modifier.fillMaxWidth(),
-                            showHeader = false // Header is now in PremiumCard
-                        )
-                    }
+            val idx = if (isTextualCard) 4 else 2
+            EnhancedSlideInItem(visible = true, index = idx, baseDelay = 80) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    AnimatedSectionHeader(
+                        title = "Appearance",
+                        icon = Icons.Default.Palette,
+                        subtitle = "Customize your card's visual style"
+                    )
+                    AppearanceSection(
+                        cardType = selectedCardType ?: CardType.Credit,
+                        selectedGradient = selectedGradient,
+                        onEditGradient = { viewModel.showGradientPicker() },
+                        modifier = Modifier.fillMaxWidth(),
+                        showHeader = false
+                    )
                 }
             }
         }
 
-        // Additional Information Section
+        // Additional Details -- PremiumCard with surfaceVariant (tertiary)
         item {
-            val additionalInfoIndex = if (isTextualCard) 4 else 3
-            AnimatedSection(index = additionalInfoIndex) {
+            val idx = if (isTextualCard) 5 else 3
+            EnhancedSlideInItem(visible = true, index = idx, baseDelay = 80) {
                 PremiumCard(
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -816,60 +1047,73 @@ private fun FormDetailsStep(
                     ) {
                         AnimatedSectionHeader(
                             title = AppConstants.UIText.ADDITIONAL_INFORMATION,
-                            icon = Icons.AutoMirrored.Filled.Notes,
+                            icon = Icons.Default.Description,
                             subtitle = "Add custom fields and notes"
                         )
-                        
-                        // Custom fields
+
                         customFields.forEach { (key, value) ->
-                            OutlinedTextField(
+                            PremiumTextField(
                                 value = value,
                                 onValueChange = { viewModel.updateCustomField(key, it) },
-                                label = { Text(key) },
+                                label = key,
                                 trailingIcon = {
-                                    IconButton(
-                                        onClick = { viewModel.removeCustomField(key) }
-                                    ) {
+                                    IconButton(onClick = { viewModel.removeCustomField(key) }) {
                                         Icon(
                                             imageVector = Icons.Default.Close,
-                                            contentDescription = AppConstants.UIText.REMOVE_FIELD
+                                            contentDescription = AppConstants.UIText.REMOVE_FIELD,
+                                            modifier = Modifier.size(18.dp)
                                         )
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
-                        
-                        // Add custom field button
-                        OutlinedButton(
+
+                        PremiumButton(
                             onClick = {
                                 viewModel.addCustomField(AppConstants.UIText.NOTES_FIELD_LABEL, AppConstants.UIText.EMPTY_STRING)
                             },
+                            text = AppConstants.UIText.ADD_FIELD,
+                            icon = Icons.Default.Add,
+                            variant = PremiumButtonVariant.Secondary,
                             modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_BUTTON_ICON_SIZE)
-                            )
-                            Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
-                            Text(AppConstants.UIText.ADD_FIELD)
-                        }
+                        )
                     }
                 }
             }
         }
 
-        // Privacy notice
+        // Privacy notice -- lightweight GlassSurface pill
         item {
-            val privacyIndex = if (isTextualCard) 5 else 4
-            AnimatedSection(index = privacyIndex) {
-                PrivacyNoticeCard()
+            val idx = if (isTextualCard) 6 else 4
+            EnhancedSlideInItem(visible = true, index = idx, baseDelay = 80) {
+                GlassSurface(
+                    shape = RoundedCornerShape(Glass.PillCornerRadius),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Shield,
+                            contentDescription = "Privacy",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "All data stays on your device. Nothing is sent to servers.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
         }
     }
 
-    // Gradient Picker Dialog
     GradientPickerDialog(
         isVisible = showGradientPicker,
         cardType = selectedCardType ?: CardType.Credit,
@@ -882,9 +1126,8 @@ private fun FormDetailsStep(
     )
 }
 
-/**
- * Appearance section for customizing card gradient
- */
+// ─── Appearance Section ──────────────────────────────────────────────────────
+
 @Composable
 private fun AppearanceSection(
     cardType: CardType,
@@ -903,7 +1146,7 @@ private fun AppearanceSection(
                 style = MaterialTheme.typography.titleMedium
             )
         }
-        
+
         val gradientToShow = selectedGradient ?: Card.getDefaultGradientForType(cardType)
         val textColor = gradientContrastText(gradientToShow.startColor, gradientToShow.endColor)
         val shadowColors = listOf(
@@ -915,11 +1158,7 @@ private fun AppearanceSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(100.dp)
-                .gradientShadow(
-                    colors = shadowColors,
-                    shadowElevation = 8.dp,
-                    cornerRadius = 12.dp,
-                )
+                .gradientShadow(colors = shadowColors, shadowElevation = 8.dp, cornerRadius = 12.dp)
                 .liquidPress()
                 .clickable { onEditGradient() },
             shape = RoundedCornerShape(12.dp),
@@ -948,52 +1187,37 @@ private fun AppearanceSection(
                             color = textColor.copy(alpha = 0.8f),
                         )
                     }
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit gradient",
-                        tint = textColor,
-                    )
+                    Icon(Icons.Default.Edit, "Edit gradient", tint = textColor)
                 }
             }
         }
     }
 }
 
-/**
- * Creates a Compose Brush from CardGradient
- */
+// ─── Utilities ───────────────────────────────────────────────────────────────
+
 private fun createGradientBrush(gradient: CardGradient): Brush {
     val startColor = Color(android.graphics.Color.parseColor(gradient.startColor))
     val endColor = Color(android.graphics.Color.parseColor(gradient.endColor))
-    
     return when (gradient.direction) {
         GradientDirection.TopToBottom -> Brush.verticalGradient(listOf(startColor, endColor))
         GradientDirection.LeftToRight -> Brush.horizontalGradient(listOf(startColor, endColor))
         GradientDirection.DiagonalTopLeftToBottomRight -> Brush.linearGradient(
             colors = listOf(startColor, endColor),
-            start = Offset(0f, 0f),
-            end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+            start = Offset(0f, 0f), end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
         )
         GradientDirection.DiagonalTopRightToBottomLeft -> Brush.linearGradient(
             colors = listOf(startColor, endColor),
-            start = Offset(Float.POSITIVE_INFINITY, 0f),
-            end = Offset(0f, Float.POSITIVE_INFINITY)
+            start = Offset(Float.POSITIVE_INFINITY, 0f), end = Offset(0f, Float.POSITIVE_INFINITY)
         )
     }
 }
 
-
-/**
- * Formats card number input as user types (adds spaces every 4 digits)
- */
 private fun formatCardNumberInput(input: String): String {
     val digitsOnly = input.filter { it.isDigit() }
-    return digitsOnly.chunked(4).joinToString(" ").take(19) // Max 16 digits + 3 spaces
+    return digitsOnly.chunked(4).joinToString(" ").take(19)
 }
 
-/**
- * Formats expiry date input as user types (MM/YY)
- */
 private fun formatExpiryInput(input: String): String {
     val digitsOnly = input.filter { it.isDigit() }
     return when {
@@ -1003,9 +1227,6 @@ private fun formatExpiryInput(input: String): String {
     }
 }
 
-/**
- * Category dropdown component
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CategoryDropdown(
@@ -1024,19 +1245,14 @@ private fun CategoryDropdown(
     ) {
         OutlinedTextField(
             value = selectedCategory?.name ?: "",
-            onValueChange = { },
+            onValueChange = {},
             readOnly = true,
             label = { Text(AppConstants.UIText.CATEGORY_LABEL) },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Category,
-                    contentDescription = null
-                )
-            },
+            leadingIcon = { Icon(Icons.Default.Category, null) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable,true)
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true)
         )
 
         ExposedDropdownMenu(

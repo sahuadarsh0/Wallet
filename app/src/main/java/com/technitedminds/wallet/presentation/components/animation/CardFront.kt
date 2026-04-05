@@ -1,6 +1,7 @@
 package com.technitedminds.wallet.presentation.components.animation
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -9,10 +10,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -42,12 +46,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -64,8 +70,8 @@ import com.technitedminds.wallet.ui.theme.gradientContrastText
 import java.io.File
 
 /**
- * Front side of the card display with proper image loading and card information.
- * Optimized for performance and visual appeal.
+ * Front side of the card display with glassmorphic badges, holographic shimmer,
+ * real-card labels, and refined typography.
  */
 @Composable
 fun CardFront(
@@ -77,11 +83,22 @@ fun CardFront(
 ) {
     val context = LocalContext.current
 
-    // Auto-detect text color based on gradient surface
     val gradient = card.getGradient()
     val cardTextColor = remember(gradient) {
         gradientContrastText(gradient.startColor, gradient.endColor)
     }
+
+    // Holographic shimmer for OCR (textual) cards
+    val shimmerTransition = rememberInfiniteTransition(label = "shimmer")
+    val shimmerOffset by shimmerTransition.animateFloat(
+        initialValue = -1f,
+        targetValue = 2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmer_offset"
+    )
 
     Box(
         modifier = modifier
@@ -91,9 +108,7 @@ fun CardFront(
                 shape = RoundedCornerShape(if (isCompact) 8.dp else 12.dp)
             )
     ) {
-        // Background image - only show for image-only cards (non-OCR cards)
-        // For OCR cards (Credit/Debit), always render the gradient live so changes are reflected immediately
-        // The saved images for OCR cards are only used for sharing purposes
+        // Background image for non-OCR cards
         if (!card.type.supportsOCR() && card.frontImagePath.isNotBlank()) {
             val imageFile = File(card.frontImagePath)
             if (imageFile.exists()) {
@@ -108,8 +123,7 @@ fun CardFront(
                         .clip(RoundedCornerShape(if (isCompact) 8.dp else 12.dp)),
                     contentScale = ContentScale.Crop
                 )
-                
-                // Overlay for text readability
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -124,7 +138,29 @@ fun CardFront(
                 )
             }
         }
-        
+
+        // Holographic shimmer overlay (OCR cards only, non-compact)
+        if (card.type.supportsOCR() && !isCompact) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.White.copy(alpha = 0.05f),
+                                Color.White.copy(alpha = 0.12f),
+                                Color.White.copy(alpha = 0.05f),
+                                Color.Transparent,
+                            ),
+                            start = Offset(shimmerOffset * 600f, 0f),
+                            end = Offset(shimmerOffset * 600f + 300f, 400f)
+                        )
+                    )
+            )
+        }
+
         // Card content
         Column(
             modifier = Modifier
@@ -132,43 +168,43 @@ fun CardFront(
                 .padding(if (isCompact) 12.dp else 16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top section - Card type and category
+            // Top section - Glassmorphic type and category badges
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                // Card type indicator
                 Surface(
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                    shape = RoundedCornerShape(6.dp),
+                    color = Color.White.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.3f)),
                     modifier = Modifier.padding(bottom = 4.dp)
                 ) {
                     Text(
                         text = card.type.getDisplayName(),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = cardTextColor,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
-                
-                // Category indicator
+
                 if (!isCompact && card.categoryId.isNotEmpty()) {
                     Surface(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
-                        shape = RoundedCornerShape(6.dp)
+                        color = Color.White.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.3f))
                     ) {
                         Text(
                             text = resolveCategoryName(card.categoryId),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            color = cardTextColor,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
                 }
             }
-            
-            // Middle section - Card number (if available and textual)
+
+            // Middle section - Card number with monospace typography
             if (!isCompact && card.type.supportsOCR() && card.extractedData.containsKey("cardNumber")) {
                 val cardNumber = card.extractedData["cardNumber"]
                 if (!cardNumber.isNullOrEmpty()) {
@@ -176,15 +212,16 @@ fun CardFront(
                         text = formatCardNumber(cardNumber),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Medium,
-                            letterSpacing = 2.sp
+                            letterSpacing = 3.sp,
+                            fontFamily = FontFamily.Monospace
                         ),
                         color = cardTextColor,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                 }
             }
-            
-            // Bottom section - Card name and holder
+
+            // Bottom section - Card name with real-card labels
             Column {
                 Text(
                     text = card.name,
@@ -198,54 +235,67 @@ fun CardFront(
                     maxLines = if (isCompact) 1 else 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                
+
                 if (!isCompact) {
-                    val holderName = card.extractedData["cardholderName"]
-                    if (!holderName.isNullOrEmpty()) {
-                        Text(
-                            text = holderName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = cardTextColor.copy(alpha = 0.9f),
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-                    
-                    val expiryDate = card.extractedData["expiryDate"]
-                    if (!expiryDate.isNullOrEmpty()) {
-                        Text(
-                            text = String.format(AppConstants.UIText.VALID_THRU_LABEL, expiryDate),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = cardTextColor.copy(alpha = 0.8f),
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        // Cardholder section with label
+                        val holderName = card.extractedData["cardholderName"]
+                        if (!holderName.isNullOrEmpty()) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "CARDHOLDER",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        letterSpacing = 1.sp
+                                    ),
+                                    color = cardTextColor.copy(alpha = 0.6f)
+                                )
+                                Text(
+                                    text = holderName,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = cardTextColor.copy(alpha = 0.9f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        // Expiry section with label
+                        val expiryDate = card.extractedData["expiryDate"]
+                        if (!expiryDate.isNullOrEmpty()) {
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "VALID THRU",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        letterSpacing = 1.sp
+                                    ),
+                                    color = cardTextColor.copy(alpha = 0.6f)
+                                )
+                                Text(
+                                    text = expiryDate,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = cardTextColor.copy(alpha = 0.9f)
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
-        
-        // Top right icons
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(if (isCompact) 8.dp else 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            // Share button with animations and haptic feedback
-            if (showShareButton && onShare != null && !isCompact) {
-                ShareButton(
-                    onShare = { onShare(CardSharingOption.FrontOnly) },
-                    contentDescription = AppConstants.ContentDescriptions.SHARE_FRONT,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-            
-            // Card type icon
-            Icon(
-                imageVector = getCardTypeIcon(card.type),
-                contentDescription = "${card.type.getDisplayName()} icon",
-                tint = Color.White.copy(alpha = 0.7f),
-                modifier = Modifier.size(if (isCompact) 20.dp else 24.dp)
+
+        // Top right - share button only (removed redundant card type icon)
+        if (showShareButton && onShare != null && !isCompact) {
+            ShareButton(
+                onShare = { onShare(CardSharingOption.FrontOnly) },
+                contentDescription = AppConstants.ContentDescriptions.SHARE_FRONT,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(12.dp)
+                    .size(32.dp)
             )
         }
     }
@@ -253,43 +303,38 @@ fun CardFront(
 
 /**
  * Get gradient colors based on card's custom gradient or type default.
- * Uses card.getGradient() which returns customGradient if set, otherwise the type default.
  */
 private fun getCardGradient(card: Card): Brush {
     val gradient = card.getGradient()
-    
+
     val startColor = try {
         Color(gradient.startColor.toColorInt())
     } catch (e: Exception) {
         Color(Card.getDefaultGradientForType(card.type).startColor.toColorInt())
     }
-    
+
     val endColor = try {
         Color(gradient.endColor.toColorInt())
     } catch (e: Exception) {
         Color(Card.getDefaultGradientForType(card.type).endColor.toColorInt())
     }
-    
-    // Apply gradient direction
+
     return when (gradient.direction) {
-        com.technitedminds.wallet.domain.model.GradientDirection.TopToBottom -> 
+        com.technitedminds.wallet.domain.model.GradientDirection.TopToBottom ->
             Brush.verticalGradient(colors = listOf(startColor, endColor))
-        com.technitedminds.wallet.domain.model.GradientDirection.LeftToRight -> 
+        com.technitedminds.wallet.domain.model.GradientDirection.LeftToRight ->
             Brush.horizontalGradient(colors = listOf(startColor, endColor))
-        com.technitedminds.wallet.domain.model.GradientDirection.DiagonalTopLeftToBottomRight -> 
+        com.technitedminds.wallet.domain.model.GradientDirection.DiagonalTopLeftToBottomRight ->
             Brush.linearGradient(colors = listOf(startColor, endColor))
-        com.technitedminds.wallet.domain.model.GradientDirection.DiagonalTopRightToBottomLeft -> 
+        com.technitedminds.wallet.domain.model.GradientDirection.DiagonalTopRightToBottomLeft ->
             Brush.linearGradient(
                 colors = listOf(startColor, endColor),
-                start = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, 0f),
-                end = androidx.compose.ui.geometry.Offset(0f, Float.POSITIVE_INFINITY)
+                start = Offset(Float.POSITIVE_INFINITY, 0f),
+                end = Offset(0f, Float.POSITIVE_INFINITY)
             )
     }
 }
 
-/**
- * Get icon for card type
- */
 private fun getCardTypeIcon(cardType: CardType) = when (cardType) {
     is CardType.Credit, is CardType.Debit -> Icons.Default.Payment
     is CardType.GiftCard -> Icons.Default.Redeem
@@ -308,9 +353,6 @@ private fun getCardTypeIcon(cardType: CardType) = when (cardType) {
     is CardType.Custom -> Icons.Default.Payment
 }
 
-/**
- * Format card number for display (mask middle digits)
- */
 private fun formatCardNumber(cardNumber: String): String {
     val cleaned = cardNumber.replace("\\s".toRegex(), "")
     return when {
@@ -328,9 +370,6 @@ private fun formatCardNumber(cardNumber: String): String {
     }
 }
 
-/**
- * Share button component with animations, haptic feedback, and loading state
- */
 @Composable
 private fun ShareButton(
     onShare: () -> Unit,
@@ -341,8 +380,7 @@ private fun ShareButton(
     val hapticFeedback = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    
-    // Scale animation for press feedback
+
     val scale by animateFloatAsState(
         targetValue = if (isPressed) AppConstants.AnimationValues.SCALE_PRESSED else 1f,
         animationSpec = spring(
@@ -351,7 +389,7 @@ private fun ShareButton(
         ),
         label = "share_button_scale"
     )
-    
+
     Surface(
         modifier = modifier
             .scale(scale)
@@ -367,7 +405,8 @@ private fun ShareButton(
                 }
             ),
         shape = CircleShape,
-        color = Color.White.copy(alpha = 0.2f)
+        color = Color.White.copy(alpha = 0.2f),
+        border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.3f))
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),

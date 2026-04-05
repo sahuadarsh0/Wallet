@@ -1,9 +1,15 @@
 package com.technitedminds.wallet.data.local.security
 
+import android.content.Context
+import com.technitedminds.wallet.data.local.database.WalletDatabase
 import com.technitedminds.wallet.data.local.preferences.SimplePreferencesManager
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,6 +37,7 @@ sealed interface PinVerifyResult {
  */
 @Singleton
 class AppLockRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val preferencesManager: SimplePreferencesManager,
     private val pinHasher: PinHasher,
     private val recoveryCodeManager: RecoveryCodeManager,
@@ -222,8 +229,27 @@ class AppLockRepository @Inject constructor(
         preferencesManager.clearSecurityPreferences()
     }
 
-    /** Clear all app data including security, preferences, etc. */
-    suspend fun clearAllAppData() {
-        preferencesManager.clearAllPreferences()
+    /**
+     * Clear ALL app data: preferences, Room database, card images, thumbnails, and cache.
+     * This is the nuclear option triggered by max PIN failures or manual data wipe.
+     */
+    suspend fun clearAllAppData(): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            preferencesManager.clearAllPreferences()
+            WalletDatabase.wipeCompletely(context)
+
+            listOf("card_images", "thumbnails", "temp", "logs").forEach { dirName ->
+                File(context.filesDir, dirName).deleteRecursively()
+            }
+
+            File(context.cacheDir, "cache").deleteRecursively()
+            File(context.cacheDir, "shared_cards").deleteRecursively()
+
+            context.getSharedPreferences("storage_prefs", Context.MODE_PRIVATE)
+                .edit().clear().commit()
+            context.getSharedPreferences("cardvault_keyset_prefs", Context.MODE_PRIVATE)
+                .edit().clear().commit()
+            Unit
+        }
     }
 }

@@ -6,34 +6,51 @@ alwaysApply: true
 ## Package Structure
 ```
 com.technitedminds.wallet/
-├── MainActivity.kt              # @AndroidEntryPoint entry point
+├── MainActivity.kt              # @AndroidEntryPoint entry point with AppPhase state machine
 ├── WalletApplication.kt         # @HiltAndroidApp application class
 ├── data/                        # Data layer implementations
 │   ├── local/                  # Local data sources
-│   │   ├── cache/             # Caching implementations
-│   │   ├── database/          # Room entities, DAOs, converters
-│   │   ├── files/             # File storage management
-│   │   ├── preferences/       # Proto DataStore
-│   │   ├── security/          # Security-related data handling
-│   │   └── storage/           # General storage utilities
-│   ├── mapper/                 # Entity ↔ Domain mapping
-│   ├── ocr/                    # ML Kit text recognition
-│   ├── repository/             # Repository implementations
-│   └── service/                # Data services
+│   │   ├── cache/             # CacheManager
+│   │   ├── database/          # WalletDatabase, dao/, entities/, converters/
+│   │   ├── files/             # ImageFileManager
+│   │   ├── preferences/       # SimplePreferencesManager (DataStore Preferences)
+│   │   ├── security/          # AppLockRepository, PinHasher, RecoveryCodeManager
+│   │   └── storage/           # StorageManager
+│   ├── mapper/                 # CardMapper, CategoryMapper
+│   ├── ocr/                    # CardTextParser, MLKitTextRecognizer
+│   ├── repository/             # CardRepositoryImpl, CategoryRepositoryImpl, ImageRepositoryImpl
+│   └── service/                # CardImageGeneratorImpl, OCRServiceImpl, StorageServiceImpl
 ├── domain/                      # Business logic layer
-│   ├── model/                  # Domain models
-│   ├── repository/             # Repository interfaces
-│   ├── service/                # Domain services
+│   ├── model/                  # Card, CardType, Category, CardGradient, CardImage, OCRResult, StorageModels
+│   ├── repository/             # CardRepository, CategoryRepository, ImageRepository
+│   ├── service/                # CardImageGenerator, OCRService, StorageService
 │   ├── usecase/                # Business logic use cases
-│   └── util/                   # Domain utilities
+│   │   ├── card/              # AddCard, DeleteCard, GetCards, ShareCard, UpdateCard
+│   │   ├── category/          # GetCategories, GetCategoryName, ManageCategory
+│   │   ├── ocr/               # ProcessCardImage
+│   │   └── storage/           # StorageManagement
+│   └── util/
 ├── presentation/                # UI layer
-│   ├── components/             # Reusable composables
-│   ├── constants/              # UI constants
-│   ├── navigation/             # Navigation setup
+│   ├── components/             # Reusable composables (65+ files)
+│   │   ├── common/            # PremiumCard, PremiumTextField, EnhancedComponents, ColorPicker, etc.
+│   │   ├── camera/            # CameraPreview, CaptureButton, CardOverlay, ImagePreview, etc.
+│   │   ├── animation/         # FlippableCard, CardFront, CardBack, EnhancedAnimations, LiquidDrag
+│   │   └── sharing/           # CardSharingDialog, CardSharingManager, CardSharingOption
 │   ├── screens/                # Feature screens
-│   └── utils/                  # UI-specific utilities
-├── di/                          # Hilt modules
-├── ui/theme/                    # M3 theming
+│   │   ├── home/              # EnhancedHomeScreen, HomeViewModel
+│   │   ├── addcard/           # AddCardScreen, AddCardViewModel
+│   │   ├── camera/            # CameraScreen, CameraViewModel
+│   │   ├── carddetail/        # CardDetailScreen, CardDetailViewModel
+│   │   ├── categories/        # CategoriesScreen, CategoriesViewModel, CategoryDialog
+│   │   ├── settings/          # SettingsScreen, SettingsViewModel
+│   │   ├── onboarding/        # OnboardingPinScreen
+│   │   └── security/          # AppLockScreen, AppLockViewModel, BiometricAuthManager
+│   ├── constants/              # AppConstants
+│   ├── navigation/             # WalletNavigation, WalletAppScaffold, BottomNavigation,
+│   │                           # NavigationDestinations, NavigationExtensions
+│   └── utils/                  # PerformanceOptimizer
+├── di/                          # DatabaseModule, RepositoryModule, CameraModule, SecurityModule
+├── ui/theme/                    # Color, ColorUtils, GlassTheme, PhysicsConstants, Theme, Type
 └── utils/                       # Extensions
 ```
 
@@ -41,23 +58,27 @@ com.technitedminds.wallet/
 
 ### Data Layer
 - Implements repository interfaces from domain layer
-- Handles data persistence (Room database, file storage)
-- Maps data entities to domain models
+- Handles data persistence (Room database, file storage, DataStore Preferences)
+- Maps data entities to domain models via `CardMapper`, `CategoryMapper`
+- Manages security primitives: PIN hashing, recovery codes, app lock state
+- Manages image file operations, storage, and caching
 - **ZERO business logic** - only data operations
 
 ### Domain Layer
 - Contains business logic and rules
-- Defines repository interfaces
-- Contains domain models (pure Kotlin classes)
-- Implements use cases/interactors
+- Defines repository and service interfaces
+- Contains domain models (pure Kotlin classes — `String` UUIDs for IDs)
+- Implements use cases/interactors organized by feature (card/, category/, ocr/, storage/)
 - **ZERO Android dependencies** - pure Kotlin only
 
 ### Presentation Layer
-- Jetpack Compose UI components
-- ViewModels with state management
-- Navigation setup
+- Jetpack Compose UI components with glassmorphic design
+- ViewModels with state management (`StateFlow` + `SharedFlow`)
+- Navigation setup via string-based routes
+- Enhanced UI components (PremiumCard, PremiumTextField, etc.)
+- Security screens (AppLock, Onboarding PIN)
 - UI-specific logic only
-- Observes ViewModels via `StateFlow`
+- Observes ViewModels via `collectAsStateWithLifecycle()`
 
 ## Data Flow Pattern (UDF)
 ```
@@ -65,6 +86,13 @@ User Action → ViewModel → Use Case → Repository → Data Source
      ↑                                                   ↓
 UI ← StateFlow ← ViewModel ← Domain Model ← Repository ←┘
 ```
+
+## Hilt DI Modules
+- `DatabaseModule`: Provides `WalletDatabase`, `CardDao`, `CategoryDao` — `@Singleton`
+- `RepositoryModule`: Binds repository interfaces to implementations
+- `CameraModule`: Provides CameraX and ML Kit dependencies
+- `SecurityModule`: Provides security-related dependencies (PinHasher, etc.)
+- NO `NetworkModule` - app is completely offline
 
 ## When Implementing New Features
 1. Start with domain layer (models, repository interface, use case)

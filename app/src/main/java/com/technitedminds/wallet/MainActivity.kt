@@ -46,6 +46,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.technitedminds.wallet.presentation.components.common.SplashOverlay
 import com.technitedminds.wallet.presentation.navigation.WalletAppScaffold
+import com.technitedminds.wallet.presentation.screens.addcard.NfcCardReaderManager
 import com.technitedminds.wallet.presentation.screens.home.EnhancedHomeScreen
 import com.technitedminds.wallet.presentation.screens.onboarding.OnboardingPinScreen
 import com.technitedminds.wallet.presentation.screens.security.AppLockEvent
@@ -79,6 +80,9 @@ class MainActivity : FragmentActivity() {
 
     @Inject
     lateinit var biometricAuthManager: BiometricAuthManager
+
+    @Inject
+    lateinit var nfcCardReaderManager: NfcCardReaderManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -131,7 +135,7 @@ class MainActivity : FragmentActivity() {
                 }
             }
 
-            // ── Handle one-shot events (biometric prompt) ───────────────
+            // ── Handle one-shot events (biometric prompt, data wipe) ────
             LaunchedEffect(Unit) {
                 appLockViewModel.events.collect { event ->
                     when (event) {
@@ -141,6 +145,9 @@ class MainActivity : FragmentActivity() {
                                 onSuccess = { appLockViewModel.onBiometricSuccess() },
                                 onFailure = { msg -> appLockViewModel.onBiometricFailure(msg) },
                             )
+                        }
+                        is AppLockEvent.DataWiped -> {
+                            activity.recreate()
                         }
                         else -> { /* handled by UI state */ }
                     }
@@ -160,7 +167,10 @@ class MainActivity : FragmentActivity() {
 
                     // Home screen — warm behind lock, or visible if ready
                     if (isReady || needsLock) {
-                        WalletAppScaffold(modifier = Modifier.fillMaxSize())
+                        WalletAppScaffold(
+                            modifier = Modifier.fillMaxSize(),
+                            nfcCardReaderManager = nfcCardReaderManager,
+                        )
                     }
 
                     // Lock overlay (opaque, on top of home)
@@ -304,6 +314,6 @@ private fun RecoveryCodeOnboardingDialog(code: String, onDone: () -> Unit) {
 @Composable
 fun HomePreview() {
     WalletTheme {
-        EnhancedHomeScreen(onCardClick = { }, onAddCardClick = { }, modifier = Modifier.fillMaxSize())
+        EnhancedHomeScreen(onCardClick = { }, modifier = Modifier.fillMaxSize())
     }
 }

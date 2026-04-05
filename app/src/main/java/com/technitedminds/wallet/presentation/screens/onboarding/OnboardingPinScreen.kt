@@ -149,7 +149,7 @@ fun OnboardingPinScreen(
                 ) {
                     Icon(
                         Icons.Default.OfflinePin,
-                        contentDescription = null,
+                        contentDescription = "Secure with PIN",
                         modifier = Modifier.size(20.dp),
                     )
                     Spacer(Modifier.width(10.dp))
@@ -242,7 +242,7 @@ private fun FeatureRow(icon: ImageVector, title: String, subtitle: String) {
         ) {
             Icon(
                 icon,
-                contentDescription = null,
+                contentDescription = title,
                 tint = WalletPurple.copy(alpha = 0.9f),
                 modifier = Modifier.size(22.dp),
             )

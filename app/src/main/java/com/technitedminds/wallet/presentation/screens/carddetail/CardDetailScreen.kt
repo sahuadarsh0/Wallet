@@ -1,17 +1,29 @@
 package com.technitedminds.wallet.presentation.screens.carddetail
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.EaseInCubic
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,21 +31,24 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Notes
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Scanner
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,24 +64,22 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.animation.core.EaseInCubic
-import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.domain.model.CardGradient
 import com.technitedminds.wallet.domain.model.GradientDirection
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
 import com.technitedminds.wallet.presentation.components.animation.EnhancedSlideInItem
 import com.technitedminds.wallet.presentation.components.animation.FlippableCard
 import com.technitedminds.wallet.presentation.components.common.AnimatedSectionHeader
@@ -75,23 +88,25 @@ import com.technitedminds.wallet.presentation.components.common.CardTypeDropdown
 import com.technitedminds.wallet.presentation.components.common.CategoryDropdown
 import com.technitedminds.wallet.presentation.components.common.CustomFieldsEditor
 import com.technitedminds.wallet.presentation.components.common.ExtractedDataEditor
+import com.technitedminds.wallet.presentation.components.common.GlassPremiumCard
 import com.technitedminds.wallet.presentation.components.common.GradientPickerDialog
-import com.technitedminds.wallet.presentation.components.common.LoadingIndicatorWithText
 import com.technitedminds.wallet.presentation.components.common.LoadingOverlay
 import com.technitedminds.wallet.presentation.components.common.PremiumCard
+import com.technitedminds.wallet.presentation.components.common.PremiumDivider
 import com.technitedminds.wallet.presentation.components.common.PremiumTextField
 import com.technitedminds.wallet.presentation.components.common.gradientShadow
 import com.technitedminds.wallet.presentation.components.common.resolveCategoryName
+import com.technitedminds.wallet.presentation.components.common.getIcon
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingDialog
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
 import com.technitedminds.wallet.presentation.components.animation.liquidDrag
 import com.technitedminds.wallet.presentation.components.animation.liquidPress
 import com.technitedminds.wallet.presentation.constants.AppConstants
+import com.technitedminds.wallet.ui.theme.Glass
+import com.technitedminds.wallet.ui.theme.GlassSurface
 import com.technitedminds.wallet.ui.theme.gradientContrastText
+import kotlinx.coroutines.delay
 
-/**
- * Card detail screen with full-screen card display, editing, and management options.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardDetailScreen(
@@ -111,26 +126,44 @@ fun CardDetailScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Handle events
+    // Security auto-exit timer (pauses during edit mode)
+    var remainingSeconds by remember { mutableIntStateOf(180) }
+
+    LaunchedEffect(isEditing) {
+        if (!isEditing) {
+            remainingSeconds = 180
+            while (remainingSeconds > 0) {
+                delay(1000)
+                remainingSeconds--
+            }
+            onNavigateBack()
+        }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
                 is CardDetailEvent.CardDeleted -> onNavigateBack()
-                is CardDetailEvent.CardSaved -> {
-                    // Show success message or handle as needed
-                }
-                is CardDetailEvent.ShareSuccess -> {
-                    // Card shared successfully
-                }
+                is CardDetailEvent.CardSaved -> {}
+                is CardDetailEvent.ShareSuccess -> {}
             }
         }
     }
 
-    // While the local DB emits the first value, render an empty box so the
-    // navigation transition animates smoothly instead of flashing a spinner.
     if (card == null) {
         Box(modifier = Modifier.fillMaxSize())
         return
+    }
+
+    // Derive ambient background from card gradient
+    val cardGradient = card!!.getGradient()
+    val ambientStart = remember(cardGradient) {
+        try { Color(android.graphics.Color.parseColor(cardGradient.startColor)) }
+        catch (e: Exception) { Color.Transparent }
+    }
+    val ambientEnd = remember(cardGradient) {
+        try { Color(android.graphics.Color.parseColor(cardGradient.endColor)) }
+        catch (e: Exception) { Color.Transparent }
     }
 
     Scaffold(
@@ -150,82 +183,106 @@ fun CardDetailScreen(
         },
         modifier = modifier
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            ambientStart.copy(alpha = 0.06f),
+                            Color.Transparent,
+                            ambientEnd.copy(alpha = 0.04f),
+                        )
+                    )
+                )
         ) {
-            // Card display with staggered animation
-            EnhancedSlideInItem(visible = true, index = 0) {
-                CardDisplaySection(
-                    card = if (isEditing) editedCard ?: card!! else card!!,
-                    isFlipped = uiState.isCardFlipped,
-                    onFlip = viewModel::toggleCardFlip,
-                    onShare = { sharingOption ->
-                        viewModel.quickShare(sharingOption)
-                    },
-                    onShowSharingDialog = viewModel::showSharingDialog,
-                    modifier = Modifier.padding(AppConstants.Dimensions.PADDING_LARGE)
-                )
-            }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .imePadding()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Card hero
+                EnhancedSlideInItem(visible = true, index = 0) {
+                    CardDisplaySection(
+                        card = if (isEditing) editedCard ?: card!! else card!!,
+                        onShare = { viewModel.quickShare(it) },
+                        onShowSharingDialog = viewModel::showSharingDialog,
+                        modifier = Modifier.padding(AppConstants.Dimensions.PADDING_LARGE)
+                    )
+                }
 
-            // Card information with smooth fade transition between edit and view modes
-            AnimatedVisibility(
-                visible = isEditing,
-                enter = fadeIn(
-                    animationSpec = tween(
-                        durationMillis = 300,
-                        easing = EaseOutCubic
+                // Edit mode
+                AnimatedVisibility(
+                    visible = isEditing,
+                    enter = fadeIn(tween(300, easing = EaseOutCubic)),
+                    exit = fadeOut(tween(300, easing = EaseInCubic))
+                ) {
+                    EditCardSection(
+                        card = editedCard ?: card!!,
+                        categories = categories,
+                        viewModel = viewModel,
+                        onUpdateName = viewModel::updateCardName,
+                        onUpdateCategory = viewModel::updateCardCategory,
+                        onUpdateCardType = viewModel::updateCardType,
+                        onUpdateExtractedData = viewModel::updateExtractedData,
+                        onUpdateCustomField = viewModel::updateCustomField,
+                        onAddCustomField = viewModel::addCustomField,
+                        onRemoveCustomField = viewModel::removeCustomField,
+                        onUpdateColor = viewModel::updateCardColor,
+                        modifier = Modifier.padding(AppConstants.Dimensions.PADDING_LARGE)
                     )
-                ),
-                exit = fadeOut(
-                    animationSpec = tween(
-                        durationMillis = 300,
-                        easing = EaseInCubic
-                    )
-                )
-            ) {
-                EditCardSection(
-                    card = editedCard ?: card!!,
-                    categories = categories,
-                    viewModel = viewModel,
-                    onUpdateName = viewModel::updateCardName,
-                    onUpdateCategory = viewModel::updateCardCategory,
-                    onUpdateCardType = viewModel::updateCardType,
-                    onUpdateExtractedData = viewModel::updateExtractedData,
-                    onUpdateCustomField = viewModel::updateCustomField,
-                    onAddCustomField = viewModel::addCustomField,
-                    onRemoveCustomField = viewModel::removeCustomField,
-                    onUpdateColor = viewModel::updateCardColor,
-                    modifier = Modifier.padding(AppConstants.Dimensions.PADDING_LARGE)
-                )
-            }
-            
-            AnimatedVisibility(
-                visible = !isEditing,
-                enter = fadeIn(
-                    animationSpec = tween(
-                        durationMillis = 300,
-                        easing = EaseOutCubic
-                    )
-                ),
-                exit = fadeOut(
-                    animationSpec = tween(
-                        durationMillis = 300,
-                        easing = EaseInCubic
-                    )
-                )
-            ) {
-                CardInfoSection(
-                    card = card!!,
-                    modifier = Modifier.padding(AppConstants.Dimensions.PADDING_LARGE)
-                )
+                }
+
+                // View mode
+                AnimatedVisibility(
+                    visible = !isEditing,
+                    enter = fadeIn(tween(300, easing = EaseOutCubic)),
+                    exit = fadeOut(tween(300, easing = EaseInCubic))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(AppConstants.Dimensions.PADDING_LARGE),
+                        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
+                    ) {
+                        // Quick meta bar
+                        EnhancedSlideInItem(visible = true, index = 1) {
+                            QuickMetaBar(card = card!!)
+                        }
+
+                        // Sensitive data section (OCR cards)
+                        if (card!!.extractedData.isNotEmpty()) {
+                            EnhancedSlideInItem(visible = true, index = 2) {
+                                SensitiveDataSection(
+                                    card = card!!,
+                                    gradientColors = listOf(ambientStart, ambientEnd)
+                                )
+                            }
+                        }
+
+                        // Custom fields section
+                        val visibleFields = card!!.customFields.filter {
+                            it.key != AppConstants.UIText.CUSTOM_COLOR_FIELD
+                        }
+                        if (visibleFields.isNotEmpty()) {
+                            EnhancedSlideInItem(visible = true, index = 3) {
+                                DetailsSection(
+                                    customFields = visibleFields,
+                                    gradientColors = listOf(ambientStart, ambientEnd)
+                                )
+                            }
+                        }
+
+                        // Security timer bar
+                        EnhancedSlideInItem(visible = true, index = 4) {
+                            SecurityTimerBar(remainingSeconds = remainingSeconds)
+                        }
+                    }
+                }
             }
         }
     }
 
-    // Delete confirmation dialog
     CardDeleteConfirmationDialog(
         isVisible = uiState.showDeleteDialog,
         cardName = card!!.name,
@@ -236,46 +293,31 @@ fun CardDetailScreen(
         onDismiss = viewModel::hideDeleteConfirmation
     )
 
-    // Success feedback
     LaunchedEffect(uiState.successMessage) {
         uiState.successMessage?.let { message ->
-            snackbarHostState.showSnackbar(
-                message = message,
-                duration = SnackbarDuration.Short
-            )
+            snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Short)
             viewModel.clearSuccessMessage()
         }
     }
 
-    // Error feedback
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
             snackbarHostState.showSnackbar(
-                message = error,
-                actionLabel = "Dismiss",
-                duration = SnackbarDuration.Long
+                message = error, actionLabel = "Dismiss", duration = SnackbarDuration.Long
             )
             viewModel.clearError()
         }
     }
 
-    // Loading overlay
-    LoadingOverlay(
-        isVisible = uiState.isLoading,
-        text = AppConstants.UIText.PROCESSING
-    )
-    
-    // Sharing dialog
+    LoadingOverlay(isVisible = uiState.isLoading, text = AppConstants.UIText.PROCESSING)
+
     CardSharingDialog(
         card = card!!,
         isVisible = showSharingDialog,
         onDismiss = viewModel::hideSharingDialog,
-        onShare = { option, config ->
-            viewModel.shareCardWithConfig(option, config)
-        }
+        onShare = { option, config -> viewModel.shareCardWithConfig(option, config) }
     )
-    
-    // Gradient Picker Dialog
+
     if (isEditing) {
         GradientPickerDialog(
             isVisible = showGradientPicker,
@@ -290,9 +332,8 @@ fun CardDetailScreen(
     }
 }
 
-/**
- * Top app bar for card detail screen
- */
+// ─── Top Bar ─────────────────────────────────────────────────────────────────
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CardDetailTopBar(
@@ -315,49 +356,26 @@ private fun CardDetailTopBar(
         },
         navigationIcon = {
             IconButton(onClick = onNavigateBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                    contentDescription = AppConstants.ContentDescriptions.BACK
-                )
+                Icon(Icons.AutoMirrored.Default.ArrowBack, AppConstants.ContentDescriptions.BACK)
             }
         },
         actions = {
             if (isEditing) {
-                // Cancel edit
                 IconButton(onClick = onCancelEdit) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = AppConstants.DialogText.CANCEL_BUTTON
-                    )
+                    Icon(Icons.Default.Close, AppConstants.DialogText.CANCEL_BUTTON)
                 }
-                // Save edit
                 IconButton(onClick = onSaveEdit) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = AppConstants.ContentDescriptions.SAVE
-                    )
+                    Icon(Icons.Default.Check, AppConstants.ContentDescriptions.SAVE)
                 }
             } else {
-                // Share with options
                 IconButton(onClick = onShowSharingDialog) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = AppConstants.UIText.SHARE_OPTIONS
-                    )
+                    Icon(Icons.Default.Share, AppConstants.UIText.SHARE_OPTIONS)
                 }
-                // Edit
                 IconButton(onClick = onStartEdit) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = AppConstants.ContentDescriptions.EDIT
-                    )
+                    Icon(Icons.Default.Edit, AppConstants.ContentDescriptions.EDIT)
                 }
-                // Delete
                 IconButton(onClick = onDeleteCard) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = AppConstants.DialogText.DELETE_BUTTON
-                    )
+                    Icon(Icons.Default.Delete, AppConstants.DialogText.DELETE_BUTTON)
                 }
             }
         },
@@ -365,134 +383,337 @@ private fun CardDetailTopBar(
     )
 }
 
-/**
- * Card display section with flip functionality
- */
+// ─── Card Display (Hero) ─────────────────────────────────────────────────────
+
 @Composable
 private fun CardDisplaySection(
     card: Card,
-    isFlipped: Boolean,
-    onFlip: () -> Unit,
     onShare: (CardSharingOption) -> Unit,
     onShowSharingDialog: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Card with flip animation - shows actual images for non-OCR cards
-        // Let FlippableCard manage its own flip state for better UX
-        FlippableCard(
-            card = card,
-            showShareButtons = true,
-            onShare = onShare,
-            onCardClick = null, // Let FlippableCard handle its own flipping
-            onCardLongPress = onShowSharingDialog,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(220.dp)
-                .liquidDrag(maxOffset = 16.dp),
-        )
-
-        Spacer(modifier = Modifier.height(AppConstants.Dimensions.SPACING_LARGE))
-
-        // Instructions
-        Text(
-            text = AppConstants.UIText.FLIP_INSTRUCTION,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
+    FlippableCard(
+        card = card,
+        showShareButtons = true,
+        onShare = onShare,
+        onCardClick = null,
+        onCardLongPress = onShowSharingDialog,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(240.dp)
+            .liquidDrag(maxOffset = 16.dp),
+    )
 }
 
-/**
- * Card information display section
- */
+// ─── View Mode: QuickMetaBar ─────────────────────────────────────────────────
+
 @Composable
-private fun CardInfoSection(
+private fun QuickMetaBar(
     card: Card,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
+    GlassSurface(
+        shape = RoundedCornerShape(Glass.PillCornerRadius),
+        modifier = modifier.fillMaxWidth()
     ) {
-        // Basic information with staggered animation (delay: 100ms)
-        StaggeredSlideInItem(delayMillis = 100) {
-            InfoCard(
-                title = AppConstants.UIText.CARD_INFORMATION,
-                icon = Icons.Default.Info
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Type
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL)
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    InfoRow(AppConstants.UIText.NAME_LABEL, card.name)
-                    InfoRow(AppConstants.UIText.TYPE_LABEL, card.type.getDisplayName())
-                    InfoRow(AppConstants.UIText.CATEGORY_LABEL, resolveCategoryName(card.categoryId))
-                    InfoRow(AppConstants.UIText.CREATED_LABEL, formatDate(card.createdAt))
-                    InfoRow(AppConstants.UIText.UPDATED_LABEL, formatDate(card.updatedAt))
+                    Icon(
+                        imageVector = card.type.getIcon(),
+                        contentDescription = "Card type",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
+                Text(
+                    text = card.type.getDisplayName(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
-        }
 
-        // Extracted data (OCR results) with staggered animation (delay: 200ms)
-        if (card.extractedData.isNotEmpty()) {
-            StaggeredSlideInItem(delayMillis = 200) {
-                InfoCard(
-                    title = AppConstants.UIText.EXTRACTED_INFORMATION,
-                    icon = Icons.Default.Scanner
-                ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL)
-                    ) {
-                        card.extractedData.forEach { (key, value) ->
-                            InfoRow(
-                                label = formatFieldName(key),
-                                value = if (key in listOf("cardNumber", "cvv")) {
-                                    maskSensitiveData(value)
-                                } else {
-                                    value
-                                }
-                            )
-                        }
-                    }
-                }
+            // Vertical divider
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(16.dp)
+                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+            )
+
+            // Category
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Category,
+                    contentDescription = "Category",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = resolveCategoryName(card.categoryId),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
-        }
 
-        // Custom fields with staggered animation (delay: 300ms)
-        if (card.customFields.isNotEmpty()) {
-            StaggeredSlideInItem(delayMillis = 300) {
-                InfoCard(
-                    title = AppConstants.UIText.ADDITIONAL_INFORMATION,
-                    icon = Icons.AutoMirrored.Default.Notes
-                ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_SMALL)
-                    ) {
-                        card.customFields.forEach { (key, value) ->
-                            if (key != AppConstants.UIText.CUSTOM_COLOR_FIELD) { // Don't show internal fields
-                                InfoRow(
-                                    label = formatFieldName(key),
-                                    value = if (key in listOf(AppConstants.UIText.PIN_FIELD, AppConstants.UIText.PASSWORD_FIELD)) {
-                                        maskSensitiveData(value)
-                                    } else {
-                                        value
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
+            // Vertical divider
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(16.dp)
+                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+            )
+
+            // Date
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CalendarToday,
+                    contentDescription = "Date created",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = formatDate(card.updatedAt),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
         }
     }
 }
 
-/**
- * Enhanced edit card section with comprehensive editing options
- */
+// ─── View Mode: RevealableFieldRow ───────────────────────────────────────────
+
+@Composable
+private fun RevealableFieldRow(
+    label: String,
+    value: String,
+    icon: ImageVector,
+    isSensitive: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    var isRevealed by remember { mutableStateOf(!isSensitive) }
+    val displayValue = if (isRevealed) value else maskSensitiveData(value)
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                modifier = Modifier.size(18.dp)
+            )
+            Column {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = displayValue,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+
+        if (isSensitive) {
+            IconButton(
+                onClick = { isRevealed = !isRevealed },
+                modifier = Modifier.size(48.dp)
+            ) {
+                Icon(
+                    imageVector = if (isRevealed) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                    contentDescription = if (isRevealed) "Hide" else "Reveal",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
+}
+
+// ─── View Mode: SensitiveDataSection ─────────────────────────────────────────
+
+@Composable
+private fun SensitiveDataSection(
+    card: Card,
+    gradientColors: List<Color>,
+    modifier: Modifier = Modifier
+) {
+    val sensitiveKeys = listOf("cardNumber", "cvv")
+
+    GlassPremiumCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .gradientShadow(
+                colors = gradientColors,
+                shadowElevation = 6.dp,
+                cornerRadius = Glass.CornerRadius,
+            )
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            AnimatedSectionHeader(
+                title = AppConstants.UIText.CARD_DETAILS_TITLE,
+                icon = Icons.Default.Shield
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            card.extractedData.entries.forEachIndexed { index, (key, value) ->
+                if (index > 0) {
+                    PremiumDivider(modifier = Modifier.padding(vertical = 2.dp))
+                }
+                RevealableFieldRow(
+                    label = formatFieldName(key),
+                    value = value,
+                    icon = getFieldIcon(key),
+                    isSensitive = key in sensitiveKeys
+                )
+            }
+        }
+    }
+}
+
+// ─── View Mode: DetailsSection ───────────────────────────────────────────────
+
+@Composable
+private fun DetailsSection(
+    customFields: Map<String, String>,
+    gradientColors: List<Color>,
+    modifier: Modifier = Modifier
+) {
+    val sensitiveKeys = listOf(AppConstants.UIText.PIN_FIELD, AppConstants.UIText.PASSWORD_FIELD)
+
+    GlassPremiumCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .gradientShadow(
+                colors = gradientColors,
+                shadowElevation = 6.dp,
+                cornerRadius = Glass.CornerRadius,
+            )
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            AnimatedSectionHeader(
+                title = "Additional Details",
+                icon = Icons.Default.Description
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            customFields.entries.forEachIndexed { index, (key, value) ->
+                if (index > 0) {
+                    PremiumDivider(modifier = Modifier.padding(vertical = 2.dp))
+                }
+                RevealableFieldRow(
+                    label = formatFieldName(key),
+                    value = value,
+                    icon = getFieldIcon(key),
+                    isSensitive = key in sensitiveKeys
+                )
+            }
+        }
+    }
+}
+
+// ─── View Mode: SecurityTimerBar ─────────────────────────────────────────────
+
+@Composable
+private fun SecurityTimerBar(
+    remainingSeconds: Int,
+    modifier: Modifier = Modifier
+) {
+    val minutes = remainingSeconds / 60
+    val seconds = remainingSeconds % 60
+    val isWarning = remainingSeconds < 30
+
+    val warningAlpha by animateFloatAsState(
+        targetValue = if (isWarning) 0.8f else 0f,
+        animationSpec = tween(300),
+        label = "warning_alpha"
+    )
+
+    val pulseTransition = rememberInfiniteTransition(label = "timer_pulse")
+    val pulseAlpha by pulseTransition.animateFloat(
+        initialValue = 0.7f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
+
+    val timerColor = if (isWarning) {
+        MaterialTheme.colorScheme.error.copy(alpha = pulseAlpha)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    GlassSurface(
+        shape = RoundedCornerShape(Glass.PillCornerRadius),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Lock,
+                contentDescription = "Auto-lock timer",
+                tint = timerColor,
+                modifier = Modifier.size(14.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = "Auto-locking in %d:%02d".format(minutes, seconds),
+                style = MaterialTheme.typography.bodySmall,
+                color = timerColor
+            )
+        }
+    }
+}
+
+// ─── Edit Mode ───────────────────────────────────────────────────────────────
+
 @Composable
 private fun EditCardSection(
     card: Card,
@@ -512,10 +733,10 @@ private fun EditCardSection(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
     ) {
-        // Enhanced basic information editing
+        // Section 1: Basic Information -- GlassPremiumCard (primary visual weight)
         EnhancedSlideInItem(visible = true, index = 0, baseDelay = 100) {
-            PremiumCard(
-                elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
+            GlassPremiumCard(
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
@@ -526,8 +747,7 @@ private fun EditCardSection(
                         icon = Icons.Default.Edit,
                         subtitle = AppConstants.UIText.BASIC_INFORMATION_SUBTITLE
                     )
-                    
-                    // Card name with enhanced styling
+
                     PremiumTextField(
                         value = card.name,
                         onValueChange = onUpdateName,
@@ -535,15 +755,13 @@ private fun EditCardSection(
                         leadingIcon = Icons.Default.CreditCard,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    
-                    // Card type dropdown
+
                     CardTypeDropdown(
                         selectedCardType = card.type,
                         onCardTypeSelected = onUpdateCardType,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    
-                    // Category dropdown
+
                     CategoryDropdown(
                         categories = categories,
                         selectedCategoryId = card.categoryId,
@@ -554,7 +772,7 @@ private fun EditCardSection(
             }
         }
 
-        // Enhanced extracted data editing (for OCR cards)
+        // Section 2: Card Details (OCR) -- PremiumCard with Shield icon
         if (card.type.supportsOCR() && (card.extractedData.isNotEmpty() || card.type.supportsOCR())) {
             EnhancedSlideInItem(visible = true, index = 1, baseDelay = 100) {
                 PremiumCard(
@@ -565,26 +783,27 @@ private fun EditCardSection(
                         verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
                     ) {
                         AnimatedSectionHeader(
-                            title = AppConstants.UIText.CARD_INFORMATION,
-                            icon = Icons.Default.Scanner,
+                            title = AppConstants.UIText.CARD_DETAILS_TITLE,
+                            icon = Icons.Default.Shield,
                             subtitle = AppConstants.UIText.CARD_DETAILS_SUBTITLE
                         )
-                        
+
                         ExtractedDataEditor(
                             card = card,
                             onUpdateExtractedData = onUpdateExtractedData,
-                            onAddField = { fieldKey ->
-                                onUpdateExtractedData(fieldKey, "")
-                            }
+                            onAddField = { fieldKey -> onUpdateExtractedData(fieldKey, "") }
                         )
                     }
                 }
             }
         }
 
-        // Enhanced custom fields editing
+        // Section 3: Additional Details -- PremiumCard with surfaceVariant
         EnhancedSlideInItem(visible = true, index = 2, baseDelay = 100) {
             PremiumCard(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
                 elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
             ) {
                 Column(
@@ -592,11 +811,11 @@ private fun EditCardSection(
                     verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
                 ) {
                     AnimatedSectionHeader(
-                        title = AppConstants.UIText.ADDITIONAL_INFORMATION,
-                        icon = Icons.AutoMirrored.Default.Notes,
+                        title = "Additional Details",
+                        icon = Icons.Default.Description,
                         subtitle = AppConstants.UIText.CUSTOM_FIELDS_SUBTITLE
                     )
-                    
+
                     CustomFieldsEditor(
                         card = card,
                         onUpdateCustomField = onUpdateCustomField,
@@ -607,65 +826,47 @@ private fun EditCardSection(
             }
         }
 
-        // Enhanced appearance settings
+        // Section 4: Appearance -- Unwrapped (GradientPreviewButton is its own visual)
         EnhancedSlideInItem(visible = true, index = 3, baseDelay = 100) {
-            PremiumCard(
-                elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
+            Column(
+                verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_MEDIUM)
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
-                ) {
-                    AnimatedSectionHeader(
-                        title = AppConstants.UIText.APPEARANCE_TITLE,
-                        icon = Icons.Default.Palette,
-                        subtitle = AppConstants.UIText.APPEARANCE_SUBTITLE
-                    )
-                    
-                    // Gradient preview card that opens picker
-                    GradientPreviewButton(
-                        gradient = card.customGradient ?: Card.getDefaultGradientForType(card.type),
-                        cardType = card.type,
-                        onClick = viewModel::showGradientPicker
-                    )
-                }
+                AnimatedSectionHeader(
+                    title = AppConstants.UIText.APPEARANCE_TITLE,
+                    icon = Icons.Default.Palette,
+                    subtitle = AppConstants.UIText.APPEARANCE_SUBTITLE
+                )
+
+                GradientPreviewButton(
+                    gradient = card.customGradient ?: Card.getDefaultGradientForType(card.type),
+                    cardType = card.type,
+                    onClick = viewModel::showGradientPicker
+                )
             }
         }
-        
-        // Enhanced save reminder
+
+        // Section 5: Save Reminder -- Lightweight GlassSurface banner
         EnhancedSlideInItem(visible = true, index = 4, baseDelay = 100) {
-            PremiumCard(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT),
+            GlassSurface(
+                shape = RoundedCornerShape(Glass.PillCornerRadius),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
-                    modifier = Modifier.padding(20.dp),
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = AppConstants.AnimationValues.ALPHA_DISABLED),
-                                shape = CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Information",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = AppConstants.UIText.SAVE_CHANGES_REMINDER,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -673,115 +874,8 @@ private fun EditCardSection(
     }
 }
 
-/**
- * Information card container
- */
-@Composable
-private fun InfoCard(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
-    ) {
-        Column(
-            modifier = Modifier.padding(AppConstants.Dimensions.PADDING_LARGE)
-        ) {
-            // Header
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = AppConstants.Dimensions.SPACING_MEDIUM)
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            
-            // Content
-            content()
-        }
-    }
-}
+// ─── GradientPreviewButton ───────────────────────────────────────────────────
 
-/**
- * Information row component
- */
-@Composable
-private fun InfoRow(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-/**
- * Staggered slide-in animation with custom delay
- */
-@Composable
-private fun StaggeredSlideInItem(
-    delayMillis: Int,
-    content: @Composable () -> Unit
-) {
-    var visible by remember { mutableStateOf(false) }
-    
-    LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(delayMillis.toLong())
-        visible = true
-    }
-    
-    AnimatedVisibility(
-        visible = visible,
-        enter = slideInVertically(
-            initialOffsetY = { it },
-            animationSpec = tween(
-                durationMillis = 400,
-                delayMillis = 0,
-                easing = EaseOutCubic
-            )
-        ) + fadeIn(
-            animationSpec = tween(
-                durationMillis = 400,
-                delayMillis = 0,
-                easing = EaseOutCubic
-            )
-        )
-    ) {
-        content()
-    }
-}
-
-/**
- * Gradient preview button that opens gradient picker
- */
 @Composable
 private fun GradientPreviewButton(
     gradient: CardGradient,
@@ -799,11 +893,7 @@ private fun GradientPreviewButton(
         modifier = modifier
             .fillMaxWidth()
             .height(80.dp)
-            .gradientShadow(
-                colors = shadowColors,
-                shadowElevation = 8.dp,
-                cornerRadius = 12.dp,
-            )
+            .gradientShadow(colors = shadowColors, shadowElevation = 8.dp, cornerRadius = 12.dp)
             .liquidPress()
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
@@ -842,13 +932,12 @@ private fun GradientPreviewButton(
     }
 }
 
-/**
- * Creates a Compose Brush from CardGradient
- */
+// ─── Utilities ───────────────────────────────────────────────────────────────
+
 private fun createGradientBrush(gradient: CardGradient): Brush {
     val startColor = Color(android.graphics.Color.parseColor(gradient.startColor))
     val endColor = Color(android.graphics.Color.parseColor(gradient.endColor))
-    
+
     return when (gradient.direction) {
         GradientDirection.TopToBottom -> Brush.verticalGradient(listOf(startColor, endColor))
         GradientDirection.LeftToRight -> Brush.horizontalGradient(listOf(startColor, endColor))
@@ -865,9 +954,6 @@ private fun createGradientBrush(gradient: CardGradient): Brush {
     }
 }
 
-/**
- * Utility functions
- */
 private fun formatDate(timestamp: Long): String {
     val date = java.util.Date(timestamp)
     val formatter = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
@@ -885,7 +971,19 @@ private fun formatFieldName(fieldName: String): String {
 
 private fun maskSensitiveData(value: String): String {
     return when {
-        value.length <= 4 -> "****"
-        else -> "*".repeat(value.length - 4) + value.takeLast(4)
+        value.length <= 4 -> "••••"
+        else -> "•".repeat(value.length - 4) + value.takeLast(4)
+    }
+}
+
+private fun getFieldIcon(key: String): ImageVector {
+    return when (key) {
+        "cardNumber" -> Icons.Default.CreditCard
+        "cvv" -> Icons.Default.Shield
+        "expiryDate" -> Icons.Default.CalendarToday
+        "cardholderName" -> Icons.Default.CreditCard
+        "bankName" -> Icons.Default.CreditCard
+        "pin", "password" -> Icons.Default.Lock
+        else -> Icons.Default.Description
     }
 }

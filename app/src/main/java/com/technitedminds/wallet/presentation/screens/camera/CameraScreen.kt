@@ -247,7 +247,7 @@ private fun AspectRatioSelector(
                             if (ratio == currentRatio) {
                                 Icon(
                                     imageVector = Icons.Default.Check,
-                                    contentDescription = null,
+                                    contentDescription = "Selected",
                                     modifier = Modifier.size(16.dp),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
@@ -378,7 +378,7 @@ private fun ImagePreviewStep(
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
-                    contentDescription = null,
+                    contentDescription = "Retake",
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -391,7 +391,7 @@ private fun ImagePreviewStep(
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = null,
+                    contentDescription = "Confirm",
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -454,7 +454,7 @@ private fun ImagePreviewStepWithSkip(
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
-                    contentDescription = null,
+                    contentDescription = "Retake",
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -467,7 +467,7 @@ private fun ImagePreviewStepWithSkip(
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = null,
+                    contentDescription = "Confirm",
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -510,7 +510,7 @@ private fun OCRPreviewStep(
         // Header
         Icon(
             imageVector = if (ocrSucceeded) Icons.Filled.CheckCircle else Icons.Filled.Warning,
-            contentDescription = null,
+            contentDescription = if (ocrSucceeded) "OCR succeeded" else "OCR failed",
             modifier = Modifier.size(64.dp),
             tint = if (ocrSucceeded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
         )
@@ -592,7 +592,7 @@ private fun OCRPreviewStep(
                     onClick = onRetryOCR,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(Icons.Default.Refresh, contentDescription = null)
+                    Icon(Icons.Default.Refresh, contentDescription = "Retry")
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Retry OCR")
                 }
@@ -617,7 +617,13 @@ private fun formatFieldName(key: String): String {
         "expiryDate" -> "Expiry Date"
         "cardholderName" -> "Cardholder Name"
         "cvv" -> "CVV"
-        else -> key.replaceFirstChar { it.uppercase() }
+        "bankName" -> "Bank Name"
+        else -> key
+            .replace(Regex("([a-z])([A-Z])"), "$1 $2")
+            .split(" ")
+            .joinToString(" ") { word ->
+                word.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+            }
     }
 }
 
@@ -754,7 +760,7 @@ private fun ErrorSnackbar(
             ) {
                 Icon(
                     imageVector = Icons.Default.Error,
-                    contentDescription = null,
+                    contentDescription = "Error",
                     tint = MaterialTheme.colorScheme.onErrorContainer
                 )
                 Text(

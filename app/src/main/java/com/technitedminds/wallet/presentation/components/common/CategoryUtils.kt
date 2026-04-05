@@ -104,48 +104,11 @@ import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.technitedminds.wallet.domain.usecase.category.GetCategoryNameUseCase
 
 /**
  * Utility functions for category-related operations in Compose.
  */
-
-/**
- * Composable function to get category name by ID.
- * Returns the category name or a fallback value.
- */
-@Composable
-fun rememberCategoryName(
-    categoryId: String?,
-    getCategoryNameUseCase: GetCategoryNameUseCase? = null
-): String {
-    var categoryName by remember(categoryId) { mutableStateOf("General") }
-    
-    LaunchedEffect(categoryId) {
-        if (getCategoryNameUseCase != null && !categoryId.isNullOrBlank()) {
-            categoryName = getCategoryNameUseCase(categoryId)
-        } else {
-            categoryName = when {
-                categoryId.isNullOrBlank() -> "General"
-                categoryId == "personal" -> "Personal"
-                categoryId == "business" -> "Business"
-                categoryId == "travel" -> "Travel"
-                categoryId == "shopping" -> "Shopping"
-                categoryId == "health" -> "Health"
-                categoryId == "entertainment" -> "Entertainment"
-                else -> categoryId.replaceFirstChar { it.uppercase() }
-            }
-        }
-    }
-    
-    return categoryName
-}
 
 /**
  * Simple category name resolver without dependency injection.

@@ -60,7 +60,14 @@ sealed class CardType {
     /** Returns true if this card type supports OCR processing */
     fun supportsOCR(): Boolean =
             when (this) {
-                is Credit, is Debit-> true
+                is Credit, is Debit -> true
+                else -> false
+            }
+
+    /** Returns true if this card type supports NFC contactless reading */
+    fun supportsNfc(): Boolean =
+            when (this) {
+                is Credit, is Debit -> true
                 else -> false
             }
 

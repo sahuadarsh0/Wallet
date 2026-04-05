@@ -10,15 +10,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.technitedminds.wallet.presentation.screens.home.HomeViewModel
+import com.technitedminds.wallet.presentation.screens.addcard.NfcCardReaderManager
 import com.technitedminds.wallet.ui.theme.WalletSpring
 
 /**
@@ -31,12 +29,10 @@ import com.technitedminds.wallet.ui.theme.WalletSpring
 fun WalletAppScaffold(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    homeViewModel: HomeViewModel = hiltViewModel(),
+    nfcCardReaderManager: NfcCardReaderManager? = null,
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val homeUiState by homeViewModel.uiState.collectAsState()
-    val categoryCount = homeUiState.categories.size
     val showBottomNav = shouldShowBottomNavigation(currentRoute)
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -44,6 +40,7 @@ fun WalletAppScaffold(
         WalletNavigation(
             navController = navController,
             modifier = Modifier.fillMaxSize(),
+            nfcCardReaderManager = nfcCardReaderManager,
         )
 
         // Floating pill nav overlaid on top
@@ -63,7 +60,9 @@ fun WalletAppScaffold(
         ) {
             WalletBottomNavigation(
                 navController = navController,
-                categoryCount = categoryCount,
+                onAddClick = {
+                    navController.navigateToDetail(NavigationDestinations.AddCard.route)
+                },
             )
         }
     }

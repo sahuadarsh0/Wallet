@@ -1,13 +1,15 @@
 package com.technitedminds.wallet.data.local.database.converters
 
 import androidx.room.TypeConverter
+import com.technitedminds.wallet.data.local.security.TinkEncryptionManager
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 
 /**
- * Room type converter for Map<String, String> fields. Converts maps to/from JSON string for
- * database storage.
+ * Room type converter for Map<String, String> fields.
+ * Encrypts JSON at rest using Tink AES-256-GCM when available,
+ * and transparently decrypts legacy plaintext for backward compatibility.
  */
 class MapConverter {
 
@@ -18,28 +20,22 @@ class MapConverter {
 
     @TypeConverter
     fun fromStringMap(map: Map<String, String>?): String {
-        return try {
-            if (map == null || map.isEmpty()) {
-                "{}"
-            } else {
-                json.encodeToString(map)
-            }
-        } catch (e: Exception) {
+        val jsonString = if (map == null || map.isEmpty()) {
             "{}"
+        } else {
+            json.encodeToString(map)
         }
+        return TinkEncryptionManager.getRequiredInstance().encrypt(jsonString)
     }
 
     @TypeConverter
     fun toStringMap(mapString: String?): Map<String, String> {
-        return try {
-            if (mapString.isNullOrBlank()) {
-                emptyMap()
-            } else {
-                json.decodeFromString<Map<String, String>>(mapString)
-            }
-        } catch (e: Exception) {
-            // Return empty map if deserialization fails
-            emptyMap()
+        if (mapString.isNullOrBlank()) return emptyMap()
+        val decrypted = if (mapString.startsWith("ENC:")) {
+            TinkEncryptionManager.getRequiredInstance().decrypt(mapString)
+        } else {
+            mapString
         }
+        return json.decodeFromString<Map<String, String>>(decrypted)
     }
 }

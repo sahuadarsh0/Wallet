@@ -18,7 +18,7 @@ import com.technitedminds.wallet.data.local.database.entities.CategoryEntity
  * Room database for the CardVault wallet application. Manages local storage of cards and categories
  * with proper configuration and migrations.
  */
-@Database(entities = [CardEntity::class, CategoryEntity::class], version = 1, exportSchema = false)
+@Database(entities = [CardEntity::class, CategoryEntity::class], version = 1, exportSchema = true)
 @TypeConverters(CardTypeConverter::class, MapConverter::class, CardGradientConverter::class)
 abstract class WalletDatabase : RoomDatabase() {
 
@@ -39,7 +39,6 @@ abstract class WalletDatabase : RoomDatabase() {
                                                 WalletDatabase::class.java,
                                                 DATABASE_NAME
                                         )
-                                        .fallbackToDestructiveMigration(dropAllTables = true)
                                         .addCallback(DatabaseCallback())
                                         .build()
                         INSTANCE = instance
@@ -72,6 +71,18 @@ abstract class WalletDatabase : RoomDatabase() {
         suspend fun clearAllData(context: Context) {
             val database = getDatabase(context)
             database.clearAllTables()
+        }
+
+        /** Secure wipe for database tables and physical database files. */
+        suspend fun wipeCompletely(context: Context) {
+            val database = getDatabase(context)
+            database.clearAllTables()
+            database.close()
+            clearInstance()
+            context.deleteDatabase(DATABASE_NAME)
+            context.deleteDatabase("$DATABASE_NAME-wal")
+            context.deleteDatabase("$DATABASE_NAME-shm")
+            context.deleteDatabase("$DATABASE_NAME-journal")
         }
     }
 }

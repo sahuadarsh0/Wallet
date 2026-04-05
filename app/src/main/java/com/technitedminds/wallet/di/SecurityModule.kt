@@ -5,6 +5,7 @@ import com.technitedminds.wallet.data.local.preferences.SimplePreferencesManager
 import com.technitedminds.wallet.data.local.security.AppLockRepository
 import com.technitedminds.wallet.data.local.security.PinHasher
 import com.technitedminds.wallet.data.local.security.RecoveryCodeManager
+import com.technitedminds.wallet.data.local.security.TinkEncryptionManager
 import com.technitedminds.wallet.presentation.screens.security.BiometricAuthManager
 import dagger.Module
 import dagger.Provides
@@ -22,6 +23,12 @@ object SecurityModule {
 
     @Provides
     @Singleton
+    fun provideTinkEncryptionManager(
+        @ApplicationContext context: Context,
+    ): TinkEncryptionManager = TinkEncryptionManager(context)
+
+    @Provides
+    @Singleton
     fun providePinHasher(): PinHasher = PinHasher()
 
     @Provides
@@ -32,10 +39,11 @@ object SecurityModule {
     @Provides
     @Singleton
     fun provideAppLockRepository(
+        @ApplicationContext context: Context,
         preferencesManager: SimplePreferencesManager,
         pinHasher: PinHasher,
         recoveryCodeManager: RecoveryCodeManager,
-    ): AppLockRepository = AppLockRepository(preferencesManager, pinHasher, recoveryCodeManager)
+    ): AppLockRepository = AppLockRepository(context, preferencesManager, pinHasher, recoveryCodeManager)
 
     @Provides
     @Singleton

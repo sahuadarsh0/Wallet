@@ -56,9 +56,6 @@ data class Card(
     /** Returns true if this card has custom fields */
     fun hasCustomFields(): Boolean = customFields.isNotEmpty()
 
-    /** Returns true if both front and back images are present */
-    fun hasCompleteImages(): Boolean = frontImagePath.isNotBlank() && backImagePath.isNotBlank()
-
     /** Returns the card number if available from extracted data */
     fun getCardNumber(): String? = extractedData[CARD_NUMBER_KEY]
 
@@ -70,9 +67,6 @@ data class Card(
 
     /** Returns the CVV if available from extracted data */
     fun getCVV(): String? = extractedData[CVV_KEY]
-
-    /** Returns the bank name if available from extracted data */
-    fun getBankName(): String? = extractedData[BANK_NAME_KEY]
 
     /** Returns notes from custom fields */
     fun getCustomNotes(): String? = customFields[NOTES_KEY]
@@ -86,10 +80,6 @@ data class Card(
     /** Returns a copy of this card with a custom color */
     fun withCustomColor(colorHex: String): Card = 
         copy(customFields = customFields + ("customColor" to colorHex), updatedAt = System.currentTimeMillis())
-
-    /** Returns a copy of this card with the custom color removed */
-    fun withoutCustomColor(): Card = 
-        copy(customFields = customFields - "customColor", updatedAt = System.currentTimeMillis())
 
     /** Returns true if the card supports OCR processing based on its type */
     fun supportsOCR(): Boolean = type.supportsOCR()
@@ -112,23 +102,15 @@ data class Card(
     /** Returns the gradient to use for this card (custom or default) */
     fun getGradient(): CardGradient = customGradient ?: getDefaultGradientForType(type)
 
-    /** Returns true if this card has a custom gradient */
-    fun hasCustomGradient(): Boolean = customGradient != null
-
     companion object {
         /** Common extracted data keys for OCR processing */
         const val CARD_NUMBER_KEY = "cardNumber"
         const val EXPIRY_DATE_KEY = "expiryDate"
         const val CARDHOLDER_NAME_KEY = "cardholderName"
         const val CVV_KEY = "cvv"
-        const val BANK_NAME_KEY = "bankName"
 
         /** Common custom field keys */
         const val NOTES_KEY = "notes"
-        const val PIN_KEY = "pin"
-        const val CUSTOMER_SERVICE_KEY = "customerService"
-        const val WEBSITE_KEY = "website"
-        const val PHONE_KEY = "phone"
 
         /** Returns the default gradient for a given card type */
         fun getDefaultGradientForType(type: CardType): CardGradient = when (type) {

@@ -1,3 +1,132 @@
 <resources>
-    <string name="app_name">Wallet</string>
+    <string name="app_name">CardVault</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_categories">Categories</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_add_card">Add Card</string>
+    <string name="nav_camera">Camera</string>
+
+    <!-- Home Screen -->
+    <string name="home_search_hint">Search cards…</string>
+    <string name="home_empty_title">No Cards Yet</string>
+    <string name="home_empty_subtitle">Add your first card to get started</string>
+    <string name="home_quick_stats">Quick Stats</string>
+    <string name="home_wallet_overview">Your wallet overview</string>
+    <string name="home_clear_all">Clear All</string>
+
+    <!-- Card Detail -->
+    <string name="card_detail_edit">Edit</string>
+    <string name="card_detail_save">Save</string>
+    <string name="card_detail_delete">Delete</string>
+    <string name="card_detail_share">Share</string>
+    <string name="card_detail_card_type">Card type</string>
+    <string name="card_detail_category">Category</string>
+    <string name="card_detail_date_created">Date created</string>
+    <string name="card_detail_reveal">Reveal</string>
+    <string name="card_detail_hide">Hide</string>
+
+    <!-- Add Card -->
+    <string name="add_card_select_type">Select Card Type</string>
+    <string name="add_card_capture">Capture Card</string>
+    <string name="add_card_details">Card Details</string>
+    <string name="add_card_card_name_hint">Card Name</string>
+    <string name="add_card_notes_hint">Notes (optional)</string>
+    <string name="add_card_error_title">Error</string>
+    <string name="add_card_step_type">Type</string>
+    <string name="add_card_step_capture">Capture</string>
+    <string name="add_card_step_details">Details</string>
+
+    <!-- Camera -->
+    <string name="camera_permission_required">Camera Permission Required</string>
+    <string name="camera_permission_message">CardVault needs camera access to scan your cards.</string>
+    <string name="camera_grant_permission">Grant Camera Permission</string>
+    <string name="camera_access_denied">Camera Access Denied</string>
+    <string name="camera_access_denied_message">Camera permission was denied. Please enable it in Settings to scan cards.</string>
+    <string name="camera_open_settings">Open Settings</string>
+    <string name="camera_retake">Retake</string>
+    <string name="camera_confirm">Confirm</string>
+    <string name="camera_retry">Retry</string>
+
+    <!-- Categories -->
+    <string name="categories_add">Add Category</string>
+    <string name="categories_edit">Edit Category</string>
+    <string name="categories_delete">Delete Category</string>
+    <string name="categories_name_hint">Category Name</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_category_management">Category Management</string>
+    <string name="settings_storage_management">Storage Management</string>
+    <string name="settings_clean_up_storage">Clean Up Storage</string>
+    <string name="settings_privacy_security">Privacy &amp; Security</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_build">Build</string>
+    <string name="settings_privacy_policy">Privacy Policy</string>
+    <string name="settings_terms_of_service">Terms of Service</string>
+    <string name="settings_open_source_licenses">Open Source Licenses</string>
+
+    <!-- Security / App Lock -->
+    <string name="security_app_lock">App Lock</string>
+    <string name="security_app_lock_subtitle">Require PIN to open CardVault</string>
+    <string name="security_biometric_unlock">Biometric Unlock</string>
+    <string name="security_biometric_subtitle">Use fingerprint or face to unlock</string>
+    <string name="security_enter_pin">Enter your PIN</string>
+    <string name="security_wrong_pin">Wrong PIN — %1$d attempts left</string>
+    <string name="security_locked_out">Too many attempts — wait %1$ds</string>
+    <string name="security_forgot_pin">Forgot PIN?</string>
+    <string name="security_recovery_code">Recovery Code</string>
+    <string name="security_code_copied">Recovery code copied</string>
+    <string name="security_unlock_title">Unlock CardVault</string>
+    <string name="security_biometric_subtitle_prompt">Use your biometric credential</string>
+    <string name="security_use_pin">Use PIN</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_save_recovery_code">Save Your Recovery Code</string>
+    <string name="onboarding_recovery_instructions">Write this code down and keep it safe. You\'ll need it if you forget your PIN.</string>
+    <string name="onboarding_saved_it">I\'ve Saved It</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_close">Close</string>
+    <string name="dialog_ok">OK</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_delete">Delete</string>
+    <string name="dialog_save">Save</string>
+    <string name="dialog_confirm">Confirm</string>
+    <string name="dialog_reset">Reset</string>
+
+    <!-- Sharing -->
+    <string name="share_card">Share Card</string>
+    <string name="share_front_only">Front Only</string>
+    <string name="share_back_only">Back Only</string>
+    <string name="share_both_sides">Both Sides</string>
+    <string name="shared_from_cardvault">Shared from CardVault</string>
+
+    <!-- Statistics -->
+    <string name="stats_total_cards">Total Cards</string>
+    <string name="stats_categories">Categories</string>
+    <string name="stats_storage_used">Storage Used</string>
+    <string name="stats_available_storage">Available Storage</string>
+    <string name="stats_mb_unit">MB</string>
+    <string name="stats_unknown">Unknown</string>
+
+    <!-- Privacy -->
+    <string name="privacy_notice">• All data stays on your device\n• No information is sent to servers\n• You can edit or clear any field</string>
+
+    <!-- Content Descriptions (accessibility) -->
+    <string name="cd_search">Search</string>
+    <string name="cd_card_type">Card type</string>
+    <string name="cd_category">Category</string>
+    <string name="cd_date_created">Date created</string>
+    <string name="cd_card_options">Card options</string>
+    <string name="cd_show_front">Show front</string>
+    <string name="cd_show_back">Show back</string>
+    <string name="cd_navigate">Navigate</string>
+    <string name="cd_locked">Locked</string>
+    <string name="cd_close">Close</string>
+    <string name="cd_view_details">View details</string>
 </resources>

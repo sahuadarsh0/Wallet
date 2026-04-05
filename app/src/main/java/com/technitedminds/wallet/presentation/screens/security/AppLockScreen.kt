@@ -500,7 +500,7 @@ private fun BreathingLockIcon(icon: ImageVector = Icons.Default.Lock) {
                 .background(Brush.linearGradient(listOf(WalletPurple, WalletBlue)), CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+            Icon(icon, contentDescription = "Locked", tint = Color.White, modifier = Modifier.size(28.dp))
         }
     }
 }

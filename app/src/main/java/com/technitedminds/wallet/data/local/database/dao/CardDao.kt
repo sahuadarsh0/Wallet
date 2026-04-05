@@ -2,7 +2,6 @@ package com.technitedminds.wallet.data.local.database.dao
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -116,19 +115,12 @@ interface CardDao {
         /** Update multiple cards */
         @Update suspend fun updateCards(cards: List<CardEntity>)
 
-        /** Delete a card */
-        @Delete suspend fun deleteCard(card: CardEntity)
-
         /** Delete a card by ID */
         @Query("DELETE FROM cards WHERE id = :cardId") suspend fun deleteCardById(cardId: String)
 
         /** Delete multiple cards by IDs */
         @Query("DELETE FROM cards WHERE id IN (:cardIds)")
         suspend fun deleteCardsByIds(cardIds: List<String>)
-
-        /** Delete all cards in a category */
-        @Query("DELETE FROM cards WHERE category_id = :categoryId")
-        suspend fun deleteCardsByCategory(categoryId: String)
 
         /** Update category for cards (used when reassigning cards to a new category) */
         @Query(

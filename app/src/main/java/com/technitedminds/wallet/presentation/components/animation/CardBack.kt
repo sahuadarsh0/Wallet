@@ -1,6 +1,7 @@
 package com.technitedminds.wallet.presentation.components.animation
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -9,8 +10,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.*
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.*
@@ -24,9 +25,11 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.core.graphics.toColorInt
@@ -34,11 +37,12 @@ import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.domain.model.GradientDirection
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
 import com.technitedminds.wallet.presentation.constants.AppConstants
+import com.technitedminds.wallet.ui.theme.GlassSurface
 import java.io.File
 
 /**
- * Back side of the card display with security information and additional details.
- * Optimized for performance and visual appeal.
+ * Back side of the card display with textured magnetic stripe, realistic signature
+ * strip + CVV panel, and compact glassmorphic security badge.
  */
 @Composable
 fun CardBack(
@@ -49,7 +53,7 @@ fun CardBack(
     onShare: ((CardSharingOption) -> Unit)? = null
 ) {
     val context = LocalContext.current
-    
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -58,9 +62,7 @@ fun CardBack(
                 shape = RoundedCornerShape(if (isCompact) 8.dp else 12.dp)
             )
     ) {
-        // Background image - only show for image-only cards (non-OCR cards)
-        // For OCR cards (Credit/Debit), always render the gradient live so changes are reflected immediately
-        // The saved images for OCR cards are only used for sharing purposes
+        // Background image for non-OCR cards
         if (!card.type.supportsOCR() && card.backImagePath.isNotBlank()) {
             val imageFile = File(card.backImagePath)
             if (imageFile.exists()) {
@@ -75,8 +77,7 @@ fun CardBack(
                         .clip(RoundedCornerShape(if (isCompact) 8.dp else 12.dp)),
                     contentScale = ContentScale.Crop
                 )
-                
-                // Overlay for text readability
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -91,84 +92,111 @@ fun CardBack(
                 )
             }
         }
-        
-        // Card back content
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(if (isCompact) 12.dp else 16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top section - Magnetic stripe simulation
+            // Textured magnetic stripe
             if (!isCompact) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(40.dp)
                         .background(
-                            Color.Black,
-                            RoundedCornerShape(4.dp)
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color(0xFF1A1A1A),
+                                    Color(0xFF2D2D2D),
+                                    Color(0xFF1A1A1A),
+                                    Color(0xFF333333),
+                                    Color(0xFF1A1A1A),
+                                )
+                            ),
+                            shape = RoundedCornerShape(2.dp)
                         )
                 )
             }
-            
-            // Middle section - Security information
+
+            // Middle section - Signature strip + CVV
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // CVV section
                 val cvv = card.extractedData["cvv"]
                 if (!cvv.isNullOrEmpty() && !isCompact) {
-                    Surface(
-                        color = Color.White,
-                        shape = RoundedCornerShape(4.dp),
-                        modifier = Modifier.padding(vertical = 8.dp)
+                    // Realistic signature strip with CVV right-aligned
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(36.dp)
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        Color(0xFFE8E8E8),
+                                        Color(0xFFF5F5F5),
+                                        Color(0xFFE0E0E0),
+                                    )
+                                ),
+                                shape = RoundedCornerShape(4.dp)
+                            )
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .padding(end = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Text(
                                 text = AppConstants.UIText.CVV_LABEL,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Color.Black
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.DarkGray
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = cvv,
-                                style = MaterialTheme.typography.titleSmall,
+                                style = MaterialTheme.typography.titleSmall.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    letterSpacing = 2.sp
+                                ),
                                 color = Color.Black,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                     }
                 }
-                
-                // Security icon and text
+
+                // Compact glassmorphic security badge
                 if (!isCompact) {
-                    Icon(
-                        imageVector = Icons.Default.Security,
-                        contentDescription = "Security",
-                        tint = Color.White.copy(alpha = 0.8f),
-                        modifier = Modifier
-                            .size(32.dp)
-                            .padding(vertical = 8.dp)
-                    )
-                    
-                    Text(
-                        text = AppConstants.UIText.CARD_PROTECTED_NOTICE,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.8f),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
+                    GlassSurface(
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Shield,
+                                contentDescription = null,
+                                tint = Color.White.copy(alpha = 0.8f),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = "Protected by CardVault",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
                 }
             }
-            
-            // Bottom section - Additional information
+
+            // Bottom section - Bank name and date
             Column {
-                // Bank or issuer information
                 val bankName = card.extractedData["bankName"]
                 if (!bankName.isNullOrEmpty()) {
                     Text(
@@ -176,66 +204,28 @@ fun CardBack(
                         style = if (isCompact) {
                             MaterialTheme.typography.bodyMedium
                         } else {
-                            MaterialTheme.typography.titleMedium
+                            MaterialTheme.typography.titleSmall
                         },
                         color = Color.White,
                         fontWeight = FontWeight.Medium
                     )
                 }
-                
-                // Additional custom fields
-                if (!isCompact) {
-                    card.customFields.forEach { (key, value) ->
-                        if (key !in listOf("cardNumber", "expiryDate", "cardholderName", "cvv", "bankName") 
-                            && value.isNotEmpty()) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 2.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = formatFieldName(key),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White.copy(alpha = 0.8f)
-                                )
-                                Text(
-                                    text = value,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-                    }
-                }
-                
-                // Card creation date
+
                 if (!isCompact) {
                     Text(
-                        text = String.format(AppConstants.UIText.CARD_ADDED_DATE_LABEL, formatDate(card.createdAt)),
+                        text = String.format(
+                            AppConstants.UIText.CARD_ADDED_DATE_LABEL,
+                            formatDate(card.createdAt)
+                        ),
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.6f),
-                        modifier = Modifier.padding(top = 8.dp)
+                        color = Color.White.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }
         }
-        
-        // Security watermark
-        if (!isCompact) {
-            Text(
-                text = AppConstants.UIText.SECURE_WATERMARK,
-                style = MaterialTheme.typography.headlineLarge,
-                color = Color.White.copy(alpha = 0.1f),
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(16.dp)
-            )
-        }
-        
-        // Share button (top right) with animations and haptic feedback
+
+        // Share button (top right)
         if (showShareButton && onShare != null && !isCompact) {
             ShareButton(
                 onShare = { onShare(CardSharingOption.BackOnly) },
@@ -249,14 +239,9 @@ fun CardBack(
     }
 }
 
-/**
- * Get gradient for card back based on card's custom gradient (darkened version).
- * Uses the card's gradient with reduced brightness for a more subtle back appearance.
- */
 private fun getCardBackGradient(card: Card): Brush {
     val gradient = card.getGradient()
-    
-    // Darken the gradient colors for the back
+
     val startColor = try {
         val baseColor = Color(gradient.startColor.toColorInt())
         Color(
@@ -268,7 +253,7 @@ private fun getCardBackGradient(card: Card): Brush {
     } catch (e: Exception) {
         Color(0xFF37474F)
     }
-    
+
     val endColor = try {
         val baseColor = Color(gradient.endColor.toColorInt())
         Color(
@@ -280,16 +265,15 @@ private fun getCardBackGradient(card: Card): Brush {
     } catch (e: Exception) {
         Color(0xFF263238)
     }
-    
-    // Apply gradient direction (same as front)
+
     return when (gradient.direction) {
-        GradientDirection.TopToBottom -> 
+        GradientDirection.TopToBottom ->
             Brush.verticalGradient(colors = listOf(startColor, endColor))
-        GradientDirection.LeftToRight -> 
+        GradientDirection.LeftToRight ->
             Brush.horizontalGradient(colors = listOf(startColor, endColor))
-        GradientDirection.DiagonalTopLeftToBottomRight -> 
+        GradientDirection.DiagonalTopLeftToBottomRight ->
             Brush.linearGradient(colors = listOf(startColor, endColor))
-        GradientDirection.DiagonalTopRightToBottomLeft -> 
+        GradientDirection.DiagonalTopRightToBottomLeft ->
             Brush.linearGradient(
                 colors = listOf(startColor, endColor),
                 start = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, 0f),
@@ -298,30 +282,12 @@ private fun getCardBackGradient(card: Card): Brush {
     }
 }
 
-/**
- * Format field names for display
- */
-private fun formatFieldName(fieldName: String): String {
-    return fieldName
-        .replace(Regex("([a-z])([A-Z])"), "$1 $2") // Add space before capital letters
-        .split(" ")
-        .joinToString(" ") { word ->
-            word.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-        }
-}
-
-/**
- * Format date for display
- */
 private fun formatDate(timestamp: Long): String {
     val date = java.util.Date(timestamp)
     val formatter = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
     return formatter.format(date)
 }
 
-/**
- * Share button component with animations, haptic feedback, and loading state
- */
 @Composable
 private fun ShareButton(
     onShare: () -> Unit,
@@ -332,8 +298,7 @@ private fun ShareButton(
     val hapticFeedback = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    
-    // Scale animation for press feedback
+
     val scale by animateFloatAsState(
         targetValue = if (isPressed) AppConstants.AnimationValues.SCALE_PRESSED else 1f,
         animationSpec = spring(
@@ -342,23 +307,21 @@ private fun ShareButton(
         ),
         label = "share_button_scale"
     )
-    
+
     Surface(
         modifier = modifier
             .scale(scale)
             .clickable(
                 interactionSource = interactionSource,
-                indication = ripple(
-                    bounded = false,
-                    radius = 20.dp
-                ),
+                indication = ripple(bounded = false, radius = 20.dp),
                 onClick = {
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     onShare()
                 }
             ),
         shape = CircleShape,
-        color = Color.White.copy(alpha = 0.2f)
+        color = Color.White.copy(alpha = 0.2f),
+        border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.3f))
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),

@@ -6,53 +6,85 @@ globs: *.gradle.kts,gradle/libs.versions.toml
 ## Dependency Management
 All dependencies MUST be defined in `gradle/libs.versions.toml`
 
+## Current Versions (from libs.versions.toml)
+| Component | Version |
+|-----------|---------|
+| AGP | 9.0.0 |
+| Kotlin | 2.1.0 |
+| KSP | 2.3.5 |
+| Compose BOM | 2026.01.01 |
+| Material3 | 1.4.0 |
+| Core KTX | 1.17.0 |
+| Lifecycle | 2.10.0 |
+| Activity Compose | 1.12.3 |
+| Navigation Compose | 2.9.7 |
+| Room | 2.8.4 |
+| SplashScreen | 1.2.0 |
+| DataStore | 1.2.0 |
+| Biometric | 1.1.0 |
+| Hilt | 2.59.1 |
+| Hilt Nav Compose | 1.3.0 |
+| CameraX | 1.5.3 |
+| ML Kit | 16.0.1 |
+| Coil | 2.7.0 |
+| Tink | 1.20.0 |
+| kotlinx-serialization-json | 1.10.0 |
+
 ## Build Configuration
 - **Target SDK**: API 36 (Android 15)
 - **Min SDK**: API 29 (Android 10)
 - **Java Version**: 11
-- **Kotlin**: Latest stable
-- **Compose Compiler**: Match Kotlin version
+- **Compose**: Enabled via `kotlin-compose` plugin
+- **BuildConfig**: Enabled
+- **Compiler opt-ins**: `ExperimentalMaterial3Api`, `ExperimentalGetImage`
 
-## KSP Configuration
-KSP must be used for annotation processing (Room, Hilt):
+## Plugins (app module)
 ```kotlin
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
-    arg("room.incremental", "true")
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.kotlin.serialization)
 }
 ```
 
 ## Required Dependencies
-### Core
+### Core AndroidX
 - androidx.core:core-ktx
 - androidx.lifecycle:lifecycle-runtime-ktx
 - androidx.activity:activity-compose
-- androidx.compose.material3:material3
+- androidx.core:core-splashscreen
+
+### Compose (via BOM)
+- compose-ui, ui-graphics, ui-tooling, ui-tooling-preview
+- material3
+- material-icons-core, material-icons-extended
+- ui-text-google-fonts
 
 ### Navigation
 - androidx.navigation:navigation-compose
 - kotlinx-serialization-json
 
 ### DI (Hilt)
-- hilt-android
-- hilt-compiler (ksp)
+- hilt-android + hilt-compiler (ksp)
 - hilt-navigation-compose
 
 ### Database (Room)
-- room-runtime
-- room-ktx
-- room-compiler (ksp)
+- room-runtime + room-ktx + room-compiler (ksp)
+
+### DataStore
+- datastore + datastore-preferences
 
 ### Camera & ML
-- camera-camera2
-- camera-lifecycle
-- camera-view
-- mlkit-text-recognition
+- camera-core, camera-camera2, camera-lifecycle, camera-view, camera-extensions
+- mlkit-text-recognition (bundled, offline)
 
 ### Image Loading
 - coil-compose
 
 ### Security
+- androidx-biometric
 - tink-android
 
 ## Build Commands
@@ -60,7 +92,9 @@ ksp {
 ./gradlew clean
 ./gradlew assembleDebug
 ./gradlew installDebug
-./gradlew kspDebugKotlin  # Generate KSP sources
+./gradlew kspDebugKotlin    # Generate KSP sources (Room, Hilt)
+./gradlew test              # Unit tests
+./gradlew connectedAndroidTest  # Instrumented tests
 ```
 
 ## NEVER Add
@@ -69,6 +103,7 @@ ksp {
 - ❌ Cloud dependencies (Firebase, AWS)
 - ❌ Tracking SDKs
 - ❌ Ad libraries
+- ❌ Proto DataStore (project uses Preferences DataStore)
 
 ## Android Manifest
 **CRITICAL**: Never add internet permission

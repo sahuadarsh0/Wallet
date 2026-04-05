@@ -163,7 +163,7 @@ class StorageManager @Inject constructor(
             val lastDbOptimization = getLastDatabaseOptimization()
             
             StorageStats(
-                totalUsedBytes = imageStats["totalSize"] ?: 0L + cacheStats.totalSizeBytes + tempSize + logSize + databaseSize,
+                totalUsedBytes = (imageStats["totalSize"] ?: 0L) + cacheStats.totalSizeBytes + tempSize + logSize + databaseSize,
                 imageStorageBytes = imageStats["imageSize"] ?: 0L,
                 thumbnailStorageBytes = imageStats["thumbnailSize"] ?: 0L,
                 cacheStorageBytes = cacheStats.totalSizeBytes,
@@ -351,24 +351,22 @@ class StorageManager @Inject constructor(
     }
     
     /**
-     * Gets the last database optimization timestamp
+     * Gets the last database optimization timestamp from DataStore.
      */
-    private fun getLastDatabaseOptimization(): String? {
+    private suspend fun getLastDatabaseOptimization(): String? {
         return try {
-            val prefs = context.getSharedPreferences("storage_prefs", Context.MODE_PRIVATE)
-            prefs.getString("last_db_optimization", null)
+            preferencesManager.getLastDbOptimization().first()
         } catch (e: Exception) {
             null
         }
     }
-    
+
     /**
-     * Saves the last database optimization timestamp
+     * Saves the last database optimization timestamp to DataStore.
      */
-    private fun saveLastDatabaseOptimization(timestamp: String) {
+    private suspend fun saveLastDatabaseOptimization(timestamp: String) {
         try {
-            val prefs = context.getSharedPreferences("storage_prefs", Context.MODE_PRIVATE)
-            prefs.edit().putString("last_db_optimization", timestamp).apply()
+            preferencesManager.setLastDbOptimization(timestamp)
         } catch (e: Exception) {
             // Ignore errors
         }

@@ -49,6 +49,8 @@ data class AppLockUiState(
     val lockoutSeconds: Int = 0,
     /** Whether input is disabled due to lockout */
     val isLockedOut: Boolean = false,
+    /** Whether a full secure wipe is currently running */
+    val isWipingData: Boolean = false,
 )
 
 // ── Events (one-shot) ───────────────────────────────────────────────────
@@ -152,7 +154,7 @@ class AppLockViewModel @Inject constructor(
     // ── PIN entry ──────────────────────────────────────────────────────
 
     fun onDigitEntered(digit: Char) {
-        if (_uiState.value.isLockedOut) return // Ignore input during lockout
+        if (_uiState.value.isLockedOut || _uiState.value.isWipingData) return
         val current = _uiState.value.enteredPin
         if (current.length >= 4) return
         val newPin = current + digit
@@ -164,7 +166,7 @@ class AppLockViewModel @Inject constructor(
     }
 
     fun onDeleteDigit() {
-        if (_uiState.value.isLockedOut) return
+        if (_uiState.value.isLockedOut || _uiState.value.isWipingData) return
         val current = _uiState.value.enteredPin
         if (current.isEmpty()) return
         _uiState.update { it.copy(enteredPin = current.dropLast(1), errorMessage = null, shakeError = false) }
@@ -204,14 +206,7 @@ class AppLockViewModel @Inject constructor(
                     startLockoutCountdown(result.remainingSeconds)
                 }
                 is PinVerifyResult.WipeTriggered -> {
-                    appLockRepository.clearAllAppData()
-                    _uiState.update {
-                        it.copy(
-                            isLocked = false, enteredPin = "",
-                            isLockedOut = false, lockoutSeconds = 0,
-                        )
-                    }
-                    _events.emit(AppLockEvent.DataWiped)
+                    runSecureDataWipe()
                 }
             }
         }
@@ -305,16 +300,43 @@ class AppLockViewModel @Inject constructor(
 
     fun confirmDataWipe() {
         viewModelScope.launch {
-            appLockRepository.clearAllAppData()
-            _uiState.update {
-                it.copy(
-                    isLocked = false,
-                    showRecoveryInput = false,
-                    showWipeConfirmation = false,
-                )
-            }
-            _events.emit(AppLockEvent.DataWiped)
+            runSecureDataWipe()
         }
+    }
+
+    private suspend fun runSecureDataWipe() {
+        _uiState.update {
+            it.copy(
+                isWipingData = true,
+                enteredPin = "",
+                errorMessage = null,
+                recoveryError = null,
+            )
+        }
+
+        appLockRepository.clearAllAppData()
+            .onSuccess {
+                _uiState.update {
+                    it.copy(
+                        isLocked = false,
+                        isLockedOut = false,
+                        lockoutSeconds = 0,
+                        showRecoveryInput = false,
+                        showWipeConfirmation = false,
+                        isWipingData = false,
+                    )
+                }
+                _events.emit(AppLockEvent.DataWiped)
+            }
+            .onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        isWipingData = false,
+                        showWipeConfirmation = false,
+                        errorMessage = error.message ?: "Failed to wipe app data",
+                    )
+                }
+            }
     }
 
     // ── Settings helpers (called from Settings screen) ─────────────────

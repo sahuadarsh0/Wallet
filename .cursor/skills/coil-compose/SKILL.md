@@ -1,74 +1,168 @@
 ---
 name: coil-compose
-description: Expert guidance on using Coil for image loading in Jetpack Compose. Use this when asked about loading images from URLs, handling image states, or optimizing image performance in Compose.
+description: Expert guidance on using Coil 2.7.0 for image loading in Jetpack Compose. Covers loading from local file paths, handling image states, and optimizing image performance. CardVault loads images from device storage, not URLs.
 ---
 
-# Coil for Jetpack Compose
+# Coil for Jetpack Compose (Local File Loading)
 
 ## Instructions
 
-When implementing image loading in Jetpack Compose, use **Coil** (Coroutines Image Loader). It is the recommended library for Compose due to its efficiency and seamless integration.
+CardVault uses **Coil 2.7.0** for loading card images from **local file storage** (not URLs). All images are stored in the app's private directory (`context.filesDir/images/`).
 
-### 1. Primary Composable: `AsyncImage`
-Use `AsyncImage` for most use cases. It handles size resolution automatically and supports standard `Image` parameters.
+### 1. Primary Composable: `AsyncImage` (Local Files)
+
+Use `AsyncImage` with `File` objects or file path strings for local image loading:
 
 ```kotlin
-AsyncImage(
-    model = ImageRequest.Builder(LocalContext.current)
-        .data("https://example.com/image.jpg")
-        .crossfade(true)
-        .build(),
-    placeholder = painterResource(R.drawable.placeholder),
-    error = painterResource(R.drawable.error),
-    contentDescription = stringResource(R.string.description),
-    contentScale = ContentScale.Crop,
-    modifier = Modifier.clip(CircleShape)
-)
+import java.io.File
+
+@Composable
+fun CardImage(
+    imagePath: String,
+    contentDescription: String?,
+    modifier: Modifier = Modifier
+) {
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(File(imagePath))
+            .crossfade(true)
+            .build(),
+        placeholder = painterResource(R.drawable.card_placeholder),
+        error = painterResource(R.drawable.card_error),
+        contentDescription = contentDescription,
+        contentScale = ContentScale.Crop,
+        modifier = modifier.clip(RoundedCornerShape(12.dp))
+    )
+}
 ```
 
-### 2. Low-Level Control: `rememberAsyncImagePainter`
-Use `rememberAsyncImagePainter` only when you need a `Painter` instead of a composable (e.g., for `Canvas` or `Icon`) or when you need to observe the loading state manually.
+### 2. Front/Back Card Image Pattern
 
-> [!WARNING]
-> `rememberAsyncImagePainter` does not detect the size your image is loaded at on screen and always loads the image with its original dimensions by default. Use `AsyncImage` unless a `Painter` is strictly required.
+CardVault stores separate front and back images per card:
+
+```kotlin
+@Composable
+fun CardImageDisplay(
+    frontImagePath: String,
+    backImagePath: String,
+    showFront: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val imagePath = if (showFront) frontImagePath else backImagePath
+
+    if (imagePath.isNotBlank()) {
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(File(imagePath))
+                .crossfade(true)
+                .size(Size.ORIGINAL)
+                .build(),
+            contentDescription = if (showFront) "Card front" else "Card back",
+            contentScale = ContentScale.Fit,
+            modifier = modifier
+        )
+    } else {
+        Box(
+            modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Default.CreditCard, contentDescription = "No image")
+        }
+    }
+}
+```
+
+### 3. Validating Image Files
+
+Always check that the file exists before loading:
+
+```kotlin
+@Composable
+fun SafeCardImage(
+    imagePath: String,
+    modifier: Modifier = Modifier
+) {
+    val file = remember(imagePath) { File(imagePath) }
+    val fileExists = remember(imagePath) { file.exists() && file.length() > 0 }
+
+    if (fileExists) {
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(file)
+                .crossfade(true)
+                .build(),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+        )
+    } else {
+        PlaceholderImage(modifier = modifier)
+    }
+}
+```
+
+### 4. Low-Level Control: `rememberAsyncImagePainter`
+
+Use when you need a `Painter` object (e.g., for `FlippableCard`, `CardFront`, `CardBack`):
 
 ```kotlin
 val painter = rememberAsyncImagePainter(
     model = ImageRequest.Builder(LocalContext.current)
-        .data("https://example.com/image.jpg")
-        .size(Size.ORIGINAL) // Explicitly define size if needed
+        .data(File(imagePath))
+        .size(Size.ORIGINAL)
         .build()
 )
-```
 
-### 3. Slot API: `SubcomposeAsyncImage`
-Use `SubcomposeAsyncImage` when you need a custom slot API for different states (Loading, Success, Error).
-
-> [!CAUTION]
-> Subcomposition is slower than regular composition. Avoid using `SubcomposeAsyncImage` in performance-critical areas like `LazyColumn` or `LazyRow`.
-
-```kotlin
-SubcomposeAsyncImage(
-    model = "https://example.com/image.jpg",
-    contentDescription = null,
-    loading = {
-        CircularProgressIndicator()
-    },
-    error = {
-        Icon(Icons.Default.Error, contentDescription = null)
-    }
+Image(
+    painter = painter,
+    contentDescription = "Card image",
+    modifier = Modifier.fillMaxWidth()
 )
 ```
 
-### 4. Performance & Best Practices
-*   **Singleton ImageLoader**: Use a single `ImageLoader` instance for the entire app to share the disk/memory cache.
-*   **Main-Safe**: Coil executes image requests on a background thread automatically.
-*   **Crossfade**: Always enable `crossfade(true)` in `ImageRequest` for a smoother transition from placeholder to success.
-*   **Sizing**: Ensure `contentScale` is set appropriately to avoid loading larger images than necessary.
+> **Warning**: `rememberAsyncImagePainter` does not auto-detect display size. Use `AsyncImage` unless a `Painter` is specifically needed.
 
-### 5. Checklist for implementation
+### 5. Thumbnail Loading for Lists
+
+In `LazyColumn`/`LazyGrid`, use smaller sizes for thumbnails to save memory:
+
+```kotlin
+@Composable
+fun CardThumbnail(
+    imagePath: String,
+    modifier: Modifier = Modifier
+) {
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(File(imagePath))
+            .crossfade(true)
+            .size(200, 120)  // Thumbnail size
+            .build(),
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        modifier = modifier
+            .size(width = 100.dp, height = 60.dp)
+            .clip(RoundedCornerShape(8.dp))
+    )
+}
+```
+
+### 6. Performance Best Practices
+
+*   **Singleton ImageLoader**: Use a single `ImageLoader` instance (Coil provides one by default).
+*   **Main-Safe**: Coil decodes images on background threads automatically.
+*   **Crossfade**: Always use `crossfade(true)` for smoother transitions.
+*   **Size Constraints**: Use `.size()` in `ImageRequest` for lists to avoid loading full-resolution images.
+*   **Memory**: Card images are JPEG quality 85, already compressed by `ImageFileManager`.
+*   **Avoid SubcomposeAsyncImage** in `LazyColumn`/`LazyRow` — subcomposition is slower.
+*   **File validation**: Check `file.exists()` before loading to avoid error states.
+
+### 7. Checklist
 - [ ] Prefer `AsyncImage` over other variants.
-- [ ] Always provide a meaningful `contentDescription` or set it to `null` for decorative images.
-- [ ] Use `crossfade(true)` for better UX.
+- [ ] Load from `File(imagePath)`, not URL strings.
+- [ ] Always provide meaningful `contentDescription` or `null` for decorative images.
+- [ ] Use `crossfade(true)` for smooth transitions.
 - [ ] Avoid `SubcomposeAsyncImage` in lists.
-- [ ] Configure `ImageRequest` for specific needs like transformations (e.g., `CircleCropTransformation`).
+- [ ] Use `.size()` constraints in `ImageRequest` for thumbnails.
+- [ ] Validate file existence with `remember` before loading.
+- [ ] Provide placeholder and error drawables for all card images.

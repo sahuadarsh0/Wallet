@@ -141,6 +141,7 @@ fun CategoryDialog(
                 Column(
                     modifier = Modifier
                         .weight(1f)
+                        .imePadding()
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 20.dp)
                         .padding(top = 20.dp, bottom = 12.dp),

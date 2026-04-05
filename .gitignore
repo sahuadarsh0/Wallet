@@ -21,3 +21,8 @@ local.properties
 .kotlin
 .vscode
 gha-creds-*.json
+
+# Signing
+keystore.properties
+*.keystore
+*.jks
