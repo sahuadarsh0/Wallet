@@ -1,6 +1,6 @@
 ---
 name: kotlin-concurrency-expert
-description: Kotlin Coroutines review and remediation for Android. Use when asked to review concurrency usage, fix coroutine-related bugs, improve thread safety, or resolve lifecycle issues in Kotlin/Android code.
+description: Kotlin Coroutines review and remediation for Android. Use when asked to review concurrency usage, fix coroutine-related bugs, improve thread safety, or resolve lifecycle issues. CardVault is offline-first with Room/DataStore/File I/O coroutines and CameraX/ML Kit callback conversions.
 ---
 
 # Kotlin Concurrency Expert

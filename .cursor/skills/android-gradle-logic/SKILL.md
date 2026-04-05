@@ -1,6 +1,6 @@
 ---
 name: android-gradle-logic
-description: Expert guidance on setting up scalable Gradle build logic using Convention Plugins and Version Catalogs.
+description: Expert guidance on setting up scalable Gradle build logic using Convention Plugins and Version Catalogs. Note - CardVault is a single-module project using Version Catalog only (no convention plugins needed).
 ---
 
 # Android Gradle Build Logic & Convention Plugins

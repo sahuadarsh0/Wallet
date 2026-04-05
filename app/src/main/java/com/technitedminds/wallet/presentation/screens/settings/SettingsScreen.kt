@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -100,6 +101,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
     appLockViewModel: AppLockViewModel = hiltViewModel(),
+    onNavigateToCategories: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val lockState by appLockViewModel.uiState.collectAsStateWithLifecycle()
@@ -130,6 +132,7 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
         ) {
             // App Statistics Section
@@ -277,6 +280,12 @@ fun SettingsScreen(
                 title = AppConstants.StatisticsLabels.CATEGORY_MANAGEMENT,
                 icon = Icons.Default.Category
             ) {
+                SettingsItem(
+                    title = AppConstants.UIText.MANAGE_CATEGORIES_TITLE,
+                    subtitle = AppConstants.UIText.MANAGE_CATEGORIES_SUBTITLE,
+                    icon = Icons.Default.Category,
+                    onClick = onNavigateToCategories
+                )
                 SettingsItem(
                     title = AppConstants.UIText.RESET_DEFAULT_CATEGORIES_TITLE,
                     subtitle = AppConstants.UIText.RESET_DEFAULT_CATEGORIES_SUBTITLE,
@@ -533,7 +542,7 @@ private fun SettingsSection(
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = title,
                 modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM),
                 tint = MaterialTheme.colorScheme.primary
             )
@@ -582,7 +591,7 @@ private fun SettingsItem(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = title,
             modifier = Modifier.size(AppConstants.Dimensions.SETTINGS_ITEM_ICON_SIZE),
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -605,7 +614,7 @@ private fun SettingsItem(
         
         trailing?.invoke() ?: Icon(
             imageVector = Icons.Default.ChevronRight,
-            contentDescription = null,
+            contentDescription = "Navigate",
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -630,7 +639,7 @@ private fun StatisticItem(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = label,
             modifier = Modifier.size(AppConstants.Dimensions.SETTINGS_ITEM_ICON_SIZE),
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -712,7 +721,11 @@ private fun ThemeSelector(
                         ThemeMode.DARK -> Icons.Default.DarkMode
                         ThemeMode.SYSTEM -> Icons.Default.SettingsBrightness
                     },
-                    contentDescription = null,
+                    contentDescription = when (theme) {
+                        ThemeMode.LIGHT -> "Light theme"
+                        ThemeMode.DARK -> "Dark theme"
+                        ThemeMode.SYSTEM -> "System theme"
+                    },
                     modifier = Modifier.size(AppConstants.Dimensions.ICON_SIZE_MEDIUM),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -765,7 +778,7 @@ private fun SettingsToggleItem(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = title,
             modifier = Modifier.size(AppConstants.Dimensions.SETTINGS_ITEM_ICON_SIZE),
             tint = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
@@ -826,7 +839,7 @@ private fun RecoveryCodeDisplayDialog(
                 ) {
                     Icon(
                         Icons.Default.Key,
-                        contentDescription = null,
+                        contentDescription = "Recovery code",
                         tint = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.size(28.dp),
                     )
@@ -878,7 +891,7 @@ private fun RecoveryCodeDisplayDialog(
                         modifier = Modifier.weight(1f).height(44.dp),
                         shape = RoundedCornerShape(10.dp),
                     ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.ContentCopy, contentDescription = "Copy", modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
                         Text(AppConstants.SecurityLabels.COPY_CODE, style = MaterialTheme.typography.labelMedium)
                     }
@@ -960,10 +973,7 @@ private fun getAppVersion(context: android.content.Context): String {
  */
 private fun getBuildType(): String {
     return try {
-        // Use reflection to get BuildConfig.BUILD_TYPE since BuildConfig is not directly accessible
-        val buildConfigClass = Class.forName(AppConstants.ClassNames.BUILD_CONFIG_CLASS)
-        val buildTypeField = buildConfigClass.getField(AppConstants.ClassNames.BUILD_TYPE_FIELD)
-        buildTypeField.get(null) as? String ?: AppConstants.StatisticsLabels.UNKNOWN
+        com.technitedminds.wallet.BuildConfig.BUILD_TYPE
     } catch (e: Exception) {
         AppConstants.StatisticsLabels.UNKNOWN
     }

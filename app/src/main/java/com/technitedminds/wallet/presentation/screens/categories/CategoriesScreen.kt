@@ -19,6 +19,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Delete
@@ -85,7 +86,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun CategoriesScreen(
     modifier: Modifier = Modifier,
-    viewModel: CategoriesViewModel = hiltViewModel()
+    viewModel: CategoriesViewModel = hiltViewModel(),
+    onNavigateBack: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
@@ -113,6 +115,14 @@ fun CategoriesScreen(
         topBar = {
             TopAppBar(
                 title = { Text(AppConstants.NavigationLabels.CATEGORIES) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = AppConstants.ContentDescriptions.BACK
+                        )
+                    }
+                },
                 actions = {
                     IconButton(onClick = viewModel::createDefaultCategories) {
                         Icon(
@@ -271,7 +281,7 @@ private fun EmptyState(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = null,
+                    contentDescription = "Create",
                     modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_BUTTON_ICON_SIZE)
                 )
                 Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))
@@ -284,7 +294,7 @@ private fun EmptyState(
             ) {
                 Icon(
                     imageVector = Icons.Default.Restore,
-                    contentDescription = null,
+                    contentDescription = "Restore defaults",
                     modifier = Modifier.size(AppConstants.Dimensions.EMPTY_STATE_BUTTON_ICON_SIZE)
                 )
                 Spacer(modifier = Modifier.width(AppConstants.Dimensions.SPACING_SMALL))

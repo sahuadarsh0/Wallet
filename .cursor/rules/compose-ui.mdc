@@ -1,55 +1,85 @@
 ---
-globs: app/src/main/java/com/technitedminds/wallet/**/**/*.kt
+globs: app/src/main/java/com/technitedminds/wallet/presentation/**/*.kt,app/src/main/java/com/technitedminds/wallet/ui/**/*.kt
 ---
-# Jetpack Compose UI Guidelines
+# Jetpack Compose UI Guidelines (2026)
+
+## Declarative Paradigm
+- Compose is declarative: describe UI from state, Compose handles updates via recomposition
+- Composable functions must be **fast, idempotent, and side-effect free**
+- Never depend on execution order — composables can run in parallel and in any order
+- Recomposition is optimistic and may be cancelled — never perform side-effects during composition
 
 ## State Management
-- Use `remember` for state that survives recomposition
-- Use `derivedStateOf` for computed state
-- Use `LaunchedEffect` for side effects with proper keys
-- Keep composables stateless - hoist state up
-- Pass state down, events up
-- Use `collectAsStateWithLifecycle()` for Flow → State conversion
+- Use `remember { mutableStateOf(default) }` for state that survives recomposition
+- Use `rememberSaveable` for state that survives configuration changes (stores in `Bundle`)
+- Use `derivedStateOf` for computed state from rapidly changing sources — limits recompositions
+- Use `LaunchedEffect(key)` for side effects with proper keys — NEVER use `LaunchedEffect(true)`
+- Use `collectAsStateWithLifecycle()` for Flow → State conversion (lifecycle-aware, conserves resources)
+- NEVER use `collectAsState()` on Android — always prefer `collectAsStateWithLifecycle()`
+- Use `@Stable` or `@Immutable` annotations on classes used as composable params for efficient skipping
+- Avoid mutable objects (`ArrayList`, `mutableListOf()`) as state — use `State<List<T>>` with immutable `listOf()`
+
+## State Hoisting Rules
+1. Hoist state to at least the **lowest common parent** of all composables that read it
+2. Hoist state to at least the **highest level** where it may be changed
+3. If two states change from the **same event**, hoist them together
+- Pattern: `value: T` parameter (state down) + `onValueChange: (T) -> Unit` lambda (events up)
 
 ## Composable Structure
-- Keep composables small and focused
+- Keep composables small, focused, and self-contained
 - Extract reusable pieces into separate composables
-- Use `Modifier` parameter last
-- Add `@Composable` preview functions
+- Use `Modifier` parameter last in composable signatures
+- Add `@Composable` preview functions for visual components
 - Leverage composition over inheritance
+- Pass the **minimum data needed** — prefer `String` over full model objects when only a field is needed
 
-## Material Design 3
-- Follow M3 guidelines strictly
-- Use M3 components: Card, Button, FAB, TextField, Dialog
-- Implement proper elevation and shadows
-- Add ripple effects on interactive elements
-- Support both light and dark themes
-- Ensure minimum touch targets (48dp)
+## Performance Best Practices
+- Use `key` parameter in `LazyColumn`/`LazyGrid` items for efficient diffing
+- Use `remember` to cache results of expensive calculations
+- **Defer state reads** with lambda modifiers: `Modifier.offset { ... }` not `Modifier.offset(...)`
+- Use lambda-based modifiers for frequently changing state variables
+- **Never write to state already read** in the same composable (backwards writes)
+- Avoid heavy computations during composition — move to ViewModel/coroutine
+- Use Coil for image loading with proper placeholders and crossfade
+- Optimize image sizes to avoid memory issues
+- Build in Release mode with R8 for accurate performance profiling
+- Consider Baseline Profiles for faster app startup
+
+## Glassmorphic Design System
+- Use `GlassTheme` for frosted-glass aesthetic with custom shaders
+- `PhysicsConstants` for physics-based animation parameters
+- Apply blur/transparency effects via `graphicsLayer` and custom composables
+- Maintain consistent glass card styling across all screens
+
+## Enhanced UI Components (Project-Specific)
+- **PremiumCard**: Use for all card containers — gradient backgrounds, haptic feedback
+- **PremiumTextField**: Use for all text input — icons, validation, smooth focus transitions
+- **AnimatedSectionHeader**: Use for section titles — icons in circular gradient backgrounds
+- **EnhancedSlideInItem**: Wrap list items for staggered slide-in animations
+- **FlippableCard/CardFront/CardBack**: 3D card flip with `graphicsLayer { rotationY }`
+- **StepProgressIndicator**: Multi-step workflow progress visualization
 
 ## Animation Standards
 - **Card flip**: 300ms with `FastOutSlowInEasing`
-- **List animations**: Spring physics for natural motion
+- **List animations**: Spring physics via `PhysicsConstants` for natural motion
 - **Transitions**: Fade, slide, scale with Material Motion
-- **3D effects**: Use `graphicsLayer` for rotationY
-- **Target**: 60fps on mid-range devices
-
-## Performance
-- Use `key` parameter in LazyColumn items
-- Use `remember` for expensive calculations
-- Avoid heavy computations during composition
-- Use Coil for image loading with proper placeholders
-- Optimize image sizes to avoid memory issues
+- **3D effects**: Use `graphicsLayer` for rotationY transformations
+- **Staggered slide-ins**: 100ms delay between items
+- **Target**: 60fps on mid-range devices — always verify on physical hardware
 
 ## Common Patterns
-- Always use `collectAsStateWithLifecycle()` not `collectAsState()`
-- Handle loading/error/success states properly
-- Provide meaningful content descriptions for accessibility
+- Handle loading/error/success states with sealed UI state classes
+- Provide meaningful `contentDescription` for accessibility
 - Use `AnimatedVisibility` for enter/exit animations
-- Use `Crossfade` for content switching
+- Use `Crossfade` for content switching between states
+- Use `AnimatedContent` for complex state transitions
+- Handle permission requests properly (camera, biometric)
 
 ## Avoid Common Mistakes
-- ❌ Don't create side effects in composition
-- ❌ Don't use `LaunchedEffect(true)` - provide proper keys
-- ❌ Don't forget configuration change handling
-- ❌ Don't perform heavy operations during composition
-- ❌ Don't expose mutable state to composables
+- ❌ Don't create side effects in composition — use `LaunchedEffect`, `SideEffect`, `DisposableEffect`
+- ❌ Don't use `LaunchedEffect(true)` or `LaunchedEffect(Unit)` for one-shot effects that need cleanup
+- ❌ Don't forget configuration change handling — use `rememberSaveable`
+- ❌ Don't perform I/O, database, or heavy operations during composition
+- ❌ Don't expose mutable state to composables — always expose immutable `StateFlow`
+- ❌ Don't modify local variables inside composable lambdas (not thread-safe)
+- ❌ Don't use `remember` without keys when the cached value depends on changing inputs

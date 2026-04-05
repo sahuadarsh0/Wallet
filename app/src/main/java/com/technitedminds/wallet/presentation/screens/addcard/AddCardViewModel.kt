@@ -242,15 +242,18 @@ class AddCardViewModel @Inject constructor(
             return
         }
 
-        if (currentState.frontImagePath == null) {
-            _uiState.value = currentState.copy(error = "Front image is required. Please capture the front side of the card.")
-            return
-        }
+        // NFC flow for credit/debit generates gradient images — no captured photos needed.
+        // Camera flow still requires a front image.
+        if (!currentState.isNfcFlow) {
+            if (currentState.frontImagePath == null) {
+                _uiState.value = currentState.copy(error = "Front image is required. Please capture the front side of the card.")
+                return
+            }
 
-        // Back image is required for OCR cards, optional for image cards (will generate default)
-        if (currentState.cardType.supportsOCR() && currentState.backImagePath == null) {
-            _uiState.value = currentState.copy(error = "Back image is required for ${currentState.cardType.getDisplayName()}. Please capture both sides of the card.")
-            return
+            if (currentState.cardType.supportsOCR() && currentState.backImagePath == null) {
+                _uiState.value = currentState.copy(error = "Back image is required for ${currentState.cardType.getDisplayName()}. Please capture both sides of the card.")
+                return
+            }
         }
 
         // Validate textual card fields if it's a credit/debit card
@@ -830,6 +833,84 @@ class AddCardViewModel @Inject constructor(
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
+
+    // ---- NFC methods ----
+
+    fun startNfcScan() {
+        _uiState.value = _uiState.value.copy(
+            showNfcScanning = true,
+            isNfcFlow = true,
+        )
+    }
+
+    fun onNfcCardRead(data: com.technitedminds.wallet.domain.model.NfcCardData) {
+        val extractedMap = data.toExtractedDataMap()
+        val currentState = _uiState.value
+
+        // Auto-generate a card name if the user hasn't set one yet
+        val autoName = if (currentState.cardName.isBlank()) {
+            buildString {
+                if (data.cardScheme.isNotBlank() && data.cardScheme != "Unknown") {
+                    append(data.cardScheme)
+                } else {
+                    append(_selectedCardType.value?.getDisplayName() ?: "Card")
+                }
+                val last4 = data.cardNumber.replace(" ", "").takeLast(4)
+                if (last4.isNotBlank()) append(" ••$last4")
+            }
+        } else {
+            currentState.cardName
+        }
+
+        val newState = currentState.copy(
+            cardName = autoName,
+            extractedData = extractedMap,
+            cardNumber = extractedMap[Card.CARD_NUMBER_KEY] ?: "",
+            expiryDate = extractedMap[Card.EXPIRY_DATE_KEY] ?: "",
+            cardholderName = extractedMap[Card.CARDHOLDER_NAME_KEY] ?: "",
+            hasOCRData = extractedMap.isNotEmpty(),
+            showNfcScanning = false,
+            nfcCardScheme = data.cardScheme,
+            nfcMaskedNumber = data.maskedCardNumber(),
+        )
+        _uiState.value = newState.copy(canSave = validateForm(newState))
+
+        val selectedType = _selectedCardType.value
+        if (selectedType != null && selectedType.supportsNfc()) {
+            _uiState.value = _uiState.value.copy(showCvvDialog = true)
+        } else {
+            _currentStep.value = AddCardStep.FORM_DETAILS
+        }
+    }
+
+    fun onCvvEntered(cvv: String) {
+        val currentState = _uiState.value
+        val updatedExtracted = currentState.extractedData.toMutableMap()
+        updatedExtracted[Card.CVV_KEY] = cvv
+        val newState = currentState.copy(
+            cvv = cvv,
+            extractedData = updatedExtracted,
+            showCvvDialog = false,
+        )
+        _uiState.value = newState.copy(canSave = validateForm(newState))
+        _currentStep.value = AddCardStep.FORM_DETAILS
+    }
+
+    fun skipCvvEntry() {
+        _uiState.value = _uiState.value.copy(showCvvDialog = false)
+        _currentStep.value = AddCardStep.FORM_DETAILS
+    }
+
+    fun cancelNfcScan() {
+        _uiState.value = _uiState.value.copy(
+            showNfcScanning = false,
+            isNfcFlow = false,
+        )
+    }
+
+    fun onNfcError(message: String) {
+        _uiState.value = _uiState.value.copy(error = message)
+    }
 }
 
 /**
@@ -864,7 +945,13 @@ data class AddCardUiState(
     val expiryDateError: String? = null,
     val cardholderNameError: String? = null,
     val cvvError: String? = null,
-    val selectedGradient: CardGradient? = null
+    val selectedGradient: CardGradient? = null,
+    // NFC-related fields
+    val isNfcFlow: Boolean = false,
+    val showNfcScanning: Boolean = false,
+    val showCvvDialog: Boolean = false,
+    val nfcCardScheme: String = "",
+    val nfcMaskedNumber: String = "",
 ) {
     // Computed property for OCR status
     val hasOCRDataComputed: Boolean

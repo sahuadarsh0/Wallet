@@ -1,17 +1,17 @@
 ---
 name: android-coroutines
-description: Authoritative rules and patterns for production-quality Kotlin Coroutines onto Android. Covers structured concurrency, lifecycle integration, and reactive streams.
+description: Authoritative rules and patterns for production-quality Kotlin Coroutines on Android. Covers structured concurrency, lifecycle integration, and reactive streams for offline-first apps.
 ---
 
 # Android Coroutines Expert Skill
 
-This skill provides authoritative rules and patterns for writing production-quality Kotlin Coroutines code on Android. It enforces structured concurrency, lifecycle safety, and modern best practices (2025 standards).
+This skill provides authoritative rules and patterns for writing production-quality Kotlin Coroutines code on Android (2026 standards). It enforces structured concurrency, lifecycle safety, and modern best practices for offline-first applications.
 
 ## Responsibilities
 
 *   **Asynchronous Logic**: Implementing suspend functions, Dispatcher management, and parallel execution.
 *   **Reactive Streams**: Implementing `Flow`, `StateFlow`, `SharedFlow`, and `callbackFlow`.
-*   **Lifecycle Integration**: Managing scopes (`viewModelScope`, `lifecycleScope`) and safe collection (`repeatOnLifecycle`).
+*   **Lifecycle Integration**: Managing scopes (`viewModelScope`, `lifecycleScope`) and safe collection (`repeatOnLifecycle`, `collectAsStateWithLifecycle`).
 *   **Error Handling**: Implementing `CoroutineExceptionHandler`, `SupervisorJob`, and proper `try-catch` hierarchies.
 *   **Cancellability**: Ensuring long-running operations are cooperative using `ensureActive()`.
 *   **Testing**: Setting up `TestDispatcher` and `runTest`.
@@ -19,106 +19,141 @@ This skill provides authoritative rules and patterns for writing production-qual
 ## Applicability
 
 Activate this skill when the user asks to:
-*   "Fetch data from an API/Database."
-*   "Perform background processing."
+*   "Fetch data from the database."
+*   "Perform background processing (OCR, image compression)."
 *   "Fix a memory leak" related to threads/tasks.
 *   "Convert a listener/callback to Coroutines."
-*   "Implement a ViewModel."
-*   "Handle UI state updates."
+*   "Implement a ViewModel with state management."
+*   "Handle UI state updates with Flow."
 
 ## Critical Rules & Constraints
 
 ### 1. Dispatcher Injection (Testability)
-*   **NEVER** hardcode Dispatchers (e.g., `Dispatchers.IO`, `Dispatchers.Default`) inside classes.
+*   **NEVER** hardcode Dispatchers inside classes.
 *   **ALWAYS** inject a `CoroutineDispatcher` via the constructor.
-*   **DEFAULT** to `Dispatchers.IO` in the constructor argument for convenience, but allow it to be overridden.
 
 ```kotlin
 // CORRECT
-class UserRepository(
+class CardRepositoryImpl(
+    private val cardDao: CardDao,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) { ... }
-
-// INCORRECT
-class UserRepository {
-    fun getData() = withContext(Dispatchers.IO) { ... }
+) : CardRepository {
+    override suspend fun insertCard(card: CardEntity) = withContext(ioDispatcher) {
+        cardDao.insert(card)
+    }
 }
 ```
 
 ### 2. Main-Safety
-*   All suspend functions defined in the Data or Domain layer must be **main-safe**.
-*   **One-shot calls** should be exposed as `suspend` functions.
-*   **Data changes** should be exposed as `Flow`.
-*   The caller (ViewModel) should be able to call them from `Dispatchers.Main` without blocking the UI.
-*   Use `withContext(dispatcher)` inside the repository implementation to move execution to the background.
+*   All suspend functions in Data/Domain layers must be **main-safe**.
+*   **One-shot calls**: Exposed as `suspend` functions.
+*   **Data streams**: Exposed as `Flow` (Room DAOs already emit on background thread).
+*   Use `withContext(ioDispatcher)` inside repository for file I/O, image operations, OCR.
 
-### 3. Lifecycle-Aware Collection
-*   **NEVER** collect a flow directly in `lifecycleScope.launch` or `launchWhenStarted` (deprecated/unsafe).
-*   **ALWAYS** use `repeatOnLifecycle(Lifecycle.State.STARTED)` for collecting flows in Activities or Fragments.
+### 3. Lifecycle-Aware Collection (Compose)
+*   **ALWAYS** use `collectAsStateWithLifecycle()` in Compose for collecting `StateFlow`/`Flow`.
+*   **NEVER** use `collectAsState()` on Android — it's not lifecycle-aware.
 
 ```kotlin
-// CORRECT
-viewLifecycleOwner.lifecycleScope.launch {
-    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-        viewModel.uiState.collect { ... }
-    }
+// CORRECT (Compose)
+@Composable
+fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // Render UI based on uiState
 }
 ```
 
 ### 4. ViewModel Scope Usage
 *   Use `viewModelScope` for initiating coroutines in ViewModels.
-*   Do not expose suspend functions from the ViewModel to the View. The ViewModel should expose `StateFlow` or `SharedFlow` that the View observes.
+*   Expose `StateFlow` or `SharedFlow` — never suspend functions to the UI.
+*   Use `.stateIn()` for converting cold Flow to hot StateFlow:
+
+```kotlin
+val cards: StateFlow<List<Card>> = getCardsUseCase()
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+```
 
 ### 5. Mutable State Encapsulation
 *   **NEVER** expose `MutableStateFlow` or `MutableSharedFlow` publicly.
-*   Expose them as read-only `StateFlow` or `Flow` using `.asStateFlow()` or upcasting.
-
-### 6. GlobalScope Prohibition
-*   **NEVER** use `GlobalScope`. It breaks structured concurrency and leads to leaks.
-*   If a task must survive the current scope, use an injected `applicationScope` (a custom scope tied to the Application lifecycle).
-
-### 7. Exception Handling
-*   **NEVER** catch `CancellationException` in a generic `catch (e: Exception)` block without rethrowing it.
-*   Use `runCatching` only if you explicitly rethrow `CancellationException`.
-*   Use `CoroutineExceptionHandler` only for top-level coroutines (inside `launch`). It has no effect inside `async` or child coroutines.
-
-### 8. Cancellability
-*   Coroutines feature **cooperative cancellation**. They don't stop immediately unless they check for cancellation.
-*   **ALWAYS** call `ensureActive()` or `yield()` in tight loops (e.g., processing a large list, reading files) to check for cancellation.
-*   Standard functions like `delay()` and `withContext()` are already cancellable.
-
-### 9. Callback Conversion
-*   Use `callbackFlow` to convert callback-based APIs to Flow.
-*   **ALWAYS** use `awaitClose` at the end of the `callbackFlow` block to unregister listeners.
-
-## Code Patterns
-
-### Repository Pattern with Flow
+*   Use `.asStateFlow()` or `.asSharedFlow()` for read-only exposure.
 
 ```kotlin
-class NewsRepository(
-    private val remoteDataSource: NewsRemoteDataSource,
-    private val externalScope: CoroutineScope, // For app-wide events
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) {
-    val newsUpdates: Flow<List<News>> = flow {
-        val news = remoteDataSource.fetchLatestNews()
-        emit(news)
-    }.flowOn(ioDispatcher) // Upstream executes on IO
+private val _uiState = MutableStateFlow(HomeUiState())
+val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+```
+
+### 6. GlobalScope Prohibition
+*   **NEVER** use `GlobalScope`. It breaks structured concurrency and causes leaks.
+*   For app-wide tasks, use an injected `applicationScope`.
+
+### 7. Exception Handling
+*   **NEVER** catch `CancellationException` without rethrowing.
+*   Use specific exception handling for database/file operations.
+
+```kotlin
+try {
+    cardDao.insert(cardEntity)
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Exception) {
+    // Handle database error
 }
 ```
 
-### Parallel Execution
+### 8. Cancellability
+*   **ALWAYS** call `ensureActive()` or `yield()` in tight loops (image processing, OCR parsing).
+*   Standard functions like `delay()` and `withContext()` are already cancellable.
+
+### 9. Callback Conversion (CameraX, ML Kit)
+*   Use `suspendCoroutine` or `callbackFlow` to convert CameraX/ML Kit callbacks.
+*   **ALWAYS** use `awaitClose` in `callbackFlow` to clean up listeners.
 
 ```kotlin
-suspend fun loadDashboardData() = coroutineScope {
-    val userDeferred = async { userRepo.getUser() }
-    val feedDeferred = async { feedRepo.getFeed() }
-    
-    // Wait for both
-    DashboardData(
-        user = userDeferred.await(),
-        feed = feedDeferred.await()
+suspend fun captureImage(): Bitmap = suspendCoroutine { continuation ->
+    imageCapture.takePicture(executor, object : ImageCapture.OnImageCapturedCallback() {
+        override fun onCaptureSuccess(imageProxy: ImageProxy) {
+            val bitmap = imageProxy.toBitmap()
+            imageProxy.close()
+            continuation.resume(bitmap)
+        }
+        override fun onError(exception: ImageCaptureException) {
+            continuation.resumeWithException(exception)
+        }
+    })
+}
+```
+
+## Code Patterns
+
+### Repository with Room Flow
+
+```kotlin
+class CardRepositoryImpl @Inject constructor(
+    private val cardDao: CardDao,
+    private val cardMapper: CardMapper,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) : CardRepository {
+    override fun getAllCards(): Flow<List<Card>> =
+        cardDao.getAllCards().map { entities ->
+            entities.map(cardMapper::toDomain)
+        }.flowOn(ioDispatcher)
+
+    override suspend fun deleteCard(cardId: String) = withContext(ioDispatcher) {
+        cardDao.deleteById(cardId)
+    }
+}
+```
+
+### Parallel Image Processing
+
+```kotlin
+suspend fun processCardImages(frontBitmap: Bitmap, backBitmap: Bitmap) = coroutineScope {
+    val frontDeferred = async { imageFileManager.saveImage(frontBitmap, "front") }
+    val backDeferred = async { imageFileManager.saveImage(backBitmap, "back") }
+
+    CardImages(
+        frontPath = frontDeferred.await(),
+        backPath = backDeferred.await()
     )
 }
 ```
@@ -127,13 +162,14 @@ suspend fun loadDashboardData() = coroutineScope {
 
 ```kotlin
 @Test
-fun testViewModel() = runTest {
+fun `loading cards updates state`() = runTest {
     val testDispatcher = StandardTestDispatcher(testScheduler)
-    val viewModel = MyViewModel(testDispatcher)
-    
-    viewModel.loadData()
-    advanceUntilIdle() // Process coroutines
-    
-    assertEquals(expectedState, viewModel.uiState.value)
+    val fakeRepository = FakeCardRepository()
+    val viewModel = HomeViewModel(GetCardsUseCase(fakeRepository), testDispatcher)
+
+    viewModel.loadCards()
+    advanceUntilIdle()
+
+    assertEquals(expectedCards, viewModel.uiState.value.cards)
 }
 ```

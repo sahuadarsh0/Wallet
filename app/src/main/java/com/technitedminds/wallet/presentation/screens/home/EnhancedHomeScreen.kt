@@ -1,7 +1,6 @@
 package com.technitedminds.wallet.presentation.screens.home
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -12,10 +11,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,15 +36,14 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.automirrored.filled.ViewList
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material3.Card
@@ -52,10 +51,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -78,13 +81,13 @@ import kotlinx.coroutines.delay
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.domain.model.Card
+import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.domain.model.GradientDirection
 import com.technitedminds.wallet.presentation.components.animation.EnhancedShimmerEffect
 import com.technitedminds.wallet.presentation.components.animation.EnhancedSlideInItem
 import com.technitedminds.wallet.presentation.components.common.AnimatedSectionHeader
 import com.technitedminds.wallet.presentation.components.common.PremiumCard
 import com.technitedminds.wallet.presentation.components.common.PremiumChip
-import com.technitedminds.wallet.presentation.components.common.PremiumFloatingActionButton
 import com.technitedminds.wallet.presentation.components.common.PremiumLoadingIndicator
 import com.technitedminds.wallet.presentation.components.common.PremiumTextField
 import com.technitedminds.wallet.presentation.components.common.gradientShadow
@@ -98,12 +101,11 @@ import com.technitedminds.wallet.presentation.constants.AppConstants
 @Composable
 fun EnhancedHomeScreen(
     onCardClick: (Card) -> Unit,
-    onAddCardClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val categoryCounts by viewModel.getCategoryCounts().collectAsStateWithLifecycle(initialValue = emptyMap())
+    var showFilterSheet by remember { mutableStateOf(false) }
 
     Scaffold(
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
@@ -115,35 +117,24 @@ fun EnhancedHomeScreen(
                 onClearSearch = viewModel::clearSearch,
                 isGridLayout = uiState.isGridLayout,
                 onToggleLayout = viewModel::toggleLayout,
-                onRefresh = viewModel::refreshCards
             )
         },
-        floatingActionButton = {
-            PremiumFloatingActionButton(
-                onClick = onAddCardClick,
-                icon = Icons.Default.Add,
-                contentDescription = AppConstants.ContentDescriptions.ADD_CARD
-            )
-        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            FilterTriggerBar(
+                selectedCategoryId = uiState.selectedCategoryId,
+                selectedCardType = uiState.selectedCardType,
+                categories = uiState.categories,
+                onClearCategory = { viewModel.selectCategory(null) },
+                onClearCardType = { viewModel.selectCardType(null) },
+                onOpenFilters = { showFilterSheet = true },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
 
-
-            // Category filter chips
-            if (uiState.categories.isNotEmpty()) {
-                EnhancedCategoryFilterSection(
-                    categories = uiState.categories,
-                    selectedCategoryId = uiState.selectedCategoryId,
-                    onCategorySelected = viewModel::selectCategory,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-            }
-
-            // Cards section
             EnhancedCardsSection(
                 cards = uiState.filteredCards,
                 isGridLayout = uiState.isGridLayout,
@@ -156,7 +147,21 @@ fun EnhancedHomeScreen(
         }
     }
 
-    // Loading overlay
+    if (showFilterSheet) {
+        FilterBottomSheet(
+            categories = uiState.categories,
+            selectedCategoryId = uiState.selectedCategoryId,
+            onCategorySelected = viewModel::selectCategory,
+            selectedCardType = uiState.selectedCardType,
+            onCardTypeSelected = viewModel::selectCardType,
+            onDismiss = { showFilterSheet = false },
+            onClearAll = {
+                viewModel.clearFilters()
+                showFilterSheet = false
+            },
+        )
+    }
+
     if (uiState.isLoading) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -175,7 +180,6 @@ private fun EnhancedHomeTopBar(
     onClearSearch: () -> Unit,
     isGridLayout: Boolean,
     onToggleLayout: () -> Unit,
-    onRefresh: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isSearchActive by remember { mutableStateOf(false) }
@@ -221,27 +225,17 @@ private fun EnhancedHomeTopBar(
         },
         actions = {
             if (!isSearchActive) {
-                // Search button
                 IconButton(onClick = { isSearchActive = true }) {
                     Icon(
                         imageVector = Icons.Default.Search,
                         contentDescription = "Search"
                     )
                 }
-                
-                // Layout toggle
+
                 IconButton(onClick = onToggleLayout) {
                     Icon(
                         imageVector = if (isGridLayout) Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView,
                         contentDescription = if (isGridLayout) AppConstants.ContentDescriptions.LIST_VIEW else AppConstants.ContentDescriptions.GRID_VIEW
-                    )
-                }
-                
-                // Refresh button
-                IconButton(onClick = onRefresh) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = AppConstants.ContentDescriptions.REFRESH
                     )
                 }
             }
@@ -333,7 +327,7 @@ private fun StatItem(
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = label,
                 tint = color,
                 modifier = Modifier.size(24.dp)
             )
@@ -356,52 +350,190 @@ private fun StatItem(
 }
 
 @Composable
-private fun EnhancedCategoryFilterSection(
+private fun FilterTriggerBar(
+    selectedCategoryId: String?,
+    selectedCardType: CardType?,
+    categories: List<com.technitedminds.wallet.domain.model.Category>,
+    onClearCategory: () -> Unit,
+    onClearCardType: () -> Unit,
+    onOpenFilters: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val hasActiveFilters = selectedCategoryId != null || selectedCardType != null
+    val categoryName = remember(selectedCategoryId, categories) {
+        categories.find { it.id == selectedCategoryId }?.name
+    }
+
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(vertical = 4.dp),
+    ) {
+        if (hasActiveFilters) {
+            if (selectedCardType != null) {
+                item(key = "type_filter") {
+                    InputChip(
+                        selected = true,
+                        onClick = onOpenFilters,
+                        label = { Text(selectedCardType.getDisplayName()) },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Clear type filter",
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null,
+                                        onClick = onClearCardType,
+                                    ),
+                            )
+                        },
+                    )
+                }
+            }
+            if (categoryName != null) {
+                item(key = "category_filter") {
+                    InputChip(
+                        selected = true,
+                        onClick = onOpenFilters,
+                        label = { Text(categoryName) },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Clear category filter",
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null,
+                                        onClick = onClearCategory,
+                                    ),
+                            )
+                        },
+                    )
+                }
+            }
+        }
+
+        item(key = "open_filters") {
+            PremiumChip(
+                text = if (hasActiveFilters) "Edit Filters" else "Filters",
+                selected = false,
+                onClick = onOpenFilters,
+                icon = Icons.Default.FilterList,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FilterBottomSheet(
     categories: List<com.technitedminds.wallet.domain.model.Category>,
     selectedCategoryId: String?,
     onCategorySelected: (String?) -> Unit,
-    modifier: Modifier = Modifier
+    selectedCardType: CardType?,
+    onCardTypeSelected: (CardType?) -> Unit,
+    onDismiss: () -> Unit,
+    onClearAll: () -> Unit,
 ) {
-    EnhancedSlideInItem(visible = true, index = 1) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val hasActiveFilters = selectedCategoryId != null || selectedCardType != null
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
         Column(
-            modifier = modifier,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             Text(
-                text = "Filter by Category",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.SemiBold
-                ),
-                color = MaterialTheme.colorScheme.onSurface
+                text = "Filter Cards",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                modifier = Modifier.padding(horizontal = 24.dp),
             )
-            
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(vertical = 4.dp)
-            ) {
-                // All categories chip
-                item {
-                    PremiumChip(
-                        text = "All",
-                        selected = selectedCategoryId == null,
-                        onClick = { onCategorySelected(null) },
-                        icon = Icons.Default.SelectAll
-                    )
+
+            // Categories section
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Category",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                )
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 24.dp),
+                ) {
+                    item {
+                        PremiumChip(
+                            text = AppConstants.UIText.ALL,
+                            selected = selectedCategoryId == null,
+                            onClick = { onCategorySelected(null) },
+                            icon = Icons.Default.SelectAll,
+                        )
+                    }
+                    items(categories) { category ->
+                        PremiumChip(
+                            text = category.name,
+                            selected = selectedCategoryId == category.id,
+                            onClick = { onCategorySelected(category.id) },
+                            icon = category.getIcon(),
+                        )
+                    }
                 }
-                
-                // Category chips
-                items(categories) { category ->
-                    PremiumChip(
-                        text = category.name,
-                        selected = selectedCategoryId == category.id,
-                        onClick = { onCategorySelected(category.id) },
-                        icon = category.getIcon()
-                    )
+            }
+
+            // Card Type section
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Card Type",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                )
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 24.dp),
+                ) {
+                    item {
+                        PremiumChip(
+                            text = AppConstants.UIText.ALL_TYPES_LABEL,
+                            selected = selectedCardType == null,
+                            onClick = { onCardTypeSelected(null) },
+                            icon = Icons.Default.CreditCard,
+                        )
+                    }
+                    items(allPredefinedCardTypes) { type ->
+                        PremiumChip(
+                            text = type.getDisplayName(),
+                            selected = selectedCardType == type,
+                            onClick = { onCardTypeSelected(type) },
+                            icon = type.getIcon(),
+                        )
+                    }
+                }
+            }
+
+            if (hasActiveFilters) {
+                TextButton(
+                    onClick = onClearAll,
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .padding(horizontal = 24.dp),
+                ) {
+                    Text("Clear All")
                 }
             }
         }
     }
 }
+
+private val allPredefinedCardTypes = CardType.getAllPredefinedTypes()
 
 @Composable
 private fun EnhancedCardsSection(
@@ -414,28 +546,15 @@ private fun EnhancedCardsSection(
     EnhancedSlideInItem(visible = true, index = 2) {
         Column(
             modifier = modifier,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            if (cards.isNotEmpty()) {
                 Text(
-                    text = String.format(AppConstants.UIText.YOUR_CARDS, cards.size),
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = "${cards.size} Cards",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp),
                 )
-                
-                if (cards.isNotEmpty()) {
-                    Text(
-                        text = if (isGridLayout) AppConstants.ContentDescriptions.GRID_VIEW else AppConstants.ContentDescriptions.LIST_VIEW,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
             
             when {
@@ -550,7 +669,7 @@ private fun EnhancedCardGridItem(
 
                     Icon(
                         imageVector = card.type.getIcon(),
-                        contentDescription = null,
+                        contentDescription = "Card type",
                         tint = textColor.copy(alpha = 0.8f),
                         modifier = Modifier.size(20.dp),
                     )
@@ -611,7 +730,7 @@ private fun EnhancedCardListItem(
             ) {
                 Icon(
                     imageVector = card.type.getIcon(),
-                    contentDescription = null,
+                    contentDescription = "Card type",
                     tint = primaryColor,
                     modifier = Modifier.size(24.dp)
                 )
@@ -640,7 +759,7 @@ private fun EnhancedCardListItem(
             // Arrow icon
             Icon(
                 imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
+                contentDescription = "View details",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
             )
@@ -691,7 +810,7 @@ private fun EmptyCardsState(
         )
 
         Text(
-            text = "Tap the + button to add your first card",
+            text = "Tap the + button below to add your first card",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = AppConstants.AnimationValues.ALPHA_NEAR_OPAQUE),
         )

@@ -18,6 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.presentation.screens.addcard.AddCardScreen
+import com.technitedminds.wallet.presentation.screens.addcard.NfcCardReaderManager
 import com.technitedminds.wallet.presentation.screens.camera.CameraScreen
 import com.technitedminds.wallet.presentation.screens.carddetail.CardDetailScreen
 import com.technitedminds.wallet.presentation.screens.categories.CategoriesScreen
@@ -38,7 +39,8 @@ private const val EXIT_MS = 280
 fun WalletNavigation(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    startDestination: String = NavigationDestinations.Home.route
+    startDestination: String = NavigationDestinations.Home.route,
+    nfcCardReaderManager: NfcCardReaderManager? = null,
 ) {
     NavHost(
         navController = navController,
@@ -69,9 +71,6 @@ fun WalletNavigation(
                 onCardClick = { card ->
                     navController.navigateToDetail(NavigationDestinations.CardDetail.createRoute(card.id))
                 },
-                onAddCardClick = {
-                    navController.navigateToDetail(NavigationDestinations.AddCard.route)
-                }
             )
         }
         
@@ -98,7 +97,8 @@ fun WalletNavigation(
                 },
                 capturedFrontImagePath = frontImagePath,
                 capturedBackImagePath = backImagePath,
-                capturedExtractedData = extractedData ?: emptyMap()
+                capturedExtractedData = extractedData ?: emptyMap(),
+                nfcCardReaderManager = nfcCardReaderManager,
             )
         }
         
@@ -194,12 +194,18 @@ fun WalletNavigation(
         
         // Categories screen
         composable(NavigationDestinations.Categories.route) {
-            CategoriesScreen()
+            CategoriesScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
         
         // Settings screen
         composable(NavigationDestinations.Settings.route) {
-            SettingsScreen()
+            SettingsScreen(
+                onNavigateToCategories = {
+                    navController.navigate(NavigationDestinations.Categories.route)
+                }
+            )
         }
     }
 }

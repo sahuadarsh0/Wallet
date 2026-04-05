@@ -52,6 +52,7 @@ class SimplePreferencesManager @Inject constructor(
         private val STORAGE_CLEANUP_LAST_RUN = stringPreferencesKey("storage_cleanup_last_run")
         private val PREFERRED_CARD_ASPECT_RATIO = stringPreferencesKey("preferred_card_aspect_ratio")
         private val DEFAULT_CARD_CATEGORY = stringPreferencesKey("default_card_category")
+        private val LAST_DB_OPTIMIZATION = stringPreferencesKey("last_db_optimization")
     }
     
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = PREFERENCES_NAME)
@@ -368,6 +369,19 @@ class SimplePreferencesManager @Inject constructor(
         }
     }
     
+    // Database optimization tracking
+    suspend fun setLastDbOptimization(timestamp: String) {
+        context.dataStore.edit { preferences ->
+            preferences[LAST_DB_OPTIMIZATION] = timestamp
+        }
+    }
+
+    fun getLastDbOptimization(): Flow<String?> {
+        return context.dataStore.data.map { preferences ->
+            preferences[LAST_DB_OPTIMIZATION]
+        }
+    }
+
     // Utility methods
     suspend fun clearAllPreferences() {
         context.dataStore.edit { preferences ->

@@ -84,7 +84,7 @@ object AppConstants {
         val SETTINGS_ITEM_ICON_SIZE = 24.dp
 
         // Card List Item
-        val CARD_LIST_ITEM_MENU_SIZE_COMPACT = 40.dp
+        val CARD_LIST_ITEM_MENU_SIZE_COMPACT = 48.dp
         val CARD_LIST_ITEM_MENU_SIZE_NORMAL = 48.dp
 
         // Card Type Selector
@@ -231,15 +231,15 @@ object AppConstants {
         const val PRIVACY_POLICY_CONTENT = """CardVault Privacy Policy
 
 • Offline First: CardVault operates completely offline. No personal data, card details, or images are ever transmitted to external servers.
-• Local Storage: All data is stored locally on your device in an encrypted database.
+• Local Storage: All data is stored locally on your device. Sensitive card fields are encrypted with AES-256-GCM via Google Tink, backed by the Android Keystore.
 • Biometric Data: Biometric authentication (fingerprint/face) is handled entirely by the Android system. CardVault receives only a success/failure signal and never accesses your raw biometric data.
 • App Lock: Your 4-digit PIN is hashed securely using PBKDF2 and stored locally. It is never transmitted.
 • On-Device Intelligence: Text recognition (OCR) is performed on-device using Google ML Kit. No image data is sent to the cloud for processing.
 • Permissions:
   - Camera: Used exclusively for scanning cards.
-  - Storage: Used only for backup/restore functionality if enabled.
+  - NFC: Used for contactless card reading (optional).
 
-For questions, contact: privacy@cardvault.app"""
+For questions, contact: support@technitedminds.com"""
 
         // Terms of Service content
         const val TERMS_OF_SERVICE_CONTENT = """CardVault Terms of Service
@@ -251,10 +251,10 @@ By using CardVault, you agree to these terms. If you do not agree, please do not
 CardVault is a tool for securely storing your personal card information. You are responsible for ensuring the accuracy of the data you enter.
 
 3. Data Security
-While we employ industry-standard encryption (AES-256) and security practices (Biometrics, PIN), no digital storage method is 100% secure. You acknowledge that you use the app at your own risk.
+We employ AES-256-GCM encryption (via Google Tink backed by Android Keystore) for sensitive card fields and PBKDF2-hashed PINs with biometric authentication. No digital storage method is 100% secure. You acknowledge that you use the app at your own risk.
 
 4. Data Loss
-Since CardVault is offline-first, we do not have a cloud backup of your data. If you lose your device or uninstall the app without a backup, your data cannot be recovered by us. You are solely responsible for managing your backups.
+CardVault is offline-first and does not include cloud backup. If you lose your device or uninstall the app, your data cannot be recovered. You are solely responsible for safeguarding your data.
 
 5. Limitation of Liability
 Technited Minds is not liable for any damages or losses resulting from the use of this app, including but not limited to data loss or unauthorized access due to device compromise.
@@ -271,7 +271,7 @@ We may update these terms from time to time. Continued use of the app constitute
 • Room Database - Apache License 2.0
 • Hilt - Apache License 2.0
 • Coil - Apache License 2.0
-• Proto DataStore - Apache License 2.0
+• DataStore Preferences - Apache License 2.0
 • Google Tink - Apache License 2.0
 
 Full license texts are available in the app's source code."""
@@ -345,9 +345,12 @@ This action cannot be undone."""
         const val ADD_CATEGORY = "Add category"
         const val ADD_DEFAULT_CATEGORIES = "Add Default Categories"
         const val ADD_FIELD = "Add Field"
+        const val LIVE_PREVIEW_TITLE = "Live Preview"
+        const val FRONT_CAPTURED = "Front captured"
+        const val BACK_CAPTURED = "Back captured"
         const val ADD_WATERMARK_LABEL = "Add watermark"
         const val ADDITIONAL_INFO_BACK = "Additional information on back"
-        const val ADDITIONAL_INFORMATION = "Additional Information"
+        const val ADDITIONAL_INFORMATION = "Additional Details"
         const val ALL = "All"
         const val ALL_TYPES_LABEL = "All Types"
         const val APPEARANCE_SUBTITLE = "Card colors and gradient"
@@ -355,6 +358,8 @@ This action cannot be undone."""
         const val APPLY = "Apply"
         const val APP_TITLE = "CardVault"
         const val AUTO_DETECTED = "Auto-detected"
+        const val AUTO_LOCK_FORMAT = "Auto-locking in %d:%02d"
+        const val AUTO_LOCK_WARNING = "Locking soon"
         const val BACK_SIDE_LABEL = "Back"
         const val BACK_SIDE_PREVIEW_TITLE = "Back Side Preview"
         const val BASIC_INFORMATION = "Basic Information"
@@ -381,13 +386,14 @@ This action cannot be undone."""
         const val CAPTURE_FAILED_TITLE = "Capture Failed"
         const val CAPTURE_INSTRUCTIONS = "• Ensure good lighting\n• Keep the card flat\n• Fill the frame completely"
         const val CARDHOLDER_NAME_LABEL = "Cardholder Name"
+        const val CARDHOLDER_LABEL = "CARDHOLDER NAME"
         const val CARDHOLDER_NAME_PLACEHOLDER = "JOHN DOE"
         const val CARD_ADDED_DATE_LABEL = "Added %s"
         const val CARD_COLOR_LABEL = "Card Color"
         const val CARD_DETAILS_SUBTITLE = "Extracted card details"
         const val CARD_DETAILS_TITLE = "Card Details"
         const val CARD_IMAGE = "Card image"
-        const val CARD_INFORMATION = "Card Information"
+        const val CARD_INFORMATION = "Card Details"
         const val CARD_NAME_LABEL = "Card Name"
         const val CARD_NAME_PLACEHOLDER = "My %s"
         const val CARD_NUMBER_FORMAT = "**** **** **** %s"
@@ -501,7 +507,7 @@ This action cannot be undone."""
 • Room Database - Apache License 2.0
 • Hilt - Apache License 2.0
 • Coil - Apache License 2.0
-• Proto DataStore - Apache License 2.0
+• DataStore Preferences - Apache License 2.0
 • Google Tink - Apache License 2.0
 
 Full license texts are available in the app's source code."""
@@ -518,19 +524,20 @@ Full license texts are available in the app's source code."""
         const val PRIVACY_NOTICE = "• All data stays on your device\n• No information is sent to servers\n• You can edit or clear any field"
         const val PRIVACY_POLICY_CONTENT = """CardVault Privacy Policy
 
-• CardVault is completely offline - no data is transmitted over the network
-• All card data is stored locally on your device in encrypted format
+• CardVault is completely offline — no data is transmitted over the network
+• Sensitive card fields are encrypted at rest with AES-256-GCM (Google Tink + Android Keystore)
 • No analytics, tracking, or data collection is performed
 • Camera permission is used only for card scanning
-• Storage permission is used only for backup/restore functionality
-• Your data never leaves your device unless you explicitly export it
+• NFC permission is used only for contactless card reading
+• Your data never leaves your device unless you explicitly share it
 
-For questions, contact: privacy@cardvault.app"""
+For questions, contact: support@technitedminds.com"""
         const val PRIVACY_POLICY_SUBTITLE = "View our privacy policy"
         const val PRIVACY_POLICY_TITLE = "Privacy Policy"
         const val TERMS_OF_SERVICE_SUBTITLE = "Read our terms of service"
         const val TERMS_OF_SERVICE_TITLE = "Terms of Service"
         const val PROCESSING = "Processing..."
+        const val PROTECTED_BY_LABEL = "Protected by CardVault"
         const val PROCESSING_CARD_IMAGES_MESSAGE = "Processing card images..."
         const val PROCESSING_CARD_IMAGES_WITH_OCR_MESSAGE = "Processing card images and extracting text..."
         const val PROCESSING_TAKES_A_FEW_MOMENTS_MESSAGE = "This may take a few moments"
@@ -542,6 +549,8 @@ For questions, contact: privacy@cardvault.app"""
         const val RESET_CATEGORIES_CONTENT = "This will restore the original category set. Your custom categories will be preserved."
         const val RESET_DEFAULT_CATEGORIES_SUBTITLE = "Restore original category set"
         const val RESET_DEFAULT_CATEGORIES_TITLE = "Reset Default Categories"
+        const val MANAGE_CATEGORIES_TITLE = "Manage Categories"
+        const val MANAGE_CATEGORIES_SUBTITLE = "Add, edit, or delete categories"
         const val RETAKE_BUTTON_LABEL = "Retake"
         const val SAVE_BUTTON = "Save"
         const val SAVE_CARD = "Save Card"
@@ -575,6 +584,7 @@ For questions, contact: privacy@cardvault.app"""
         const val UPDATED_LABEL = "Updated"
         const val UPDATE_CARD_DETAILS_SUBTITLE = "Update card details"
         const val VALID_THRU_LABEL = "Valid thru %s"
+        const val VALID_THRU_PREFIX = "VALID THRU"
         const val VOUCHER_DESC = "Discount vouchers and coupons"
         const val WATERMARK_TEXT_LABEL = "Watermark text"
         const val WHAT_TO_SHARE_LABEL = "What to share:"
@@ -650,6 +660,22 @@ For questions, contact: privacy@cardvault.app"""
         const val LABEL_SHIMMER = "shimmer"
         const val LABEL_SHIMMER_TRANSLATE = "shimmer_translate"
         const val LABEL_BOUNCE_SCALE = "bounce_scale"
+    }
+
+    // NFC Text and Labels
+    object NfcText {
+        const val SCAN_WITH_NFC = "Tap to Read"
+        const val SCANNING_TITLE = "Ready to Scan"
+        const val SCANNING_SUBTITLE = "Hold your card against the back of your phone"
+        const val READ_SUCCESS_TITLE = "Card Read Successfully"
+        const val READ_FAILED_TITLE = "Card Read Failed"
+        const val CARD_READ_SUCCESS = "Card Read Successfully"
+        const val CVV_PROMPT = "NFC cannot read the CVV printed on your card. Please enter it manually for a complete record."
+        const val CVV_VALIDATION_ERROR = "CVV must be 3 or 4 digits"
+        const val SKIP_CVV = "Skip for Now"
+        const val NFC_NOT_AVAILABLE = "NFC is not available on this device"
+        const val NFC_DISABLED = "NFC is disabled. Please enable it in your device settings."
+        const val NFC_CONTENT_DESC = "NFC contactless scan"
     }
 
     // Class Names and Reflection

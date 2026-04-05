@@ -8,12 +8,12 @@ description: Room database setup, entities, DAOs, and type converters
 @Database(
     entities = [CardEntity::class, CategoryEntity::class],
     version = 1,
-    exportSchema = true
+    exportSchema = false
 )
 @TypeConverters(
     CardTypeConverter::class,
     MapConverter::class,
-    ListConverter::class
+    CardGradientConverter::class
 )
 abstract class WalletDatabase : RoomDatabase() {
     abstract fun cardDao(): CardDao
@@ -21,40 +21,63 @@ abstract class WalletDatabase : RoomDatabase() {
 }
 ```
 
+## Entity ID Convention
+**CRITICAL**: All entity IDs are `String` UUIDs, NOT `Long` auto-increment:
+```kotlin
+@Entity(tableName = "cards")
+data class CardEntity(
+    @PrimaryKey val id: String,  // String UUID
+    @ColumnInfo(name = "name") val name: String,
+    @ColumnInfo(name = "type") val type: String,
+    @ColumnInfo(name = "category_id") val categoryId: String,  // String UUID
+    // ... other fields
+)
+```
+
 ## Entity Best Practices
 - Use `@Entity` with proper table name
-- Define `@PrimaryKey(autoGenerate = true)` for auto-increment
+- Use `String` UUID as `@PrimaryKey` (NOT `autoGenerate = true`)
 - Add `@ColumnInfo(name = "...")` for column names
 - Create `@Index` for frequently queried columns
 - Use `@ForeignKey` for relationships
 - **Store file paths, NOT binary data**
 
 ## Type Converters
-Required for complex types:
-- CardType sealed class → String
-- Map<String, String> → JSON String
-- List<String> → JSON String
+Three converters are required:
 
+### CardTypeConverter
+Converts `CardType` sealed class ↔ String using `getSerializableName()` / `fromSerializableName()`:
+```kotlin
+class CardTypeConverter {
+    @TypeConverter
+    fun fromCardType(cardType: CardType): String = cardType.getSerializableName()
+    
+    @TypeConverter
+    fun toCardType(value: String): CardType = CardType.fromSerializableName(value)
+}
+```
+
+### MapConverter
+Converts `Map<String, String>` ↔ JSON String using kotlinx.serialization:
 ```kotlin
 class MapConverter {
     private val json = Json { ignoreUnknownKeys = true }
     
     @TypeConverter
-    fun fromMap(value: Map<String, String>): String {
-        return json.encodeToString(value)
-    }
+    fun fromMap(value: Map<String, String>): String = json.encodeToString(value)
     
     @TypeConverter
-    fun toMap(value: String): Map<String, String> {
-        return if (value.isEmpty()) emptyMap()
-        else json.decodeFromString(value)
-    }
+    fun toMap(value: String): Map<String, String> =
+        if (value.isEmpty()) emptyMap() else json.decodeFromString(value)
 }
 ```
 
+### CardGradientConverter
+Converts `CardGradient?` ↔ JSON String for gradient color storage.
+
 ## DAO Patterns
-- Return `Flow<T>` for reactive queries
-- Use `suspend` for one-shot operations
+- Return `Flow<T>` for reactive queries (auto-updates on data change)
+- Use `suspend` for one-shot insert/update/delete operations
 - Add `@Transaction` for complex operations
 - Create specific queries, avoid `SELECT *` when possible
 - Use proper indexes for search queries
@@ -64,6 +87,9 @@ class MapConverter {
 interface CardDao {
     @Query("SELECT * FROM cards ORDER BY updated_at DESC")
     fun getAllCards(): Flow<List<CardEntity>>
+    
+    @Query("SELECT * FROM cards WHERE id = :cardId")
+    fun getCardById(cardId: String): Flow<CardEntity?>
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(card: CardEntity): Long
@@ -76,31 +102,54 @@ interface CardDao {
     
     @Query("SELECT * FROM cards WHERE name LIKE '%' || :query || '%'")
     fun searchCards(query: String): Flow<List<CardEntity>>
+    
+    @Query("SELECT * FROM cards WHERE category_id = :categoryId")
+    fun getCardsByCategory(categoryId: String): Flow<List<CardEntity>>
 }
 ```
 
 ## Data Mapping
 Always map between Entity (data layer) and Domain Model (domain layer):
-
 ```kotlin
 class CardMapper @Inject constructor() {
-    fun toDomain(entity: CardEntity): Card {
-        // Map entity to domain model
-    }
-    
-    fun toEntity(domain: Card): CardEntity {
-        // Map domain model to entity
-    }
+    fun toDomain(entity: CardEntity): Card { /* Map entity to domain model */ }
+    fun toEntity(domain: Card): CardEntity { /* Map domain model to entity */ }
 }
 ```
 
+## Hilt Integration
+```kotlin
+@Module
+@InstallIn(SingletonComponent::class)
+object DatabaseModule {
+    @Provides
+    @Singleton
+    fun provideWalletDatabase(@ApplicationContext context: Context): WalletDatabase =
+        WalletDatabase.getDatabase(context)
+    
+    @Provides
+    fun provideCardDao(database: WalletDatabase): CardDao = database.cardDao()
+    
+    @Provides
+    fun provideCategoryDao(database: WalletDatabase): CategoryDao = database.categoryDao()
+}
+```
+
+## Database Configuration
+- Uses `fallbackToDestructiveMigration(dropAllTables = true)` during development
+- `DatabaseCallback` for initialization tasks (e.g., inserting default categories)
+- `clearAllData()` companion function for data wipe (security feature)
+- `clearInstance()` for testing
+
 ## Best Practices
+- ✅ Use `String` UUIDs for primary keys
 - ✅ Use indexes on frequently queried columns
-- ✅ Return Flow for reactive queries
+- ✅ Return `Flow` for reactive queries
 - ✅ Store file paths, not BLOBs
 - ✅ Map entities to domain models in repository
-- ✅ Handle migrations properly
+- ✅ Use `CardGradientConverter` for gradient serialization
 - ❌ Don't perform operations on main thread
 - ❌ Don't expose entities outside data layer
 - ❌ Don't use BLOBs for large files
 - ❌ Don't skip type converters for complex types
+- ❌ Don't use `Long` auto-increment for IDs

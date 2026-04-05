@@ -1,6 +1,6 @@
 ---
 name: compose-performance-audit
-description: Audit and improve Jetpack Compose runtime performance from code review and architecture. Use when asked to diagnose slow rendering, janky scrolling, excessive recompositions, or performance issues in Compose UI.
+description: Audit and improve Jetpack Compose runtime performance from code review and architecture. Use when asked to diagnose slow rendering, janky scrolling, excessive recompositions, or performance issues. CardVault targets 60fps with glassmorphic UI and physics-based animations.
 ---
 
 # Compose Performance Audit

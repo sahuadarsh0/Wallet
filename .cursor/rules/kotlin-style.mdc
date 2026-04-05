@@ -10,45 +10,80 @@ globs: *.kt
 - **Use Cases**: `*UseCase.kt` (e.g., `AddCardUseCase`, `GetCardsUseCase`)
 - **Entities**: `*Entity.kt` with `@Entity` annotation
 - **DAOs**: `*Dao.kt` with `@Dao` annotation
-- **Composables**: PascalCase (e.g., `CardFlipAnimation`, `CameraPreview`)
+- **Services**: `*Service.kt` (interface) + `*ServiceImpl.kt` (implementation)
+- **Composables**: PascalCase (e.g., `CardFlipAnimation`, `CameraPreview`, `PremiumCard`)
 - **Screens**: `*Screen.kt` with corresponding `*ViewModel.kt`
 - **Mappers**: `*Mapper.kt` (e.g., `CardMapper`, `CategoryMapper`)
+- **Converters**: `*Converter.kt` (e.g., `CardTypeConverter`, `MapConverter`)
+- **Managers**: `*Manager.kt` (e.g., `ImageFileManager`, `CacheManager`, `StorageManager`)
 
 ## Kotlin Style Rules
 - Prefer `val` over `var` for immutability
 - Use trailing commas in multi-line constructs
 - Maximum line length: 120 characters
-- Use meaningful, descriptive names - avoid abbreviations
+- Use meaningful, descriptive names — avoid abbreviations
 - Add KDoc for public APIs and complex functions
 - Use sealed classes/interfaces for type-safe state management
-- Prefer data classes for models
+- Prefer data classes for models with `copy()` for immutable updates
 - Use extension functions for utility operations
+- Use `String` UUIDs for entity IDs (NOT `Long` auto-increment)
 
 ## ViewModel Patterns
 - Annotate with `@HiltViewModel` and inject via constructor
-- Use `StateFlow` for UI state, `SharedFlow` for events
-- Expose immutable state (`StateFlow<T>`) to UI
+- Use `StateFlow` for UI state, `SharedFlow` for one-off events
+- Expose immutable state (`StateFlow<T>`) to UI — NEVER expose `MutableStateFlow`
 - Use `viewModelScope` for coroutines
 - Handle errors gracefully with sealed result classes
 - Update state immutably using `copy()` on data classes
+- Use `_uiState` (private mutable) / `uiState` (public immutable) naming pattern
+
+```kotlin
+@HiltViewModel
+class ExampleViewModel @Inject constructor(
+    private val useCase: ExampleUseCase,
+) : ViewModel() {
+    private val _uiState = MutableStateFlow(ExampleUiState())
+    val uiState: StateFlow<ExampleUiState> = _uiState.asStateFlow()
+
+    fun onEvent(event: ExampleEvent) {
+        viewModelScope.launch {
+            // Handle event, update _uiState via copy()
+        }
+    }
+}
+```
 
 ## Repository Implementation
 - Interfaces in `domain/repository/`, implementations in `data/repository/`
-- Use `suspend` functions for async operations
-- Return `Flow<T>` for streams, `Result<T>` or domain models for one-shot operations
-- Map data layer models to domain models in repository layer
+- Use `suspend` functions for one-shot async operations
+- Return `Flow<T>` for reactive streams, `Result<T>` or domain models for one-shot operations
+- Map data layer entities to domain models in repository layer
 - Handle exceptions and wrap in domain-appropriate error types
 
 ## Use Case Guidelines
-- Single responsibility - one use case per business operation
-- Inject repositories via constructor
-- Keep business logic in use cases, not ViewModels
+- Single responsibility — one use case per business operation
+- Inject repositories/services via constructor
+- Keep business logic in use cases, NOT in ViewModels or repositories
 - Return domain models or `Result<T>` wrapper
 - Use `suspend` for async operations
 - Add input validation and error handling
 
 ## Constants Usage
-- Use `AppConstants` Define constants in a centralized object or file for reuse across the app
+- Use `AppConstants` object for centralized constant definitions
+- Group related constants in nested objects (e.g., `AppConstants.Defaults`, `AppConstants.Security`)
 - Avoid hardcoding values directly in the codebase
 - Use descriptive names for constants to convey their purpose
-- Group related constants together for better organization
+
+## Security Patterns
+- Never log sensitive card data (numbers, CVV, cardholder names)
+- Use `PinHasher` for PBKDF2 password hashing — never store plaintext PINs
+- Handle biometric authentication via `BiometricAuthManager`
+- Validate all user inputs before saving to database
+- Handle exceptions without exposing stack traces to users
+
+## Coroutine Patterns
+- Use `viewModelScope` in ViewModels
+- Use `withContext(Dispatchers.IO)` for I/O operations in use cases/repositories
+- Use `Flow` for reactive streams from Room/DataStore
+- Never block the main thread — all I/O operations must be async
+- Use structured concurrency — avoid `GlobalScope`

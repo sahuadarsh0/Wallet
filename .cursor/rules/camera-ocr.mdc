@@ -3,11 +3,12 @@ description: Camera integration and OCR processing guidelines
 ---
 # Camera & OCR Integration
 
-## Camera Setup (CameraX)
+## Camera Setup (CameraX 1.5.3)
 - Use `AndroidView` for CameraX Preview in Compose
 - Handle lifecycle properly with `LocalLifecycleOwner`
-- Request `CAMERA` permission before access
+- Request `CAMERA` permission before access with proper rationale
 - Provide proper error handling and fallbacks
+- CameraX dependencies: core, camera2, lifecycle, view, extensions
 
 ```kotlin
 @Composable
@@ -22,7 +23,7 @@ fun CameraPreview(
     AndroidView(
         factory = { ctx ->
             PreviewView(ctx).apply {
-                // CameraX setup
+                // CameraX setup with lifecycle binding
             }
         },
         modifier = modifier
@@ -33,64 +34,79 @@ fun CameraPreview(
 ## Camera Configuration
 - Optimize image quality for OCR (good lighting, focus)
 - Support flash, focus, and exposure controls
-- Provide card overlay guides (16:9, 4:3, 3:4 aspect ratios)
-- Allow preview and retake before confirming
-- Capture both front and back images
+- Provide card overlay guides (16:9, 4:3, 3:4, credit card aspect ratios) via `CardOverlay`
+- Allow preview and retake before confirming via `ImagePreview`
+- Capture both front and back images (front-first flow with skip option for back)
+- Use `CaptureButton` for consistent capture UI
+- Handle camera errors via `CameraError` component
 
-## OCR Processing (ML Kit)
-**CRITICAL**: OCR is ONLY for Credit/Debit cards - never for other card types!
+## Camera Components (in `presentation/components/camera/`)
+- `CameraPreview.kt` — Main camera preview composable
+- `CaptureButton.kt` — Styled capture button with animation
+- `CardOverlay.kt` — Card-shaped overlay guide for framing
+- `ImagePreview.kt` — Post-capture image review
+- `CameraPermission.kt` / `CameraPermissionComponent.kt` — Permission handling
+- `CameraManager.kt` — Camera lifecycle management
+- `CameraError.kt` — Error display and retry UI
+
+## OCR Processing (ML Kit 16.0.1 — Bundled Offline)
+**CRITICAL**: OCR is ONLY for Credit/Debit cards — never for other card types!
 
 ### When to Use OCR
-- ✅ Credit card selected → Run OCR
-- ✅ Debit card selected → Run OCR
+- ✅ `CardType.Credit` selected → Run OCR
+- ✅ `CardType.Debit` selected → Run OCR
 - ❌ Transport, Gift, Voucher, Membership, etc. → NO OCR
+- Check via `cardType.supportsOCR()` method
 
 ### OCR Implementation
+Two classes handle OCR:
+- `MLKitTextRecognizer` — Wraps ML Kit `TextRecognition.getClient()`
+- `CardTextParser` — Parses raw OCR text into structured card fields
+
 ```kotlin
 class MLKitTextRecognizer @Inject constructor() {
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
     
-    suspend fun extractCardData(bitmap: Bitmap): CardData = suspendCoroutine { continuation ->
+    suspend fun extractCardData(bitmap: Bitmap): OCRResult = suspendCoroutine { continuation ->
         val image = InputImage.fromBitmap(bitmap, 0)
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
-                val data = parseCardText(visionText.text)
+                val data = CardTextParser.parseCardText(visionText.text)
                 continuation.resume(data)
             }
             .addOnFailureListener { exception ->
                 continuation.resumeWithException(exception)
             }
     }
-    
-    private fun parseCardText(text: String): CardData {
-        return CardData(
-            cardNumber = extractCardNumber(text),
-            expiryDate = extractExpiryDate(text),
-            cardholderName = extractCardholderName(text),
-            cvv = extractCVV(text)
-        )
-    }
 }
 ```
 
-### Extraction Patterns
-- **Card Number**: 15-16 digits (Visa, Mastercard, Amex)
+### Extraction Patterns (via `CardTextParser`)
+- **Card Number**: 15-16 digits (Visa, Mastercard, Amex) — validated with Luhn algorithm
 - **Expiry Date**: MM/YY or MM/YYYY format
 - **CVV**: 3-4 digits
-- **Name**: Text in UPPERCASE
+- **Cardholder Name**: Text in UPPERCASE
+- **Bank Name**: Optional extraction
 
-### Validation
-- Validate card numbers with Luhn algorithm
-- Check expiry date format and validity
-- Provide confidence scores for each field
-- Allow manual correction if OCR fails
+### OCR Data Keys (from `Card.companion`)
+```kotlin
+const val CARD_NUMBER_KEY = "cardNumber"
+const val EXPIRY_DATE_KEY = "expiryDate"
+const val CARDHOLDER_NAME_KEY = "cardholderName"
+const val CVV_KEY = "cvv"
+const val BANK_NAME_KEY = "bankName"
+```
+
+### OCR UI Components
+- `OCRStatusCard` — Shows OCR processing state (scanning, success, failure)
+- `ManualEntryCard` — Fallback UI for manual data entry when OCR fails
 
 ## Image Storage
-- Store captured images in app's private storage
+- Store captured images in app's private storage via `ImageFileManager`
 - Compress images before saving (JPEG quality 85)
 - Naming convention: `{cardId}_front.jpg`, `{cardId}_back.jpg`
 - Clean up orphaned images when cards are deleted
-- Use Coil for efficient image loading
+- Use Coil for efficient image loading with placeholders
 
 ## Permission Handling
 ```kotlin
@@ -98,7 +114,7 @@ val cameraPermissionState = rememberPermissionState(
     android.Manifest.permission.CAMERA
 )
 
-LaunchedEffect(Unit) {
+LaunchedEffect(cameraPermissionState) {
     if (!cameraPermissionState.status.isGranted) {
         cameraPermissionState.launchPermissionRequest()
     }
@@ -106,19 +122,21 @@ LaunchedEffect(Unit) {
 ```
 
 ## Error Handling
-- Handle camera initialization failures
-- Handle OCR processing failures gracefully
-- Provide user-friendly error messages
+- Handle camera initialization failures gracefully
+- Handle OCR processing failures — always offer manual input fallback
+- Provide user-friendly error messages via `CameraError` component
 - Offer retry mechanisms
 - Never crash on permission denial
 
 ## Best Practices
-- ✅ Run OCR on background thread
+- ✅ Run OCR on background thread (via coroutines)
 - ✅ Show processing indicator during OCR
-- ✅ Provide manual input option
-- ✅ Validate extracted data
-- ✅ Clean up camera resources properly
+- ✅ Provide manual input option as fallback
+- ✅ Validate extracted data with patterns and Luhn algorithm
+- ✅ Clean up camera resources properly on lifecycle changes
+- ✅ Use `ProcessCardImageUseCase` for OCR business logic
 - ❌ Don't run OCR on non-Credit/Debit cards
 - ❌ Don't block UI during processing
-- ❌ Don't save raw bitmaps - compress first
+- ❌ Don't save raw bitmaps — compress first
 - ❌ Don't forget to handle camera lifecycle
+- ❌ Don't log extracted card data (sensitive information)

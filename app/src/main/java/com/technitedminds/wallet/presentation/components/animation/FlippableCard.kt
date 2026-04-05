@@ -1,15 +1,39 @@
 package com.technitedminds.wallet.presentation.components.animation
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FlipCameraAndroid
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,10 +43,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.toColorInt
 import com.technitedminds.wallet.domain.model.Card
+import com.technitedminds.wallet.presentation.components.common.gradientShadow
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
 import com.technitedminds.wallet.presentation.constants.AppConstants
-import com.technitedminds.wallet.presentation.components.common.gradientShadow
 import com.technitedminds.wallet.ui.theme.WalletSpring
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -69,6 +94,18 @@ fun FlippableCard(
     )
 
     val gradientColors = remember(card) { getCardGradientColors(card) }
+
+    // Subtle idle breathing glow -- pulsing shadow elevation multiplier
+    val breathingGlow by rememberInfiniteTransition(label = "glow").animateFloat(
+        initialValue = 0.85f,
+        targetValue = 1.15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "breathing_glow"
+    )
+    val shadowMultiplier = if (isPressed) 1f else breathingGlow
 
     Box(
         modifier = modifier
@@ -173,14 +210,16 @@ fun FlippableCard(
             AppConstants.Dimensions.SPACING_SMALL
         }
 
+        val baseShadow = if (isCompact) 6.dp else 10.dp
+        val animatedShadow = baseShadow * shadowMultiplier
+
         if (!isBackVisible) {
-            // Front side
             Card(
                 modifier = Modifier
                     .fillMaxSize()
                     .gradientShadow(
                         colors = gradientColors.toList(),
-                        shadowElevation = if (isCompact) 6.dp else 10.dp,
+                        shadowElevation = animatedShadow,
                         cornerRadius = cornerRadius,
                     ),
                 shape = RoundedCornerShape(cornerRadius),
@@ -195,13 +234,12 @@ fun FlippableCard(
                 )
             }
         } else {
-            // Back side (mirrored so text reads correctly)
             Card(
                 modifier = Modifier
                     .fillMaxSize()
                     .gradientShadow(
                         colors = gradientColors.toList(),
-                        shadowElevation = if (isCompact) 6.dp else 10.dp,
+                        shadowElevation = animatedShadow,
                         cornerRadius = cornerRadius,
                     )
                     .graphicsLayer { rotationY = 180f },
@@ -245,22 +283,19 @@ fun FlippableCard(
 private fun getCardGradientColors(card: Card): Pair<Color, Color> {
     val gradient = card.getGradient()
     val startColor = try {
-        Color(android.graphics.Color.parseColor(gradient.startColor))
+        Color(gradient.startColor.toColorInt())
     } catch (e: Exception) {
-        Color(android.graphics.Color.parseColor(Card.getDefaultGradientForType(card.type).startColor))
+        Color(Card.getDefaultGradientForType(card.type).startColor.toColorInt())
     }
 
     val endColor = try {
-        Color(android.graphics.Color.parseColor(gradient.endColor))
+        Color(gradient.endColor.toColorInt())
     } catch (e: Exception) {
-        Color(android.graphics.Color.parseColor(Card.getDefaultGradientForType(card.type).endColor))
+        Color(Card.getDefaultGradientForType(card.type).endColor.toColorInt())
     }
     return startColor to endColor
 }
 
-/**
- * Flip indicator component
- */
 @Composable
 private fun FlipIndicator(
     isFlipped: Boolean,
@@ -269,46 +304,23 @@ private fun FlipIndicator(
 ) {
     Surface(
         modifier = modifier
-            .size(AppConstants.Dimensions.ICON_SIZE_EXTRA_LARGE)
+            .size(32.dp)
             .clickable { onFlip() },
-        shape = androidx.compose.foundation.shape.CircleShape,
-        color = MaterialTheme.colorScheme.inverseSurface.copy(alpha = AppConstants.AnimationValues.ALPHA_HIGH),
+        shape = CircleShape,
+        color = Color.White.copy(alpha = 0.2f),
+        border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.3f))
     ) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.fillMaxSize(),
         ) {
-            Text(
-                text = if (isFlipped) "F" else "B",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.inverseOnSurface,
+            Icon(
+                imageVector = Icons.Default.FlipCameraAndroid,
+                contentDescription = if (isFlipped) "Show front" else "Show back",
+                tint = Color.White.copy(alpha = 0.9f),
+                modifier = Modifier.size(18.dp)
             )
         }
     }
 }
 
-/**
- * Enhanced flippable card — alias to [FlippableCard] with magnetic drag.
- * Kept for backward compatibility with screens that reference this name.
- */
-@Composable
-fun EnhancedFlippableCard(
-    card: Card,
-    modifier: Modifier = Modifier,
-    isCompact: Boolean = false,
-    showShareButtons: Boolean = true,
-    enableSwipeToFlip: Boolean = true,
-    onShare: ((CardSharingOption) -> Unit)? = null,
-    onCardClick: (() -> Unit)? = null,
-    onCardLongPress: (() -> Unit)? = null,
-) {
-    FlippableCard(
-        card = card,
-        modifier = modifier,
-        isCompact = isCompact,
-        showShareButtons = showShareButtons,
-        onShare = onShare,
-        onCardClick = onCardClick,
-        onCardLongPress = onCardLongPress,
-    )
-}

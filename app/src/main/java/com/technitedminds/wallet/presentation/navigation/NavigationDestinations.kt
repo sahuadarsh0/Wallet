@@ -102,47 +102,11 @@ sealed class NavigationDestinations(
          */
         fun getBottomNavDestinations(): List<NavigationDestinations> = listOf(
             Home,
-            Categories,
             Settings
         )
     }
 }
 
-/**
- * Navigation arguments data classes for type-safe parameter passing
- */
-object NavigationArgs {
-    
-    /**
-     * Arguments for camera screen
-     */
-    data class CameraArgs(
-        val cardType: CardType
-    )
-    
-    /**
-     * Arguments for card detail screen
-     */
-    data class CardDetailArgs(
-        val cardId: String
-    )
-    
-    /**
-     * Arguments for edit card screen
-     */
-    data class EditCardArgs(
-        val cardId: String
-    )
-    
-    /**
-     * Result data for camera capture
-     */
-    data class CameraCaptureResult(
-        val frontImagePath: String,
-        val backImagePath: String?,
-        val extractedData: Map<String, String>
-    )
-}
 
 /**
  * Navigation routes as constants for easy reference

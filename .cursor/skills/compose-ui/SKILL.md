@@ -1,13 +1,13 @@
 ---
 name: compose-ui
-description: Best practices for building UI with Jetpack Compose, focusing on state hoisting, detailed performance optimizations, and theming. Use this when writing or refactoring Composable functions.
+description: Best practices for building UI with Jetpack Compose (2026), focusing on state hoisting, performance optimizations, theming, and CardVault's glassmorphic design system. Use when writing or refactoring Composable functions.
 ---
 
 # Jetpack Compose Best Practices
 
 ## Instructions
 
-Follow these guidelines to create performant, reusable, and testable Composables.
+Follow these guidelines to create performant, reusable, and testable Composables. CardVault targets 60fps on mid-range devices with glassmorphic design.
 
 ### 1. State Hoisting (Unidirectional Data Flow)
 Make Composables **stateless** whenever possible by moving state to the caller.
@@ -21,29 +21,44 @@ Make Composables **stateless** whenever possible by moving state to the caller.
         modifier: Modifier = Modifier // Standard modifier parameter
     )
     ```
-*   **Benefit**: Decouples the UI from simple state storage, making it easier to preview and test.
-*   **ViewModel Integration**: The screen-level Composable retrieves state from the ViewModel (`viewModel.uiState.collectAsStateWithLifecycle()`) and passes it down.
+*   **Benefit**: Decouples the UI from state storage, making it easier to preview and test.
+*   **ViewModel Integration**: Screen-level Composable retrieves state from ViewModel (`viewModel.uiState.collectAsStateWithLifecycle()`) and passes it down.
+*   **Hoisting rules**: Hoist to lowest common parent (read), highest level changed (write), and together if triggered by same event.
 
 ### 2. Modifiers
-*   **Default Parameter**: Always provide a `modifier: Modifier = Modifier` as the first optional parameter.
+*   **Default Parameter**: Always provide a `modifier: Modifier = Modifier` as the **last** named parameter.
 *   **Application**: Apply this `modifier` to the *root* layout element of your Composable.
-*   **Ordering matters**: `padding().clickable()` is different from `clickable().padding()`. Generally apply layout-affecting modifiers (like padding) *after* click listeners if you want the padding to be clickable.
+*   **Ordering matters**: `padding().clickable()` is different from `clickable().padding()`.
+*   **Lambda modifiers**: Use `Modifier.offset { ... }` (lambda) instead of `Modifier.offset(...)` for frequently changing values to defer state reads.
 
 ### 3. Performance Optimization
-*   **`remember`**: Use `remember { ... }` to cache expensive calculations across recompositions.
-*   **`derivedStateOf`**: Use `derivedStateOf { ... }` when a state changes frequently (like scroll position) but the UI only needs to react to a threshold or summary (e.g., show "Jump to Top" button). This prevents unnecessary recompositions.
+*   **`remember`**: Cache expensive calculations. Use keys for invalidation: `remember(key) { ... }`.
+*   **`derivedStateOf`**: Limit recompositions from rapidly changing state (scroll position, animation progress).
     ```kotlin
     val showButton by remember {
         derivedStateOf { listState.firstVisibleItemIndex > 0 }
     }
     ```
-*   **Lambda Stability**: Prefer method references (e.g., `viewModel::onEvent`) or remembered lambdas to prevent unstable types from triggering recomposition of children.
+*   **Lambda Stability**: Use `remember(key) { { viewModel.doAction(key) } }` or method references to stabilize lambdas.
+*   **Stable keys**: Always provide `key` in `LazyColumn`/`LazyGrid` items using stable IDs.
+*   **Defer state reads**: Wrap in lambda modifiers to push reads from composition to layout/draw phase.
+*   **No backwards writes**: Never write to state already read during the same composition.
+*   **`@Stable`/`@Immutable`**: Annotate data classes used as composable params for efficient skipping.
 
-### 4. Theming and Resources
-*   Use `MaterialTheme.colorScheme` and `MaterialTheme.typography` instead of hardcoded colors or text styles.
-*   Organize simple UI components into specific files (e.g., `DesignSystem.kt` or `Components.kt`) if they are shared across features.
+### 4. Theming and Design System
+*   Use `MaterialTheme.colorScheme` and `MaterialTheme.typography` — never hardcode colors or text styles.
+*   **Glassmorphic design**: Use `GlassTheme` for frosted-glass aesthetics and `PhysicsConstants` for physics-based animations.
+*   **Enhanced components**: Prefer `PremiumCard`, `PremiumTextField`, `AnimatedSectionHeader` over plain M3 components for consistency.
+*   Both light and dark themes must be supported and tested.
 
 ### 5. Previews
-*   Create a private preview function for every public Composable.
-*   Use `@Preview(showBackground = true)` and include Light/Dark mode previews if applicable.
-*   Pass dummy data (static) to the stateless Composable for the preview.
+*   Create a `@Preview` function for every public Composable.
+*   Use `@Preview(showBackground = true)` and include Light/Dark mode previews.
+*   Pass dummy data (static) to the stateless Composable.
+*   For card-related previews, create sample `Card` and `Category` objects.
+
+### 6. Side Effects
+*   Use `LaunchedEffect(key)` for coroutine-based side effects — NEVER `LaunchedEffect(true)`.
+*   Use `DisposableEffect` for cleanup (camera lifecycle, listeners).
+*   Use `SideEffect` for non-suspend code that must run after every successful composition.
+*   Never perform I/O, database, or heavy work during composition.

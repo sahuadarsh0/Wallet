@@ -179,7 +179,9 @@ class CardDetailViewModel @Inject constructor(
         val current = _editedCard.value
         if (current != null) {
             val updatedData = current.extractedData.toMutableMap()
-            if (value.isBlank()) {
+            // Only remove if the field already exists AND value is blank
+            // This allows adding new fields with empty values
+            if (value.isBlank() && updatedData.containsKey(key)) {
                 updatedData.remove(key)
             } else {
                 updatedData[key] = value
