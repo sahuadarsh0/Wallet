@@ -229,17 +229,48 @@ object AppConstants {
 
         // Privacy policy content
         const val PRIVACY_POLICY_CONTENT = """CardVault Privacy Policy
+Last updated: April 2026
+Published by Technited Minds
 
-• Offline First: CardVault operates completely offline. No personal data, card details, or images are ever transmitted to external servers.
-• Local Storage: All data is stored locally on your device. Sensitive card fields are encrypted with AES-256-GCM via Google Tink, backed by the Android Keystore.
-• Biometric Data: Biometric authentication (fingerprint/face) is handled entirely by the Android system. CardVault receives only a success/failure signal and never accesses your raw biometric data.
-• App Lock: Your 4-digit PIN is hashed securely using PBKDF2 and stored locally. It is never transmitted.
-• On-Device Intelligence: Text recognition (OCR) is performed on-device using Google ML Kit. No image data is sent to the cloud for processing.
-• Permissions:
-  - Camera: Used exclusively for scanning cards.
-  - NFC: Used for contactless card reading (optional).
+1. Introduction
+CardVault ("we", "our", "the app") by Technited Minds is an offline-first digital wallet for managing card information. This policy describes how we handle your data.
 
-For questions, contact: support@technitedminds.com"""
+2. Data We Collect
+CardVault collects only data you explicitly provide:
+• Card details: Card name, type, optional expiry date, notes, and custom fields.
+• Financial info (Credit/Debit cards only): Card number, CVV, expiry, and cardholder name extracted via on-device OCR. These fields are encrypted at rest with AES-256-GCM.
+• Card images: Photos of the front and back of your cards, stored in the app's private storage.
+• App lock PIN: A 4-digit PIN, hashed with PBKDF2 (never stored in plaintext).
+
+3. How We Use Your Data
+All data is used exclusively for the app's core functionality — storing and displaying your cards. No data is used for analytics, advertising, profiling, or any purpose beyond what you see in the app.
+
+4. Data Sharing
+CardVault does NOT share, sell, or transfer any data to third parties. The app has no network access — the INTERNET permission is explicitly removed. No data ever leaves your device unless you manually use the share feature.
+
+5. Data Security
+• Sensitive card fields are encrypted with AES-256-GCM via Google Tink, backed by Android Keystore.
+• Your PIN is hashed with PBKDF2-HmacSHA256 (10,000 iterations, random salt).
+• Biometric authentication is handled entirely by the Android system — we receive only a success/failure signal.
+• On-device OCR is performed by Google ML Kit (bundled). No images are sent to any server.
+• All files are stored in the app's sandboxed private storage.
+
+6. Data Retention & Deletion
+• Your data is retained on-device until you delete it.
+• You can delete individual cards at any time (card data and images are permanently removed).
+• A full data wipe is available in Settings, which permanently deletes all cards, images, categories, preferences, and encryption keys.
+• Uninstalling the app permanently removes all data from the device.
+
+7. Permissions
+• Camera: Used exclusively for scanning card images. Requested at runtime.
+• NFC: Used for contactless card reading (optional hardware feature).
+• No location, microphone, contacts, or internet permissions are used.
+
+8. Children's Privacy
+CardVault is not directed at children under 13 and does not knowingly collect data from children.
+
+9. Contact
+For questions about this privacy policy, contact: support@technitedminds.com"""
 
         // Terms of Service content
         const val TERMS_OF_SERVICE_CONTENT = """CardVault Terms of Service
@@ -523,13 +554,11 @@ Full license texts are available in the app's source code."""
         const val PRIVACY_AND_SECURITY = "Privacy & Security"
         const val PRIVACY_NOTICE = "• All data stays on your device\n• No information is sent to servers\n• You can edit or clear any field"
         const val PRIVACY_POLICY_CONTENT = """CardVault Privacy Policy
+Published by Technited Minds
 
-• CardVault is completely offline — no data is transmitted over the network
-• Sensitive card fields are encrypted at rest with AES-256-GCM (Google Tink + Android Keystore)
-• No analytics, tracking, or data collection is performed
-• Camera permission is used only for card scanning
-• NFC permission is used only for contactless card reading
-• Your data never leaves your device unless you explicitly share it
+CardVault is 100% offline — no data is transmitted over the network (INTERNET permission is explicitly removed). Sensitive card fields are encrypted at rest with AES-256-GCM (Google Tink + Android Keystore). No analytics, tracking, or data collection is performed. Camera permission is used only for card scanning. NFC permission is used only for contactless card reading. Your data never leaves your device unless you explicitly share it.
+
+Data Retention & Deletion: All data is stored locally until you delete it. You may delete individual cards or perform a full data wipe in Settings. Uninstalling the app removes all data permanently.
 
 For questions, contact: support@technitedminds.com"""
         const val PRIVACY_POLICY_SUBTITLE = "View our privacy policy"

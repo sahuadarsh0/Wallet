@@ -44,6 +44,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -70,6 +71,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.domain.model.Category
 import com.technitedminds.wallet.presentation.components.common.getIconFromName
 import com.technitedminds.wallet.presentation.components.common.PremiumFloatingActionButton
+import com.technitedminds.wallet.presentation.components.common.ScreenGradientBackground
 import com.technitedminds.wallet.presentation.constants.AppConstants
 import com.technitedminds.wallet.presentation.components.animation.liquidPress
 import com.technitedminds.wallet.ui.theme.WalletSpring
@@ -111,42 +113,46 @@ fun CategoriesScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(AppConstants.NavigationLabels.CATEGORIES) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = AppConstants.ContentDescriptions.BACK
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = viewModel::createDefaultCategories) {
-                        Icon(
-                            imageVector = Icons.Default.Restore,
-                            contentDescription = AppConstants.ContentDescriptions.RESTORE_DEFAULTS
-                        )
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            PremiumFloatingActionButton(
-                onClick = viewModel::showCreateCategoryDialog,
-                icon = Icons.Default.Add,
-                contentDescription = AppConstants.UIText.ADD_CATEGORY
-            )
-        },
-        modifier = modifier
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+    ScreenGradientBackground(modifier = modifier) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(AppConstants.NavigationLabels.CATEGORIES) },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = AppConstants.ContentDescriptions.BACK
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = viewModel::createDefaultCategories) {
+                            Icon(
+                                imageVector = Icons.Default.Restore,
+                                contentDescription = AppConstants.ContentDescriptions.RESTORE_DEFAULTS
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                    ),
+                )
+            },
+            floatingActionButton = {
+                PremiumFloatingActionButton(
+                    onClick = viewModel::showCreateCategoryDialog,
+                    icon = Icons.Default.Add,
+                    contentDescription = AppConstants.UIText.ADD_CATEGORY
+                )
+            },
+            containerColor = Color.Transparent,
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
             when {
                 uiState.isLoading -> {
                     CircularProgressIndicator(
@@ -197,6 +203,7 @@ fun CategoriesScreen(
                 }
             }
         }
+    }
     }
 
     // Dialogs

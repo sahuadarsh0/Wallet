@@ -58,6 +58,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -87,6 +88,7 @@ import com.technitedminds.wallet.presentation.components.animation.EnhancedShimm
 import com.technitedminds.wallet.presentation.components.animation.EnhancedSlideInItem
 import com.technitedminds.wallet.presentation.components.common.AnimatedSectionHeader
 import com.technitedminds.wallet.presentation.components.common.PremiumCard
+import com.technitedminds.wallet.presentation.components.common.ScreenGradientBackground
 import com.technitedminds.wallet.presentation.components.common.PremiumChip
 import com.technitedminds.wallet.presentation.components.common.PremiumLoadingIndicator
 import com.technitedminds.wallet.presentation.components.common.PremiumTextField
@@ -107,24 +109,25 @@ fun EnhancedHomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showFilterSheet by remember { mutableStateOf(false) }
 
-    Scaffold(
-        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
-        modifier = modifier,
-        topBar = {
-            EnhancedHomeTopBar(
-                searchQuery = uiState.searchQuery,
-                onSearchQueryChange = viewModel::updateSearchQuery,
-                onClearSearch = viewModel::clearSearch,
-                isGridLayout = uiState.isGridLayout,
-                onToggleLayout = viewModel::toggleLayout,
-            )
-        },
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+    ScreenGradientBackground(modifier = modifier) {
+        Scaffold(
+            contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
+            containerColor = Color.Transparent,
+            topBar = {
+                EnhancedHomeTopBar(
+                    searchQuery = uiState.searchQuery,
+                    onSearchQueryChange = viewModel::updateSearchQuery,
+                    onClearSearch = viewModel::clearSearch,
+                    isGridLayout = uiState.isGridLayout,
+                    onToggleLayout = viewModel::toggleLayout,
+                )
+            },
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
             FilterTriggerBar(
                 selectedCategoryId = uiState.selectedCategoryId,
                 selectedCardType = uiState.selectedCardType,
@@ -145,6 +148,7 @@ fun EnhancedHomeScreen(
                     .padding(horizontal = 16.dp)
             )
         }
+    }
     }
 
     if (showFilterSheet) {
@@ -240,7 +244,10 @@ private fun EnhancedHomeTopBar(
                 }
             }
         },
-        modifier = modifier
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent,
+        ),
+        modifier = modifier,
     )
 }
 

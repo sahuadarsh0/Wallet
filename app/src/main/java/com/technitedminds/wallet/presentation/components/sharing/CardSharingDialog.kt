@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -30,6 +29,7 @@ import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ViewCarousel
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -40,6 +40,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -52,6 +53,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -61,18 +64,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.technitedminds.wallet.domain.model.Card
-import com.technitedminds.wallet.presentation.components.common.GlassPremiumCard
 import com.technitedminds.wallet.presentation.components.common.PremiumButton
 import com.technitedminds.wallet.presentation.components.common.PremiumButtonVariant
 import com.technitedminds.wallet.presentation.constants.AppConstants
-import com.technitedminds.wallet.ui.theme.Glass
-import com.technitedminds.wallet.ui.theme.GlassSurface
 import com.technitedminds.wallet.ui.theme.WalletSpring
 
-/**
- * Modern card sharing dialog with glass morphism styling, spring physics,
- * and organized layout. Replaces the old AlertDialog-based approach.
- */
 @Composable
 fun CardSharingDialog(
     card: Card,
@@ -85,6 +81,7 @@ fun CardSharingDialog(
     if (!isVisible) return
 
     val haptic = LocalHapticFeedback.current
+    val accent = MaterialTheme.colorScheme.primary
     var selectedOption by remember(isVisible, initialOption) {
         mutableStateOf(initialOption ?: CardSharingOption.FrontOnly)
     }
@@ -111,51 +108,71 @@ fun CardSharingDialog(
             shadowElevation = 12.dp,
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                // -- Header --
-                Row(
+                // ── Gradient header ─────────────────────────────────
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    accent.copy(alpha = 0.14f),
+                                    Color.Transparent,
+                                ),
+                            ),
+                        )
+                        .padding(start = 24.dp, end = 12.dp, top = 20.dp, bottom = 16.dp),
                 ) {
                     Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
-                            contentAlignment = Alignment.Center,
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
                         ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .background(
+                                        Brush.radialGradient(
+                                            colors = listOf(
+                                                accent.copy(alpha = 0.25f),
+                                                accent.copy(alpha = 0.06f),
+                                            ),
+                                        ),
+                                        shape = RoundedCornerShape(14.dp),
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = null,
+                                    tint = accent,
+                                    modifier = Modifier.size(24.dp),
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "Share Card",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Text(
+                                    text = card.name,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+
+                        IconButton(onClick = onDismiss) {
                             Icon(
-                                imageVector = Icons.Default.Share,
-                                contentDescription = "Share",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp),
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        Column {
-                            Text(
-                                text = "Share Card",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Text(
-                                text = card.name,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
                     }
                 }
 
@@ -163,19 +180,20 @@ fun CardSharingDialog(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
                 )
 
-                // -- Content --
+                // ── Scrollable content ──────────────────────────────
                 Column(
                     modifier = Modifier
+                        .weight(1f, fill = false)
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
                         .padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
-                    // Share option selector
-                    Text(
-                        text = AppConstants.UIText.WHAT_TO_SHARE_LABEL,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
+                    // ── What to share section ───────────────────────
+                    SectionHeader(
+                        icon = Icons.Default.CreditCard,
+                        title = AppConstants.UIText.WHAT_TO_SHARE_LABEL,
+                        accentColor = accent,
                     )
 
                     Row(
@@ -186,6 +204,7 @@ fun CardSharingDialog(
                             icon = Icons.Default.CreditCard,
                             label = "Front",
                             isSelected = selectedOption == CardSharingOption.FrontOnly,
+                            accentColor = accent,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 selectedOption = CardSharingOption.FrontOnly
@@ -198,6 +217,7 @@ fun CardSharingDialog(
                                 icon = Icons.Default.Security,
                                 label = "Back",
                                 isSelected = selectedOption == CardSharingOption.BackOnly,
+                                accentColor = accent,
                                 onClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     selectedOption = CardSharingOption.BackOnly
@@ -208,6 +228,7 @@ fun CardSharingDialog(
                                 icon = Icons.Default.ViewCarousel,
                                 label = "Both",
                                 isSelected = selectedOption == CardSharingOption.BothSides,
+                                accentColor = accent,
                                 onClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     selectedOption = CardSharingOption.BothSides
@@ -217,68 +238,86 @@ fun CardSharingDialog(
                         }
                     }
 
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                    // ── Share settings section ──────────────────────
+                    SectionHeader(
+                        icon = Icons.Default.Tune,
+                        title = AppConstants.UIText.SHARING_OPTIONS_LABEL,
+                        accentColor = accent,
                     )
 
-                    // Settings section
-                    Text(
-                        text = AppConstants.UIText.SHARING_OPTIONS_LABEL,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-
-                    // Sensitive info toggle
-                    SettingRow(
-                        icon = if (includeSensitiveInfo) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        title = AppConstants.UIText.INCLUDE_SENSITIVE_INFO_LABEL,
-                        subtitle = AppConstants.UIText.INCLUDE_SENSITIVE_INFO_SUBTITLE,
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Switch(
-                            checked = includeSensitiveInfo,
-                            onCheckedChange = { includeSensitiveInfo = it },
-                        )
-                    }
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            SettingRow(
+                                icon = if (includeSensitiveInfo) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                title = AppConstants.UIText.INCLUDE_SENSITIVE_INFO_LABEL,
+                                subtitle = AppConstants.UIText.INCLUDE_SENSITIVE_INFO_SUBTITLE,
+                            ) {
+                                Switch(
+                                    checked = includeSensitiveInfo,
+                                    onCheckedChange = { includeSensitiveInfo = it },
+                                )
+                            }
 
-                    // Image quality
-                    SettingRow(
-                        icon = Icons.Default.HighQuality,
-                        title = AppConstants.UIText.IMAGE_QUALITY_LABEL,
-                        subtitle = "${(imageQuality * 100).toInt()}%",
-                    ) {}
-                    Slider(
-                        value = imageQuality,
-                        onValueChange = { imageQuality = it },
-                        valueRange = 0.3f..1.0f,
-                        steps = 6,
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                            )
 
-                    // Watermark toggle
-                    SettingRow(
-                        icon = Icons.Default.WaterDrop,
-                        title = AppConstants.UIText.ADD_WATERMARK_LABEL,
-                        subtitle = AppConstants.UIText.PROTECT_SHARED_IMAGES_SUBTITLE,
-                    ) {
-                        Switch(
-                            checked = addWatermark,
-                            onCheckedChange = { addWatermark = it },
-                        )
-                    }
+                            SettingRow(
+                                icon = Icons.Default.HighQuality,
+                                title = AppConstants.UIText.IMAGE_QUALITY_LABEL,
+                                subtitle = "${(imageQuality * 100).toInt()}%",
+                            ) {}
 
-                    AnimatedVisibility(
-                        visible = addWatermark,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut(),
-                    ) {
-                        OutlinedTextField(
-                            value = watermarkText,
-                            onValueChange = { watermarkText = it },
-                            label = { Text(AppConstants.UIText.WATERMARK_TEXT_LABEL) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                        )
+                            Slider(
+                                value = imageQuality,
+                                onValueChange = { imageQuality = it },
+                                valueRange = 0.3f..1.0f,
+                                steps = 6,
+                                modifier = Modifier.padding(top = 4.dp),
+                                colors = SliderDefaults.colors(
+                                    thumbColor = accent,
+                                    activeTrackColor = accent,
+                                ),
+                            )
+
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                            )
+
+                            SettingRow(
+                                icon = Icons.Default.WaterDrop,
+                                title = AppConstants.UIText.ADD_WATERMARK_LABEL,
+                                subtitle = AppConstants.UIText.PROTECT_SHARED_IMAGES_SUBTITLE,
+                            ) {
+                                Switch(
+                                    checked = addWatermark,
+                                    onCheckedChange = { addWatermark = it },
+                                )
+                            }
+
+                            AnimatedVisibility(
+                                visible = addWatermark,
+                                enter = expandVertically() + fadeIn(),
+                                exit = shrinkVertically() + fadeOut(),
+                            ) {
+                                OutlinedTextField(
+                                    value = watermarkText,
+                                    onValueChange = { watermarkText = it },
+                                    label = { Text(AppConstants.UIText.WATERMARK_TEXT_LABEL) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 12.dp),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(12.dp),
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -286,7 +325,7 @@ fun CardSharingDialog(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
                 )
 
-                // -- Actions --
+                // ── Actions footer ──────────────────────────────────
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -323,15 +362,51 @@ fun CardSharingDialog(
     }
 }
 
-/**
- * Selectable chip for share options (Front / Back / Both).
- * Uses spring scale and glass surface when selected.
- */
+// ── Internal components ─────────────────────────────────────────────────
+
+@Composable
+private fun SectionHeader(
+    icon: ImageVector,
+    title: String,
+    accentColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .background(
+                    accentColor.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(8.dp),
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = accentColor,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
 @Composable
 private fun ShareOptionChip(
     icon: ImageVector,
     label: String,
     isSelected: Boolean,
+    accentColor: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -341,29 +416,17 @@ private fun ShareOptionChip(
         label = "chip_scale",
     )
 
-    val bgColor = if (isSelected) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
+    val bgColor = if (isSelected) accentColor.copy(alpha = 0.12f) else
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-    }
-    val contentColor = if (isSelected) {
-        MaterialTheme.colorScheme.primary
-    } else {
+    val contentColor = if (isSelected) accentColor else
         MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    val borderColor = if (isSelected) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-    } else {
-        MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-    }
+    val borderColor = if (isSelected) accentColor.copy(alpha = 0.5f) else
+        MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
 
     Surface(
         modifier = modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .height(72.dp)
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            .height(76.dp)
             .border(1.dp, borderColor, RoundedCornerShape(16.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -381,12 +444,12 @@ private fun ShareOptionChip(
                 imageVector = icon,
                 contentDescription = label,
                 tint = contentColor,
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(24.dp),
             )
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                 color = contentColor,
             )
@@ -394,9 +457,6 @@ private fun ShareOptionChip(
     }
 }
 
-/**
- * Settings row with icon, title, subtitle, and trailing content.
- */
 @Composable
 private fun SettingRow(
     icon: ImageVector,
@@ -416,7 +476,7 @@ private fun SettingRow(
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = title,
+                contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp),
             )
@@ -424,6 +484,7 @@ private fun SettingRow(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(

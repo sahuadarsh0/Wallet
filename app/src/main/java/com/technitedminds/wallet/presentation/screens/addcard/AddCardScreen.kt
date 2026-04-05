@@ -66,6 +66,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -105,6 +106,7 @@ import com.technitedminds.wallet.presentation.components.common.PremiumButton
 import com.technitedminds.wallet.presentation.components.common.PremiumButtonVariant
 import com.technitedminds.wallet.presentation.components.common.PremiumCard
 import com.technitedminds.wallet.presentation.components.common.PremiumTextField
+import com.technitedminds.wallet.presentation.components.common.ScreenGradientBackground
 import com.technitedminds.wallet.presentation.components.common.StepProgressIndicator
 import com.technitedminds.wallet.presentation.components.common.gradientShadow
 import com.technitedminds.wallet.presentation.constants.AppConstants
@@ -188,41 +190,36 @@ fun AddCardScreen(
         catch (e: Exception) { Color.Transparent }
     }
 
-    Scaffold(
-        topBar = {
-            AddCardTopBar(
-                currentStep = currentStep,
-                onNavigateBack = onNavigateBack,
-                onPreviousStep = viewModel::previousStep,
-                canGoBack = currentStep != AddCardStep.TYPE_SELECTION
-            )
-        },
-        bottomBar = {
-            AddCardBottomBar(
-                currentStep = currentStep,
-                isFormValid = isFormValid,
-                isLoading = uiState.isLoading || uiState.isSaving,
-                onNextStep = viewModel::nextStep,
-                onSaveCard = viewModel::saveCard,
-                onSkipCamera = viewModel::skipCameraCapture
-            )
-        },
-        modifier = modifier
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            ambientStart.copy(alpha = 0.05f),
-                            Color.Transparent,
-                            ambientEnd.copy(alpha = 0.03f),
-                        )
-                    )
+    ScreenGradientBackground(
+        accentColor = ambientStart.takeIf { it != Color.Transparent }
+            ?: MaterialTheme.colorScheme.primary,
+        modifier = modifier,
+    ) {
+        Scaffold(
+            topBar = {
+                AddCardTopBar(
+                    currentStep = currentStep,
+                    onNavigateBack = onNavigateBack,
+                    onPreviousStep = viewModel::previousStep,
+                    canGoBack = currentStep != AddCardStep.TYPE_SELECTION,
                 )
-        ) {
+            },
+            bottomBar = {
+                AddCardBottomBar(
+                    currentStep = currentStep,
+                    isFormValid = isFormValid,
+                    isLoading = uiState.isLoading || uiState.isSaving,
+                    onNextStep = viewModel::nextStep,
+                    onSaveCard = viewModel::saveCard,
+                    onSkipCamera = viewModel::skipCameraCapture,
+                )
+            },
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 StepProgressIndicator(
                     currentStep = currentStep.ordinal,
@@ -287,6 +284,7 @@ fun AddCardScreen(
                 }
             }
         }
+    }
     }
 
     uiState.error?.let { error ->
@@ -357,7 +355,10 @@ private fun AddCardTopBar(
                 Icon(Icons.Default.Close, AppConstants.DialogText.CANCEL_BUTTON)
             }
         },
-        modifier = modifier
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent,
+        ),
+        modifier = modifier,
     )
 }
 
@@ -855,7 +856,7 @@ private fun FormDetailsStep(
             }
         }
 
-        // Card Details section -- GlassPremiumCard (primary section)
+        // Card Details section
         item {
             val idx = if (isTextualCard) 2 else 1
             EnhancedSlideInItem(visible = true, index = idx, baseDelay = 80) {
@@ -891,9 +892,7 @@ private fun FormDetailsStep(
         if (isTextualCard) {
             item {
                 EnhancedSlideInItem(visible = true, index = 3, baseDelay = 80) {
-                    PremiumCard(
-                        elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
-                    ) {
+                    GlassPremiumCard(modifier = Modifier.fillMaxWidth()) {
                         Column(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -1035,12 +1034,7 @@ private fun FormDetailsStep(
         item {
             val idx = if (isTextualCard) 5 else 3
             EnhancedSlideInItem(visible = true, index = idx, baseDelay = 80) {
-                PremiumCard(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
-                ) {
+                GlassPremiumCard(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)

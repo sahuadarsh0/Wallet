@@ -3,13 +3,13 @@ package com.technitedminds.wallet.presentation.screens.carddetail
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.EaseInCubic
 import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -33,7 +33,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Check
@@ -50,7 +49,6 @@ import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -61,6 +59,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -70,11 +69,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.toColorInt
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.domain.model.Card
@@ -82,6 +82,8 @@ import com.technitedminds.wallet.domain.model.CardGradient
 import com.technitedminds.wallet.domain.model.GradientDirection
 import com.technitedminds.wallet.presentation.components.animation.EnhancedSlideInItem
 import com.technitedminds.wallet.presentation.components.animation.FlippableCard
+import com.technitedminds.wallet.presentation.components.animation.liquidDrag
+import com.technitedminds.wallet.presentation.components.animation.liquidPress
 import com.technitedminds.wallet.presentation.components.common.AnimatedSectionHeader
 import com.technitedminds.wallet.presentation.components.common.CardDeleteConfirmationDialog
 import com.technitedminds.wallet.presentation.components.common.CardTypeDropdown
@@ -91,16 +93,13 @@ import com.technitedminds.wallet.presentation.components.common.ExtractedDataEdi
 import com.technitedminds.wallet.presentation.components.common.GlassPremiumCard
 import com.technitedminds.wallet.presentation.components.common.GradientPickerDialog
 import com.technitedminds.wallet.presentation.components.common.LoadingOverlay
-import com.technitedminds.wallet.presentation.components.common.PremiumCard
 import com.technitedminds.wallet.presentation.components.common.PremiumDivider
 import com.technitedminds.wallet.presentation.components.common.PremiumTextField
+import com.technitedminds.wallet.presentation.components.common.ScreenGradientBackground
+import com.technitedminds.wallet.presentation.components.common.getIcon
 import com.technitedminds.wallet.presentation.components.common.gradientShadow
 import com.technitedminds.wallet.presentation.components.common.resolveCategoryName
-import com.technitedminds.wallet.presentation.components.common.getIcon
 import com.technitedminds.wallet.presentation.components.sharing.CardSharingDialog
-import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
-import com.technitedminds.wallet.presentation.components.animation.liquidDrag
-import com.technitedminds.wallet.presentation.components.animation.liquidPress
 import com.technitedminds.wallet.presentation.constants.AppConstants
 import com.technitedminds.wallet.ui.theme.Glass
 import com.technitedminds.wallet.ui.theme.GlassSurface
@@ -158,7 +157,7 @@ fun CardDetailScreen(
     // Derive ambient background from card gradient
     val cardGradient = card!!.getGradient()
     val ambientStart = remember(cardGradient) {
-        try { Color(android.graphics.Color.parseColor(cardGradient.startColor)) }
+        try { Color(cardGradient.startColor.toColorInt()) }
         catch (e: Exception) { Color.Transparent }
     }
     val ambientEnd = remember(cardGradient) {
@@ -166,36 +165,32 @@ fun CardDetailScreen(
         catch (e: Exception) { Color.Transparent }
     }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            CardDetailTopBar(
-                card = card!!,
-                isEditing = isEditing,
-                onNavigateBack = onNavigateBack,
-                onStartEdit = viewModel::startEditing,
-                onSaveEdit = viewModel::saveCard,
-                onCancelEdit = viewModel::cancelEditing,
-                onDeleteCard = viewModel::showDeleteConfirmation,
+    ScreenGradientBackground(
+        accentColor = ambientStart.copy(alpha = 1f).takeIf { it != Color.Transparent }
+            ?: MaterialTheme.colorScheme.primary,
+        modifier = modifier,
+    ) {
+        Scaffold(
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            containerColor = Color.Transparent,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = {
+                CardDetailTopBar(
+                    card = card!!,
+                    isEditing = isEditing,
+                    onNavigateBack = onNavigateBack,
+                    onStartEdit = viewModel::startEditing,
+                    onSaveEdit = viewModel::saveCard,
+                    onCancelEdit = viewModel::cancelEditing,
+                    onDeleteCard = viewModel::showDeleteConfirmation,
                 onShowSharingDialog = viewModel::showSharingDialog
             )
         },
-        modifier = modifier
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            ambientStart.copy(alpha = 0.06f),
-                            Color.Transparent,
-                            ambientEnd.copy(alpha = 0.04f),
-                        )
-                    )
-                )
         ) {
             Column(
                 modifier = Modifier
@@ -207,7 +202,6 @@ fun CardDetailScreen(
                 EnhancedSlideInItem(visible = true, index = 0) {
                     CardDisplaySection(
                         card = if (isEditing) editedCard ?: card!! else card!!,
-                        onShare = { viewModel.quickShare(it) },
                         onShowSharingDialog = viewModel::showSharingDialog,
                         modifier = Modifier.padding(AppConstants.Dimensions.PADDING_LARGE)
                     )
@@ -253,10 +247,7 @@ fun CardDetailScreen(
                         // Sensitive data section (OCR cards)
                         if (card!!.extractedData.isNotEmpty()) {
                             EnhancedSlideInItem(visible = true, index = 2) {
-                                SensitiveDataSection(
-                                    card = card!!,
-                                    gradientColors = listOf(ambientStart, ambientEnd)
-                                )
+                                SensitiveDataSection(card = card!!)
                             }
                         }
 
@@ -266,10 +257,7 @@ fun CardDetailScreen(
                         }
                         if (visibleFields.isNotEmpty()) {
                             EnhancedSlideInItem(visible = true, index = 3) {
-                                DetailsSection(
-                                    customFields = visibleFields,
-                                    gradientColors = listOf(ambientStart, ambientEnd)
-                                )
+                                DetailsSection(customFields = visibleFields)
                             }
                         }
 
@@ -281,6 +269,7 @@ fun CardDetailScreen(
                 }
             }
         }
+    }
     }
 
     CardDeleteConfirmationDialog(
@@ -379,7 +368,10 @@ private fun CardDetailTopBar(
                 }
             }
         },
-        modifier = modifier
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent,
+        ),
+        modifier = modifier,
     )
 }
 
@@ -388,14 +380,11 @@ private fun CardDetailTopBar(
 @Composable
 private fun CardDisplaySection(
     card: Card,
-    onShare: (CardSharingOption) -> Unit,
     onShowSharingDialog: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     FlippableCard(
         card = card,
-        showShareButtons = true,
-        onShare = onShare,
         onCardClick = null,
         onCardLongPress = onShowSharingDialog,
         modifier = modifier
@@ -572,24 +561,17 @@ private fun RevealableFieldRow(
 @Composable
 private fun SensitiveDataSection(
     card: Card,
-    gradientColors: List<Color>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val sensitiveKeys = listOf("cardNumber", "cvv")
 
     GlassPremiumCard(
-        modifier = modifier
-            .fillMaxWidth()
-            .gradientShadow(
-                colors = gradientColors,
-                shadowElevation = 6.dp,
-                cornerRadius = Glass.CornerRadius,
-            )
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             AnimatedSectionHeader(
                 title = AppConstants.UIText.CARD_DETAILS_TITLE,
-                icon = Icons.Default.Shield
+                icon = Icons.Default.Shield,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -602,7 +584,7 @@ private fun SensitiveDataSection(
                     label = formatFieldName(key),
                     value = value,
                     icon = getFieldIcon(key),
-                    isSensitive = key in sensitiveKeys
+                    isSensitive = key in sensitiveKeys,
                 )
             }
         }
@@ -614,24 +596,17 @@ private fun SensitiveDataSection(
 @Composable
 private fun DetailsSection(
     customFields: Map<String, String>,
-    gradientColors: List<Color>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val sensitiveKeys = listOf(AppConstants.UIText.PIN_FIELD, AppConstants.UIText.PASSWORD_FIELD)
 
     GlassPremiumCard(
-        modifier = modifier
-            .fillMaxWidth()
-            .gradientShadow(
-                colors = gradientColors,
-                shadowElevation = 6.dp,
-                cornerRadius = Glass.CornerRadius,
-            )
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             AnimatedSectionHeader(
                 title = "Additional Details",
-                icon = Icons.Default.Description
+                icon = Icons.Default.Description,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -644,7 +619,7 @@ private fun DetailsSection(
                     label = formatFieldName(key),
                     value = value,
                     icon = getFieldIcon(key),
-                    isSensitive = key in sensitiveKeys
+                    isSensitive = key in sensitiveKeys,
                 )
             }
         }
@@ -733,10 +708,10 @@ private fun EditCardSection(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(AppConstants.Dimensions.SPACING_LARGE)
     ) {
-        // Section 1: Basic Information -- GlassPremiumCard (primary visual weight)
+        // Section 1: Basic Information
         EnhancedSlideInItem(visible = true, index = 0, baseDelay = 100) {
             GlassPremiumCard(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
@@ -775,8 +750,8 @@ private fun EditCardSection(
         // Section 2: Card Details (OCR) -- PremiumCard with Shield icon
         if (card.type.supportsOCR() && (card.extractedData.isNotEmpty() || card.type.supportsOCR())) {
             EnhancedSlideInItem(visible = true, index = 1, baseDelay = 100) {
-                PremiumCard(
-                    elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
+                GlassPremiumCard(
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(
                         modifier = Modifier.padding(20.dp),
@@ -798,13 +773,10 @@ private fun EditCardSection(
             }
         }
 
-        // Section 3: Additional Details -- PremiumCard with surfaceVariant
+        // Section 3: Additional Details
         EnhancedSlideInItem(visible = true, index = 2, baseDelay = 100) {
-            PremiumCard(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = AppConstants.Dimensions.CARD_ELEVATION_DEFAULT)
+            GlassPremiumCard(
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
