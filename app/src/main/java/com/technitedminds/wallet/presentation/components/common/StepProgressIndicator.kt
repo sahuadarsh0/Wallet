@@ -173,8 +173,12 @@ private fun StepCircle(
                 )
             }
             isCurrent -> {
-                // Show filled circle for current step (no content, just background)
-                // The circle itself indicates the current step
+                Text(
+                    text = "${stepIndex + 1}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = contentColor,
+                    textAlign = TextAlign.Center,
+                )
             }
             else -> {
                 // Show step number for future steps

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -46,7 +47,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.presentation.components.common.gradientShadow
-import com.technitedminds.wallet.presentation.components.sharing.CardSharingOption
 import com.technitedminds.wallet.presentation.constants.AppConstants
 import com.technitedminds.wallet.ui.theme.WalletSpring
 import kotlinx.coroutines.launch
@@ -69,8 +69,6 @@ fun FlippableCard(
     card: Card,
     modifier: Modifier = Modifier,
     isCompact: Boolean = false,
-    showShareButtons: Boolean = true,
-    onShare: ((CardSharingOption) -> Unit)? = null,
     onCardClick: (() -> Unit)? = null,
     onCardLongPress: (() -> Unit)? = null,
 ) {
@@ -302,24 +300,29 @@ private fun FlipIndicator(
     onFlip: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
+    Box(
         modifier = modifier
-            .size(32.dp)
+            .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
             .clickable { onFlip() },
-        shape = CircleShape,
-        color = Color.White.copy(alpha = 0.2f),
-        border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.3f))
+        contentAlignment = Alignment.Center,
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.fillMaxSize(),
+        Surface(
+            modifier = Modifier.size(32.dp),
+            shape = CircleShape,
+            color = Color.White.copy(alpha = 0.2f),
+            border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.3f))
         ) {
-            Icon(
-                imageVector = Icons.Default.FlipCameraAndroid,
-                contentDescription = if (isFlipped) "Show front" else "Show back",
-                tint = Color.White.copy(alpha = 0.9f),
-                modifier = Modifier.size(18.dp)
-            )
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.FlipCameraAndroid,
+                    contentDescription = if (isFlipped) "Show front" else "Show back",
+                    tint = Color.White.copy(alpha = 0.9f),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
     }
 }

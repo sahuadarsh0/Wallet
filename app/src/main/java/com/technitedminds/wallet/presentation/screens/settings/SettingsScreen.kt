@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -46,6 +47,7 @@ import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -63,6 +65,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -71,6 +74,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -86,6 +91,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.data.local.preferences.ThemeMode
 import com.technitedminds.wallet.presentation.components.common.ConfirmationDialog
+import com.technitedminds.wallet.presentation.components.common.ScreenGradientBackground
 import com.technitedminds.wallet.presentation.constants.AppConstants
 import com.technitedminds.wallet.presentation.screens.security.AppLockScreen
 import com.technitedminds.wallet.presentation.screens.security.AppLockViewModel
@@ -117,24 +123,28 @@ fun SettingsScreen(
     var showRecoveryCodeDisplay by remember { mutableStateOf<String?>(null) }
     var showTimeoutPicker by remember { mutableStateOf(false) }
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(AppConstants.NavigationLabels.SETTINGS) }
-            )
-        },
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState)
-        },
-        modifier = modifier
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-        ) {
+    ScreenGradientBackground(modifier = modifier) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(AppConstants.NavigationLabels.SETTINGS) },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                    ),
+                )
+            },
+            snackbarHost = {
+                SnackbarHost(hostState = snackbarHostState)
+            },
+            containerColor = Color.Transparent,
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .imePadding()
+                    .verticalScroll(rememberScrollState())
+            ) {
             // App Statistics Section
             SettingsSection(
                 title = AppConstants.StatisticsLabels.APP_STATISTICS,
@@ -371,7 +381,8 @@ fun SettingsScreen(
             }
         }
     }
-    
+    }
+
     // Reset confirmation dialog
     ConfirmationDialog(
         isVisible = uiState.showResetDialog,
@@ -392,60 +403,33 @@ fun SettingsScreen(
         onDismiss = viewModel::hideCleanupDialog
     )
     
-    // Privacy Policy dialog
     if (showPrivacyPolicy) {
-        AlertDialog(
-            onDismissRequest = { showPrivacyPolicy = false },
-            title = { Text(AppConstants.DialogText.PRIVACY_POLICY_TITLE) },
-            text = {
-                Text(
-                    text = AppConstants.DialogText.PRIVACY_POLICY_CONTENT,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showPrivacyPolicy = false }) {
-                    Text(AppConstants.DialogText.CLOSE_BUTTON)
-                }
-            }
+        LegalDocumentDialog(
+            title = AppConstants.DialogText.PRIVACY_POLICY_TITLE,
+            icon = Icons.Default.PrivacyTip,
+            accentColor = MaterialTheme.colorScheme.primary,
+            content = AppConstants.DialogText.PRIVACY_POLICY_CONTENT,
+            onDismiss = { showPrivacyPolicy = false },
         )
     }
 
-    // Terms of Service dialog
     if (showTermsOfService) {
-        AlertDialog(
-            onDismissRequest = { showTermsOfService = false },
-            title = { Text(AppConstants.DialogText.TERMS_OF_SERVICE_TITLE) },
-            text = {
-                Text(
-                    text = AppConstants.DialogText.TERMS_OF_SERVICE_CONTENT,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showTermsOfService = false }) {
-                    Text(AppConstants.DialogText.CLOSE_BUTTON)
-                }
-            }
+        LegalDocumentDialog(
+            title = AppConstants.DialogText.TERMS_OF_SERVICE_TITLE,
+            icon = Icons.Default.Description,
+            accentColor = MaterialTheme.colorScheme.tertiary,
+            content = AppConstants.DialogText.TERMS_OF_SERVICE_CONTENT,
+            onDismiss = { showTermsOfService = false },
         )
     }
-    
-    // Open Source Licenses dialog
+
     if (showOpenSourceLicenses) {
-        AlertDialog(
-            onDismissRequest = { showOpenSourceLicenses = false },
-            title = { Text(AppConstants.DialogText.OPEN_SOURCE_LICENSES_TITLE) },
-            text = {
-                Text(
-                    text = AppConstants.DialogText.OPEN_SOURCE_LICENSES_CONTENT,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { showOpenSourceLicenses = false }) {
-                    Text(AppConstants.DialogText.CLOSE_BUTTON)
-                }
-            }
+        LegalDocumentDialog(
+            title = AppConstants.DialogText.OPEN_SOURCE_LICENSES_TITLE,
+            icon = Icons.Default.Code,
+            accentColor = MaterialTheme.colorScheme.secondary,
+            content = AppConstants.DialogText.OPEN_SOURCE_LICENSES_CONTENT,
+            onDismiss = { showOpenSourceLicenses = false },
         )
     }
     
@@ -980,8 +964,201 @@ private fun getBuildType(): String {
 }
 
 /**
- * Preview for SettingsScreen
+ * Premium full-screen dialog for legal documents (Privacy Policy, ToS, Licenses).
+ * Features a glassmorphic header with icon, scrollable styled content,
+ * and a gradient close button.
  */
+@Composable
+private fun LegalDocumentDialog(
+    title: String,
+    icon: ImageVector,
+    accentColor: Color,
+    content: String,
+    onDismiss: () -> Unit,
+) {
+    val sections = remember(content) { parseLegalSections(content) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .fillMaxHeight(0.85f),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // ── Header ──────────────────────────────────────────
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    accentColor.copy(alpha = 0.15f),
+                                    Color.Transparent,
+                                ),
+                            ),
+                        )
+                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(
+                                    Brush.radialGradient(
+                                        colors = listOf(
+                                            accentColor.copy(alpha = 0.25f),
+                                            accentColor.copy(alpha = 0.08f),
+                                        ),
+                                    ),
+                                    shape = RoundedCornerShape(14.dp),
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = accentColor,
+                                modifier = Modifier.size(26.dp),
+                            )
+                        }
+
+                        Spacer(Modifier.width(16.dp))
+
+                        Column {
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = "Technited Minds",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                )
+
+                // ── Scrollable content ──────────────────────────────
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    sections.forEach { section ->
+                        when (section) {
+                            is LegalSection.Title -> {
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text = section.text,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = accentColor,
+                                )
+                                Spacer(Modifier.height(4.dp))
+                            }
+                            is LegalSection.Body -> {
+                                Text(
+                                    text = section.text,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                                    lineHeight = 22.sp,
+                                )
+                            }
+                            is LegalSection.Bullet -> {
+                                Row(modifier = Modifier.padding(start = 8.dp, top = 2.dp, bottom = 2.dp)) {
+                                    Text(
+                                        text = "•",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = accentColor,
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text = section.text,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                                        lineHeight = 22.sp,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                )
+
+                // ── Footer ──────────────────────────────────────────
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                    ) {
+                        Text(
+                            text = "Got It",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private sealed interface LegalSection {
+    data class Title(val text: String) : LegalSection
+    data class Body(val text: String) : LegalSection
+    data class Bullet(val text: String) : LegalSection
+}
+
+private fun parseLegalSections(raw: String): List<LegalSection> {
+    val result = mutableListOf<LegalSection>()
+    val lines = raw.trimIndent().lines()
+
+    for (line in lines) {
+        val trimmed = line.trim()
+        when {
+            trimmed.isBlank() -> {}
+            trimmed.startsWith("•") || trimmed.startsWith("-") -> {
+                result += LegalSection.Bullet(trimmed.removePrefix("•").removePrefix("-").trim())
+            }
+            trimmed.matches(Regex("^\\d+\\.\\s+.+")) -> {
+                result += LegalSection.Title(trimmed)
+            }
+            trimmed.endsWith("Policy") || trimmed.endsWith("Service") ||
+                trimmed.startsWith("Last updated") || trimmed.startsWith("Published by") -> {
+                result += LegalSection.Body(trimmed)
+            }
+            else -> {
+                result += LegalSection.Body(trimmed)
+            }
+        }
+    }
+    return result
+}
+
 @Preview(showBackground = true)
 @Composable
 fun SettingsScreenPreview() {
