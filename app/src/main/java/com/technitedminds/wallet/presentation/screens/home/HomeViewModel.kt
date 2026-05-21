@@ -113,6 +113,30 @@ class HomeViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
+    /**
+     * Cards across the entire app, filtered by [searchQuery] only.
+     * Used by the folders root view to provide global search results when
+     * the user types a query without opening a folder.
+     */
+    val globalFilteredCards: StateFlow<List<Card>> = searchQuery
+        .debounce(300)
+        .flatMapLatest { query ->
+            getCardsUseCase(
+                GetCardsRequest(
+                    categoryId = null,
+                    cardType = null,
+                    searchQuery = query,
+                    sortBy = CardSortBy.UPDATED_AT,
+                    ascending = false,
+                )
+            )
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList(),
+        )
+
     // UI State — uses nested typed combine to avoid unchecked casts
     val uiState = combine(
         combine(filteredCards, categories, isRefreshing, folderCounts) { cards, cats, refreshing, counts ->
@@ -120,12 +144,14 @@ class HomeViewModel @Inject constructor(
         },
         combine(searchQuery, openedFolder, selectedCardType, isGridView) { query, folder, cardType, gridView ->
             HomeFilterState(query, folder, cardType, gridView)
-        }
-    ) { data, filter ->
+        },
+        globalFilteredCards,
+    ) { data, filter, globalCards ->
         val openedCategoryId = (filter.folder as? OpenedFolder.Category)?.id
         HomeUiState(
             cards = data.cards,
             filteredCards = data.cards,
+            globalFilteredCards = globalCards,
             categories = data.categories,
             folderCounts = data.counts,
             openedFolder = filter.folder,
@@ -161,8 +187,10 @@ class HomeViewModel @Inject constructor(
 
     /**
      * Open a folder on the home screen.
+     * Clears any active root-level search query so the in-folder search starts fresh.
      */
     fun openFolder(folder: OpenedFolder) {
+        _searchQuery.value = ""
         _openedFolder.value = folder
     }
 
@@ -284,6 +312,7 @@ private data class HomeDataState(
 data class HomeUiState(
     val cards: List<Card> = emptyList(),
     val filteredCards: List<Card> = emptyList(),
+    val globalFilteredCards: List<Card> = emptyList(),
     val categories: List<Category> = emptyList(),
     val folderCounts: Map<String, Int> = emptyMap(),
     val openedFolder: OpenedFolder? = null,

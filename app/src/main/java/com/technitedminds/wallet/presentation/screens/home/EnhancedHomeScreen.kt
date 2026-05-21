@@ -2,6 +2,7 @@ package com.technitedminds.wallet.presentation.screens.home
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -9,8 +10,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -59,6 +62,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,7 +82,7 @@ import com.technitedminds.wallet.presentation.components.animation.liquidPress
 import com.technitedminds.wallet.presentation.components.common.PremiumCard
 import com.technitedminds.wallet.presentation.components.common.PremiumChip
 import com.technitedminds.wallet.presentation.components.common.PremiumLoadingIndicator
-import com.technitedminds.wallet.presentation.components.common.PremiumTextField
+import com.technitedminds.wallet.presentation.components.common.PremiumSearchBar
 import com.technitedminds.wallet.presentation.components.common.ScreenGradientBackground
 import com.technitedminds.wallet.presentation.components.common.getIcon
 import com.technitedminds.wallet.presentation.components.common.gradientShadow
@@ -112,10 +116,23 @@ fun EnhancedHomeScreen(
         resolveOpenedFolderItem(uiState.openedFolder, folderItems)
     }
     val isInsideFolder = uiState.openedFolder != null
+    val hasRootQuery = !isInsideFolder && uiState.searchQuery.isNotBlank()
+    var isSearchExpanded by rememberSaveable { mutableStateOf(false) }
+
+    // Reset search-expanded state when entering or leaving a folder.
+    LaunchedEffect(isInsideFolder) {
+        isSearchExpanded = false
+    }
 
     // Intercept back when inside a folder so we pop back to the folders grid.
     BackHandler(enabled = isInsideFolder) {
         viewModel.closeFolder()
+    }
+
+    // Back closes an expanded search field at folders root before exiting the screen.
+    BackHandler(enabled = !isInsideFolder && (isSearchExpanded || hasRootQuery)) {
+        viewModel.clearSearch()
+        isSearchExpanded = false
     }
 
     ScreenGradientBackground(modifier = modifier) {
@@ -124,13 +141,17 @@ fun EnhancedHomeScreen(
             containerColor = Color.Transparent,
             topBar = {
                 EnhancedHomeTopBar(
-                    searchQuery = uiState.searchQuery,
-                    onSearchQueryChange = viewModel::updateSearchQuery,
-                    onClearSearch = viewModel::clearSearch,
+                    isSearchExpanded = isSearchExpanded,
+                    onToggleSearch = {
+                        isSearchExpanded = !isSearchExpanded
+                        if (!isSearchExpanded && uiState.searchQuery.isNotBlank()) {
+                            viewModel.clearSearch()
+                        }
+                    },
+                    showSearchAction = !isInsideFolder,
                     isGridLayout = uiState.isGridLayout,
                     onToggleLayout = viewModel::toggleLayout,
-                    searchEnabled = isInsideFolder,
-                    layoutToggleEnabled = isInsideFolder,
+                    layoutToggleEnabled = isInsideFolder || hasRootQuery,
                 )
             },
         ) { paddingValues ->
@@ -139,32 +160,75 @@ fun EnhancedHomeScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
+                val showSearchField = isInsideFolder || isSearchExpanded
+                AnimatedVisibility(
+                    visible = showSearchField,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut(),
+                ) {
+                    PremiumSearchBar(
+                        query = uiState.searchQuery,
+                        onQueryChange = viewModel::updateSearchQuery,
+                        onClear = {
+                            viewModel.clearSearch()
+                            if (!isInsideFolder) {
+                                isSearchExpanded = false
+                            }
+                        },
+                        autoFocus = isSearchExpanded && !isInsideFolder,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = AppConstants.Dimensions.SPACING_LARGE,
+                                vertical = AppConstants.Dimensions.SPACING_SMALL,
+                            ),
+                    )
+                }
+                val mode = when {
+                    isInsideFolder && openedFolderItem != null -> HomeMode.FolderDetail
+                    hasRootQuery -> HomeMode.GlobalSearch
+                    else -> HomeMode.Folders
+                }
                 AnimatedContent(
-                    targetState = isInsideFolder,
+                    targetState = mode,
                     transitionSpec = {
                         (slideInHorizontally { it / 6 } + fadeIn(tween(250))) togetherWith
                             (slideOutHorizontally { -it / 6 } + fadeOut(tween(200)))
                     },
                     label = "home_mode",
                     modifier = Modifier.fillMaxSize(),
-                ) { inside ->
-                    if (inside && openedFolderItem != null) {
-                        FolderDetailView(
-                            folderItem = openedFolderItem,
-                            selectedCardType = uiState.selectedCardType,
-                            cards = uiState.filteredCards,
-                            isGridLayout = uiState.isGridLayout,
-                            isLoading = uiState.isLoading,
-                            onBack = viewModel::closeFolder,
-                            onOpenFilters = { showFilterSheet = true },
-                            onClearCardType = { viewModel.selectCardType(null) },
-                            onCardClick = onCardClick,
-                        )
-                    } else {
-                        FoldersView(
-                            items = folderItems,
-                            onFolderClick = viewModel::openFolder,
-                        )
+                ) { current ->
+                    when (current) {
+                        HomeMode.FolderDetail -> {
+                            // Safe because mode is only FolderDetail when openedFolderItem != null.
+                            val folderItem = openedFolderItem ?: return@AnimatedContent
+                            FolderDetailView(
+                                folderItem = folderItem,
+                                selectedCardType = uiState.selectedCardType,
+                                cards = uiState.filteredCards,
+                                isGridLayout = uiState.isGridLayout,
+                                isLoading = uiState.isLoading,
+                                onBack = viewModel::closeFolder,
+                                onOpenFilters = { showFilterSheet = true },
+                                onClearCardType = { viewModel.selectCardType(null) },
+                                onCardClick = onCardClick,
+                            )
+                        }
+                        HomeMode.GlobalSearch -> {
+                            GlobalSearchResultsView(
+                                query = uiState.searchQuery,
+                                cards = uiState.globalFilteredCards,
+                                isGridLayout = uiState.isGridLayout,
+                                isLoading = uiState.isLoading,
+                                onCardClick = onCardClick,
+                            )
+                        }
+                        HomeMode.Folders -> {
+                            FoldersView(
+                                items = folderItems,
+                                onFolderClick = viewModel::openFolder,
+                            )
+                        }
                     }
                 }
             }
@@ -265,85 +329,136 @@ private fun FolderDetailView(
     }
 }
 
+/**
+ * Top-level rendering modes for the home screen body.
+ */
+private enum class HomeMode { Folders, GlobalSearch, FolderDetail }
+
+/**
+ * Global search results view shown at the folders root when the user has
+ * typed a non-empty query. Lists every card in the app matching the query,
+ * regardless of category, sorted by last-updated descending.
+ */
+@Composable
+private fun GlobalSearchResultsView(
+    query: String,
+    cards: List<Card>,
+    isGridLayout: Boolean,
+    isLoading: Boolean,
+    onCardClick: (Card) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(top = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = AppConstants.UIText.GLOBAL_SEARCH_HEADER,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = "\u201C${query.trim()}\u201D",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+
+        if (!isLoading && cards.isEmpty()) {
+            GlobalSearchEmptyState(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 32.dp),
+            )
+        } else {
+            EnhancedCardsSection(
+                cards = cards,
+                isGridLayout = isGridLayout,
+                isLoading = isLoading,
+                onCardClick = onCardClick,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+    }
+}
+
+/**
+ * Empty state shown when the global search has no matches.
+ */
+@Composable
+private fun GlobalSearchEmptyState(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            modifier = Modifier.size(56.dp),
+        )
+        Text(
+            text = AppConstants.UIText.GLOBAL_SEARCH_EMPTY_TITLE,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = AppConstants.UIText.GLOBAL_SEARCH_EMPTY_SUBTITLE,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EnhancedHomeTopBar(
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
-    onClearSearch: () -> Unit,
+    isSearchExpanded: Boolean,
+    onToggleSearch: () -> Unit,
+    showSearchAction: Boolean,
     isGridLayout: Boolean,
     onToggleLayout: () -> Unit,
-    searchEnabled: Boolean,
     layoutToggleEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    var isSearchActive by remember { mutableStateOf(false) }
-
-    // If we leave the folder, drop the search-active UI state so the bar is reset.
-    LaunchedEffect(searchEnabled) {
-        if (!searchEnabled && isSearchActive) {
-            isSearchActive = false
-            onClearSearch()
-        }
-    }
-
     TopAppBar(
         title = {
-            AnimatedContent(
-                targetState = isSearchActive && searchEnabled,
-                transitionSpec = {
-                    slideInHorizontally() + fadeIn() togetherWith
-                        slideOutHorizontally() + fadeOut()
-                },
-                label = "topbar_content"
-            ) { searchActive ->
-                if (searchActive) {
-                    PremiumTextField(
-                        value = searchQuery,
-                        onValueChange = onSearchQueryChange,
-                        label = AppConstants.UIText.SEARCH_CARDS_PLACEHOLDER,
-                        leadingIcon = Icons.Default.Search,
-                        trailingIcon = {
-                            IconButton(onClick = {
-                                onClearSearch()
-                                isSearchActive = false
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = AppConstants.ContentDescriptions.CLEAR_SEARCH
-                                )
-                            }
+            Text(
+                text = AppConstants.UIText.APP_TITLE,
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Bold,
+                ),
+            )
+        },
+        actions = {
+            if (showSearchAction) {
+                IconButton(onClick = onToggleSearch) {
+                    Icon(
+                        imageVector = if (isSearchExpanded) Icons.Default.Close else Icons.Default.Search,
+                        contentDescription = if (isSearchExpanded) {
+                            AppConstants.ContentDescriptions.CLEAR_SEARCH
+                        } else {
+                            "Search"
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                } else {
-                    Text(
-                        text = AppConstants.UIText.APP_TITLE,
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                        ),
                     )
                 }
             }
-        },
-        actions = {
-            if (!isSearchActive) {
-                if (searchEnabled) {
-                    IconButton(onClick = { isSearchActive = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                        )
-                    }
-                }
 
-                if (layoutToggleEnabled) {
-                    IconButton(onClick = onToggleLayout) {
-                        Icon(
-                            imageVector = if (isGridLayout) Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView,
-                            contentDescription = if (isGridLayout) AppConstants.ContentDescriptions.LIST_VIEW else AppConstants.ContentDescriptions.GRID_VIEW,
-                        )
-                    }
+            if (layoutToggleEnabled) {
+                IconButton(onClick = onToggleLayout) {
+                    Icon(
+                        imageVector = if (isGridLayout) Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView,
+                        contentDescription = if (isGridLayout) AppConstants.ContentDescriptions.LIST_VIEW else AppConstants.ContentDescriptions.GRID_VIEW,
+                    )
                 }
             }
         },
