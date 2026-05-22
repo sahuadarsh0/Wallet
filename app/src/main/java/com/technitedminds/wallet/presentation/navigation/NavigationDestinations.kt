@@ -136,6 +136,7 @@ object NavigationResultKeys {
     const val FRONT_IMAGE_PATH = "frontImagePath"
     const val BACK_IMAGE_PATH = "backImagePath"
     const val EXTRACTED_DATA = "extractedData"
+    const val ASPECT_RATIO = "aspectRatio"
     const val CARD_SAVED = "cardSaved"
     const val CARD_DELETED = "cardDeleted"
     const val CATEGORY_SELECTED = "categorySelected"

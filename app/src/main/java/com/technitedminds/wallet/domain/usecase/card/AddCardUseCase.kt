@@ -70,6 +70,7 @@ constructor(
                             expiryDate = request.expiryDate,
                             notes = request.notes,
                             customGradient = request.customGradient,
+                            aspectRatio = request.aspectRatio,
                             createdAt = System.currentTimeMillis(),
                             updatedAt = System.currentTimeMillis()
                     )
@@ -191,7 +192,8 @@ data class AddCardRequest(
         val customFields: Map<String, String> = emptyMap(),
         val expiryDate: String? = null,
         val notes: String? = null,
-        val customGradient: com.technitedminds.wallet.domain.model.CardGradient? = null
+        val customGradient: com.technitedminds.wallet.domain.model.CardGradient? = null,
+        val aspectRatio: Float? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -210,6 +212,7 @@ data class AddCardRequest(
         if (expiryDate != other.expiryDate) return false
         if (notes != other.notes) return false
         if (customGradient != other.customGradient) return false
+        if (aspectRatio != other.aspectRatio) return false
 
         return true
     }
@@ -226,6 +229,7 @@ data class AddCardRequest(
         result = 31 * result + (expiryDate?.hashCode() ?: 0)
         result = 31 * result + (notes?.hashCode() ?: 0)
         result = 31 * result + (customGradient?.hashCode() ?: 0)
+        result = 31 * result + (aspectRatio?.hashCode() ?: 0)
         return result
     }
 }

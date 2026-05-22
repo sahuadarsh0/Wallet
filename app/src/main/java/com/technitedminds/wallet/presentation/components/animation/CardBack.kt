@@ -53,6 +53,40 @@ fun CardBack(
     onShare: ((CardSharingOption) -> Unit)? = null
 ) {
     val context = LocalContext.current
+    val isImageOnlyCard = !card.type.supportsOCR() && card.backImagePath.isNotBlank()
+    val trayTint = remember(card) {
+        val gradient = card.getGradient()
+        try {
+            Color(gradient.endColor.toColorInt())
+        } catch (e: Exception) {
+            Color(Card.getDefaultGradientForType(card.type).endColor.toColorInt())
+        }
+    }
+
+    if (isImageOnlyCard) {
+        Box(modifier = modifier.fillMaxSize()) {
+            NeumorphicPhotoTray(
+                imagePath = card.backImagePath,
+                tint = trayTint,
+                modifier = Modifier.fillMaxSize(),
+                cornerRadius = if (isCompact) 12.dp else 18.dp,
+                photoInset = if (isCompact) 6.dp else 10.dp,
+                contentDescription = "${card.name} back",
+            )
+
+            if (showShareButton && onShare != null && !isCompact) {
+                ShareButton(
+                    onShare = { onShare(CardSharingOption.BackOnly) },
+                    contentDescription = AppConstants.ContentDescriptions.SHARE_BACK,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp)
+                        .size(32.dp)
+                )
+            }
+        }
+        return
+    }
 
     Box(
         modifier = modifier
@@ -62,37 +96,6 @@ fun CardBack(
                 shape = RoundedCornerShape(if (isCompact) 8.dp else 12.dp)
             )
     ) {
-        // Background image for non-OCR cards
-        if (!card.type.supportsOCR() && card.backImagePath.isNotBlank()) {
-            val imageFile = File(card.backImagePath)
-            if (imageFile.exists()) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(imageFile)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = "Card back image",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(if (isCompact) 8.dp else 12.dp)),
-                    contentScale = ContentScale.Crop
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.3f),
-                                    Color.Black.copy(alpha = 0.5f)
-                                )
-                            )
-                        )
-                )
-            }
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()

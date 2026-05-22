@@ -107,7 +107,7 @@ fun FlippableCard(
 
     Box(
         modifier = modifier
-            .aspectRatio(AppConstants.Defaults.CREDIT_CARD_ASPECT_RATIO)
+            .aspectRatio(card.getDisplayAspectRatio())
             .graphicsLayer {
                 rotationY = rotation.value
                 scaleX = scale

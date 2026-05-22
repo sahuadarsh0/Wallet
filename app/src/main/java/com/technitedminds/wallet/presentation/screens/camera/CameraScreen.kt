@@ -36,7 +36,7 @@ import androidx.compose.ui.res.painterResource
 fun CameraScreen(
     cardType: CardType,
     onNavigateBack: () -> Unit,
-    onImagesConfirmed: (frontImagePath: String, backImagePath: String?, extractedData: Map<String, String>) -> Unit,
+    onImagesConfirmed: (frontImagePath: String, backImagePath: String?, extractedData: Map<String, String>, aspectRatio: Float) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CameraViewModel = hiltViewModel()
 ) {
@@ -56,9 +56,10 @@ fun CameraScreen(
             when (event) {
                 is CameraEvent.ImagesReady -> {
                     onImagesConfirmed(
-                        event.frontImage.absolutePath, 
-                        event.backImage?.absolutePath, 
-                        uiState.extractedData
+                        event.frontImage.absolutePath,
+                        event.backImage?.absolutePath,
+                        uiState.extractedData,
+                        event.aspectRatio,
                     )
                 }
                 is CameraEvent.NavigateBack -> {

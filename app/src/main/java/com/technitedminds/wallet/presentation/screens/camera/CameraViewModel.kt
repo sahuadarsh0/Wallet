@@ -29,7 +29,12 @@ enum class CameraStep {
  * Camera events
  */
 sealed class CameraEvent {
-    data class ImagesReady(val frontImage: File, val backImage: File?) : CameraEvent()  // backImage is now nullable
+    data class ImagesReady(
+        val frontImage: File,
+        val backImage: File?,
+        /** Aspect ratio (w/h) the image was captured at — used to render image-only cards. */
+        val aspectRatio: Float,
+    ) : CameraEvent()
     object NavigateBack : CameraEvent()
 }
 
@@ -244,7 +249,7 @@ class CameraViewModel @Inject constructor(
                 if (currentCardType.supportsOCR()) {
                     _currentStep.value = CameraStep.OCR_PREVIEW
                 } else {
-                    _events.send(CameraEvent.ImagesReady(frontImage, backImage))
+                    _events.send(CameraEvent.ImagesReady(frontImage, backImage, _aspectRatio.value.ratio))
                 }
 
             } catch (e: Exception) {
@@ -271,7 +276,7 @@ class CameraViewModel @Inject constructor(
             val frontImage = _uiState.value.frontImage
             val backImage = _uiState.value.backImage
             if (frontImage != null) {
-                _events.send(CameraEvent.ImagesReady(frontImage, backImage))
+                _events.send(CameraEvent.ImagesReady(frontImage, backImage, _aspectRatio.value.ratio))
             }
         }
     }
@@ -285,7 +290,7 @@ class CameraViewModel @Inject constructor(
             val frontImage = _uiState.value.frontImage
             val backImage = _uiState.value.backImage
             if (frontImage != null) {
-                _events.send(CameraEvent.ImagesReady(frontImage, backImage))
+                _events.send(CameraEvent.ImagesReady(frontImage, backImage, _aspectRatio.value.ratio))
             }
         }
     }

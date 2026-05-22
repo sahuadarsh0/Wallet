@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.domain.model.CardGradient
 import com.technitedminds.wallet.domain.model.CardType
+import com.technitedminds.wallet.domain.model.Category
 import com.technitedminds.wallet.domain.service.CardImageGenerator
 import com.technitedminds.wallet.domain.usecase.card.AddCardUseCase
 import com.technitedminds.wallet.domain.usecase.card.GetCardsUseCase
@@ -65,7 +66,7 @@ class AddCardViewModel @Inject constructor(
         initialValue = false
     )
     val cardName: StateFlow<String> = uiState.map { it.cardName }.stateIn(viewModelScope, SharingStarted.Eagerly, "")
-    val selectedCategory: StateFlow<String> = uiState.map { it.categoryId }.stateIn(viewModelScope, SharingStarted.Eagerly, "government")
+    val selectedCategory: StateFlow<String> = uiState.map { it.categoryId }.stateIn(viewModelScope, SharingStarted.Eagerly, Category.DEFAULT.id)
     val customFields: StateFlow<Map<String, String>> =
         uiState.map { it.customFields }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
     val categories: StateFlow<List<com.technitedminds.wallet.domain.model.Category>> =
@@ -119,7 +120,8 @@ class AddCardViewModel @Inject constructor(
                             hasOCRData = card.extractedData.isNotEmpty(),
                             isEditMode = true,
                             isLoading = false,
-                            error = null
+                            error = null,
+                            capturedAspectRatio = card.aspectRatio,
                         )
                         _uiState.value = newState.copy(canSave = validateForm(newState))
                     } else {
@@ -334,6 +336,8 @@ class AddCardViewModel @Inject constructor(
                         backImagePath = currentState.backImagePath ?: "",
                         extractedData = currentState.extractedData,
                         customFields = currentState.customFields,
+                        aspectRatio = if (currentState.cardType.supportsOCR()) null
+                                      else currentState.capturedAspectRatio,
                         createdAt = System.currentTimeMillis(),
                         updatedAt = System.currentTimeMillis()
                     )
@@ -453,7 +457,11 @@ class AddCardViewModel @Inject constructor(
                         backImageData = backImageData,
                         extractedData = finalExtractedData,
                         customFields = currentState.customFields,
-                        customGradient = customGradient
+                        customGradient = customGradient,
+                        // Only image-only cards persist a captured aspect ratio.
+                        // OCR cards always render at the standard credit-card ratio.
+                        aspectRatio = if (currentState.cardType.supportsOCR()) null
+                                      else currentState.capturedAspectRatio,
                     )
                     
                     val result = addCardUseCase(request)
@@ -555,6 +563,19 @@ class AddCardViewModel @Inject constructor(
         if (_currentStep.value == AddCardStep.CAMERA_CAPTURE) {
             _currentStep.value = AddCardStep.FORM_DETAILS
         }
+    }
+
+    /**
+     * Records the aspect ratio (w/h) of the captured image so that image-only
+     * cards render at exactly the same shape they were captured at.
+     *
+     * Ignored for OCR cards — they use the standard credit-card ratio at render
+     * time regardless of what was captured.
+     */
+    fun setCapturedAspectRatio(aspectRatio: Float) {
+        if (aspectRatio <= 0f) return
+        if (_uiState.value.capturedAspectRatio == aspectRatio) return
+        _uiState.value = _uiState.value.copy(capturedAspectRatio = aspectRatio)
     }
 
     fun setCapturedImages(frontPath: String, backPath: String?, extractedData: Map<String, String>) {
@@ -916,7 +937,7 @@ data class AddCardUiState(
     val cardId: String? = null,
     val cardName: String = "",
     val cardType: CardType = CardType.Credit,
-    val categoryId: String = "government",
+    val categoryId: String = Category.DEFAULT.id,
     val notes: String = "",
     val frontImagePath: String? = null,
     val backImagePath: String? = null,
@@ -948,6 +969,8 @@ data class AddCardUiState(
     val showCvvDialog: Boolean = false,
     val nfcCardScheme: String = "",
     val nfcMaskedNumber: String = "",
+    /** Aspect ratio (w/h) of the most recently captured image, or null if not captured. */
+    val capturedAspectRatio: Float? = null,
 ) {
     // Computed property for OCR status
     val hasOCRDataComputed: Boolean

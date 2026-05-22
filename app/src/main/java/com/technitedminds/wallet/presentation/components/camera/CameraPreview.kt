@@ -464,16 +464,39 @@ private fun captureImageWithCropping(
 }
 
 /**
- * Crops the captured image to match the overlay bounds
+ * Crops the captured image to match the overlay bounds.
+ *
+ * Important: CameraX writes captured JPEGs with the **sensor pixel orientation**
+ * (typically landscape) and stores the rotation needed for upright display in
+ * the EXIF `Orientation` tag. `BitmapFactory.decodeFile` does NOT honor that
+ * tag, so [bitmap.width]/[bitmap.height] returned here would be the raw
+ * sensor dimensions (e.g. 4032×3024 even when the user held the phone in
+ * portrait).
+ *
+ * If we cropped against those raw dimensions, the resulting region would be
+ * cut from the wrong axis (portrait target ratio applied to landscape pixels)
+ * and the saved JPEG — which we strip of EXIF — would show up rotated 90°
+ * relative to the live overlay.
+ *
+ * To fix this we:
+ *   1. Read the JPEG's EXIF orientation.
+ *   2. Rotate the decoded bitmap into its upright display orientation.
+ *   3. Compute the crop against the upright dimensions, matching the overlay.
+ *   4. Save the result as a new JPEG. The output has no EXIF rotation, but its
+ *      pixel orientation matches what the user saw in the preview, so Coil and
+ *      every other consumer renders it correctly.
  */
 private fun cropImageToOverlayBounds(
     originalFile: File,
     aspectRatio: CardAspectRatio,
     context: Context
 ): File {
-    val bitmap = android.graphics.BitmapFactory.decodeFile(originalFile.absolutePath)
+    val rawBitmap = android.graphics.BitmapFactory.decodeFile(originalFile.absolutePath)
+        ?: throw IllegalStateException("Could not decode captured image: ${originalFile.absolutePath}")
 
-    // Calculate crop dimensions based on aspect ratio
+    // Bring the bitmap into the orientation the user actually saw.
+    val bitmap = rotateBitmapToUpright(rawBitmap, originalFile)
+
     val originalWidth = bitmap.width
     val originalHeight = bitmap.height
 
@@ -506,15 +529,19 @@ private fun cropImageToOverlayBounds(
     val finalX = cropX + (cropWidth - finalWidth) / 2
     val finalY = cropY + (cropHeight - finalHeight) / 2
 
+    val safeX = finalX.coerceAtLeast(0)
+    val safeY = finalY.coerceAtLeast(0)
+    val safeWidth = finalWidth.coerceAtMost(bitmap.width - safeX).coerceAtLeast(1)
+    val safeHeight = finalHeight.coerceAtMost(bitmap.height - safeY).coerceAtLeast(1)
+
     val croppedBitmap = android.graphics.Bitmap.createBitmap(
         bitmap,
-        finalX.coerceAtLeast(0),
-        finalY.coerceAtLeast(0),
-        finalWidth.coerceAtMost(bitmap.width - finalX.coerceAtLeast(0)),
-        finalHeight.coerceAtMost(bitmap.height - finalY.coerceAtLeast(0))
+        safeX,
+        safeY,
+        safeWidth,
+        safeHeight,
     )
 
-    // Save cropped image
     val croppedName = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
         .format(System.currentTimeMillis())
     val croppedFile = File(context.cacheDir, "card_cropped_$croppedName.jpg")
@@ -523,9 +550,64 @@ private fun cropImageToOverlayBounds(
         croppedBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, out)
     }
 
-    // Clean up bitmaps
-    bitmap.recycle()
-    croppedBitmap.recycle()
+    // Recycle each distinct bitmap exactly once.
+    // [croppedBitmap] may alias [bitmap] when the crop covers the full bitmap.
+    // [bitmap] may alias [rawBitmap] when no EXIF rotation was needed.
+    val distinctBitmaps = setOf(rawBitmap, bitmap, croppedBitmap)
+    distinctBitmaps.forEach { if (!it.isRecycled) it.recycle() }
 
     return croppedFile
+}
+
+/**
+ * Returns a bitmap rotated according to the EXIF orientation tag on [sourceFile].
+ *
+ * Falls back to the original bitmap if EXIF can't be read or no rotation is needed.
+ * Mirroring (transverse / transpose) is also handled because some front-camera
+ * captures encode it.
+ */
+private fun rotateBitmapToUpright(
+    bitmap: android.graphics.Bitmap,
+    sourceFile: File,
+): android.graphics.Bitmap {
+    val orientation = try {
+        android.media.ExifInterface(sourceFile.absolutePath)
+            .getAttributeInt(
+                android.media.ExifInterface.TAG_ORIENTATION,
+                android.media.ExifInterface.ORIENTATION_NORMAL,
+            )
+    } catch (e: Exception) {
+        Log.w("CameraPreview", "Failed to read EXIF orientation: ${e.message}")
+        android.media.ExifInterface.ORIENTATION_NORMAL
+    }
+
+    val matrix = android.graphics.Matrix()
+    when (orientation) {
+        android.media.ExifInterface.ORIENTATION_ROTATE_90 ->
+            matrix.postRotate(90f)
+        android.media.ExifInterface.ORIENTATION_ROTATE_180 ->
+            matrix.postRotate(180f)
+        android.media.ExifInterface.ORIENTATION_ROTATE_270 ->
+            matrix.postRotate(270f)
+        android.media.ExifInterface.ORIENTATION_FLIP_HORIZONTAL ->
+            matrix.postScale(-1f, 1f)
+        android.media.ExifInterface.ORIENTATION_FLIP_VERTICAL ->
+            matrix.postScale(1f, -1f)
+        android.media.ExifInterface.ORIENTATION_TRANSPOSE -> {
+            matrix.postRotate(90f); matrix.postScale(-1f, 1f)
+        }
+        android.media.ExifInterface.ORIENTATION_TRANSVERSE -> {
+            matrix.postRotate(270f); matrix.postScale(-1f, 1f)
+        }
+        else -> return bitmap
+    }
+
+    return try {
+        android.graphics.Bitmap.createBitmap(
+            bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true,
+        )
+    } catch (oom: OutOfMemoryError) {
+        Log.w("CameraPreview", "OOM rotating bitmap; using raw orientation")
+        bitmap
+    }
 }

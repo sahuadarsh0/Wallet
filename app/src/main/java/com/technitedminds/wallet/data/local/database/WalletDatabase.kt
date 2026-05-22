@@ -19,7 +19,7 @@ import com.technitedminds.wallet.data.local.database.entities.CategoryEntity
  * Room database for the CardVault wallet application. Manages local storage of cards and categories
  * with proper configuration and migrations.
  */
-@Database(entities = [CardEntity::class, CategoryEntity::class], version = 3, exportSchema = true)
+@Database(entities = [CardEntity::class, CategoryEntity::class], version = 4, exportSchema = true)
 @TypeConverters(CardTypeConverter::class, MapConverter::class, CardGradientConverter::class)
 abstract class WalletDatabase : RoomDatabase() {
 
@@ -99,6 +99,20 @@ abstract class WalletDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migration v3 → v4: Add nullable [aspect_ratio] column to the [cards] table.
+         *
+         * Image-only cards now persist the aspect ratio (width / height) of the
+         * captured photo so the saved display matches the capture preview.
+         * Existing rows are migrated with NULL (which renders as the legacy
+         * credit-card ratio via [Card.getDisplayAspectRatio]).
+         */
+        val MIGRATION_3_4: Migration = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cards ADD COLUMN aspect_ratio REAL DEFAULT NULL")
+            }
+        }
+
         fun getDatabase(context: Context): WalletDatabase {
             return INSTANCE
                     ?: synchronized(this) {
@@ -108,7 +122,7 @@ abstract class WalletDatabase : RoomDatabase() {
                                                 WalletDatabase::class.java,
                                                 DATABASE_NAME
                                         )
-                                        .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                                        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                                         .addCallback(DatabaseCallback())
                                         .build()
                         INSTANCE = instance
