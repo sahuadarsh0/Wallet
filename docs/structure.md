@@ -72,15 +72,19 @@ domain/
 ```
 presentation/
 ├── screens/                   # Feature screens
-│   ├── home/                 # Main card list screen
+│   ├── home/                 # Folder-based main screen
+│   │   ├── EnhancedHomeScreen.kt
+│   │   ├── FolderComponents.kt   # FolderItem, FoldersGrid, FolderCard, OpenedFolder
+│   │   └── HomeViewModel.kt
 │   ├── add_card/             # Card creation workflow
 │   ├── card_detail/          # Card viewing and editing
 │   ├── categories/           # Category management
 │   └── settings/             # App settings
 ├── components/                # Reusable UI components
-│   ├── common/               # Generic components
+│   ├── common/               # Generic components (incl. PremiumSearchBar)
 │   ├── camera/               # Camera-related components
-│   └── animation/            # Animation components
+│   ├── animation/            # Animation components
+│   └── sharing/              # Card sharing dialog & manager
 └── navigation/                # Navigation setup
     ├── WalletNavigation.kt
     └── NavigationDestinations.kt

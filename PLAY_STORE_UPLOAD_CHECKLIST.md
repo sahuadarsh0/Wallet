@@ -12,8 +12,8 @@
 
 | # | Item | Status | Reference |
 |---|------|:------:|-----------|
-| 1.1 | Full pass of [`SECURITY_CHECKLIST.md`](./SECURITY_CHECKLIST.md) closed (all action items resolved) | [ ] | §17 of security checklist |
-| 1.2 | `./gradlew clean lint` — zero blocker / fatal lint warnings | [ ] | |
+| 1.1 | Full pass of [`SECURITY_CHECKLIST.md`](./SECURITY_CHECKLIST.md) closed (all action items resolved) | [x] | All 3 code-level items (7.9, 8.10, 9.4) resolved 2026-05-22; remaining items are process/environment tasks |
+| 1.2 | `./gradlew clean lint` — zero blocker / fatal lint warnings | [ ] | Run before each release |
 | 1.3 | `./gradlew test` — all unit tests pass | [ ] | |
 | 1.4 | `./gradlew connectedAndroidTest` — instrumented tests pass on at least one physical device | [ ] | |
 | 1.5 | Manual smoke test on min SDK device (Android 10, API 29) | [ ] | |
@@ -25,6 +25,7 @@
 | 1.11 | No dropped frames / jank on scroll, card flip, sharing dialog (60 fps) | [ ] | |
 | 1.12 | All strings externalised in `strings.xml` (no hardcoded user-facing text) | [ ] | |
 | 1.13 | Memory leaks checked with LeakCanary in debug build | [ ] | |
+| 1.14 | Verify `FLAG_SECURE` blocks screenshots & screen recording on a real device | [ ] | New 2026-05-22 — confirms the §8.10 fix works end-to-end |
 
 ---
 
@@ -323,3 +324,31 @@ git push origin v1.0.0
 ---
 
 **Last updated:** 2026-05-22 · **Owner:** TechnitedMinds · **Companion docs:** [`SECURITY_CHECKLIST.md`](./SECURITY_CHECKLIST.md), [`DATA_SAFETY_FORM.md`](./DATA_SAFETY_FORM.md)
+
+---
+
+## Appendix — 2026-05-22 Audit Snapshot
+
+Items resolved in code on this audit:
+
+| Item | Resolution |
+|------|------------|
+| Security §7.9 — constant-time PIN hash compare | `PinHasher.verify` now uses `MessageDigest.isEqual` |
+| Security §8.10 — screenshot / screen-record / recents block | `MainActivity.onCreate` sets `WindowManager.LayoutParams.FLAG_SECURE` |
+| Security §9.4 — strip verbose logs in release | `proguard-rules.pro` adds `-assumenosideeffects` for `Log.d` / `Log.v` / `Log.i` |
+
+Confirmed compliant (no action needed):
+
+- Network permissions removed (`tools:node="remove"` for `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`).
+- Only `CAMERA` + `NFC` requested; both `uses-feature required="false"`.
+- AES-256-GCM via Tink + Android Keystore for sensitive Room columns.
+- PBKDF2-HmacSHA256 (10 000 iterations, 16-byte random salt) for PIN + recovery code.
+- Backup & device-transfer exclude DB, datastore, card images, thumbnails, Tink keyset, storage prefs.
+- FileProvider declared `exported="false"`; only `files-path`, `cache-path`, `external-cache-path` exposed.
+- R8 + resource shrinking enabled for release; signing config externalised via `keystore.properties` (git-ignored).
+- No analytics, crash reporters, ads, or trackers in `gradle/libs.versions.toml`.
+- ML Kit Text Recognition is the **bundled** offline variant.
+- `supportsRtl="true"` and `enableOnBackInvokedCallback="true"` set.
+- Splash + onboarding overlaid on a dark base to avoid white-flash leaks.
+
+Remaining open items are entirely process / environment (Play Console enrollment, keystore backup, device smoke tests, privacy policy hosting) and cannot be auto-verified from the repo.

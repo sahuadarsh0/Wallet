@@ -60,6 +60,7 @@ com.technitedminds.wallet/
 │   │   ├── CategoryRepositoryImpl.kt
 │   │   └── ImageRepositoryImpl.kt
 │   └── service/                  # Service implementations
+│       ├── CardImageDrawing.kt   # Pure Canvas drawing primitives (background, shimmer, EMV chip, text)
 │       ├── CardImageGeneratorImpl.kt
 │       ├── OCRServiceImpl.kt
 │       └── StorageServiceImpl.kt
@@ -141,6 +142,7 @@ com.technitedminds.wallet/
 │   │   │   ├── LoadingIndicator.kt
 │   │   │   ├── ModelExtensions.kt
 │   │   │   ├── OCRStatusCards.kt
+│   │   │   ├── PremiumSearchBar.kt
 │   │   │   ├── PrivacyNoticeCard.kt
 │   │   │   ├── SplashOverlay.kt
 │   │   │   ├── StepProgressIndicator.kt
@@ -174,6 +176,7 @@ com.technitedminds.wallet/
 │   │   │   └── CategoryDialog.kt
 │   │   ├── home/                 # Home screen
 │   │   │   ├── EnhancedHomeScreen.kt
+│   │   │   ├── FolderComponents.kt # Folder grid tiles + OpenedFolder state model
 │   │   │   └── HomeViewModel.kt
 │   │   ├── onboarding/           # Onboarding flow
 │   │   │   └── OnboardingPinScreen.kt

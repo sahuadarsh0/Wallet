@@ -119,16 +119,19 @@
 | 7.6 | PIN never stored in plaintext | [x] | PBKDF2-HmacSHA256, 10 000 iterations, per-user 16-byte salt |
 | 7.7 | Recovery code never stored in plaintext | [x] | Same hashing scheme as PIN; plaintext shown ONCE at onboarding |
 | 7.8 | All hashes use cryptographically secure salts | [x] | `SecureRandom` in `PinHasher.generateSalt()` |
-| 7.9 | Constant-time comparison considered for hash check | [ ] | **Recommended improvement** — `MessageDigest.isEqual` instead of `String.==` in `PinHasher.verify` |
+| 7.9 | Constant-time comparison for hash check | [x] | `MessageDigest.isEqual` used in `PinHasher.verify` (mitigates timing side-channels) |
 | 7.10 | Image files NOT encrypted | [x] (by design) | App-private storage relies on Android FBE (file-based encryption) |
 
-**Action item (7.9):** Replace `computedHash == storedHash` with constant-time comparison to mitigate timing side-channels:
+**Resolved (7.9):** `PinHasher.verify` now uses `MessageDigest.isEqual` for constant-time comparison:
 
 ```kotlin
 import java.security.MessageDigest
 fun verify(pin: String, salt: String, storedHash: String): Boolean {
     val computed = hash(pin, salt)
-    return MessageDigest.isEqual(computed.toByteArray(), storedHash.toByteArray())
+    return MessageDigest.isEqual(
+        computed.toByteArray(Charsets.UTF_8),
+        storedHash.toByteArray(Charsets.UTF_8),
+    )
 }
 ```
 
@@ -147,9 +150,9 @@ fun verify(pin: String, salt: String, storedHash: String): Boolean {
 | 8.7 | Auto-exit on card detail (180 s idle) | [x] | Reduces shoulder-surfing |
 | 8.8 | App lock re-prompted after configured background time | [x] | `shouldLockNow()` checks `lastUnlockEpoch` vs timeout |
 | 8.9 | Splash + onboarding overlaid on dark base to avoid white-flash leak | [x] | `SpaceEnd` background |
-| 8.10 | `FLAG_SECURE` on screens displaying sensitive data | [ ] | **Recommended** — add to `MainActivity` or sensitive screens to block screenshots & screen recording of cards |
+| 8.10 | `FLAG_SECURE` on activity displaying sensitive data | [x] | `MainActivity.onCreate` sets `WindowManager.LayoutParams.FLAG_SECURE` — blocks screenshots, screen recording, and hides content from recents thumbnail across the entire single-activity app |
 
-**Action item (8.10):** Consider `window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)` for screens that show extracted card numbers / CVV (CardDetailScreen, AddCardScreen review step, AppLockScreen, OnboardingPinScreen). This also hides the app from the recents thumbnail.
+**Resolved (8.10):** `MainActivity` now sets `FLAG_SECURE` for the entire window. Because CardVault is a single-activity Compose app, this covers every screen (CardDetail, AddCard review, AppLock, Onboarding, Home, Settings) without per-screen wiring.
 
 ---
 
@@ -159,22 +162,23 @@ fun verify(pin: String, salt: String, storedHash: String): Boolean {
 |---|------|:------:|-------|
 | 9.1 | Card numbers, CVV, cardholder name, PIN never logged | [x] | Verified — only Camera lifecycle logs use `Log.d` / `Log.e` |
 | 9.2 | `printStackTrace()` not used in main code | [x] | Grep returns 0 matches |
-| 9.3 | All `Log.*` calls confined to `CameraManager.kt`, `CameraPreview.kt`, and `DeleteCardUseCase.kt` | [x] | None contain user data |
-| 9.4 | R8 strips debug logs in release builds | [ ] | **Recommended** — add ProGuard rule (see action item below) |
+| 9.3 | All `Log.*` calls confined to `CameraManager.kt` and `CameraPreview.kt` | [x] | None contain user data — only camera lifecycle traces |
+| 9.4 | R8 strips debug logs in release builds | [x] | `proguard-rules.pro` strips `Log.d` / `Log.v` / `Log.i` via `-assumenosideeffects`; `Log.w` / `Log.e` retained for production diagnostics |
 | 9.5 | No `BuildConfig.DEBUG`-gated insecure paths | [x] | None found |
 | 9.6 | Toasts / Snackbars never echo card numbers | [x] | UI strings only show generic statuses |
 | 9.7 | Crash reports disabled (no crash reporter SDK) | [x] | No Crashlytics / Bugsnag / Sentry |
 
-**Action item (9.4):** Add the following to `proguard-rules.pro` to strip `Log.d` / `Log.v` from release:
+**Resolved (9.4):** `proguard-rules.pro` now contains:
 
 ```proguard
 -assumenosideeffects class android.util.Log {
     public static *** d(...);
     public static *** v(...);
+    public static *** i(...);
 }
 ```
 
-> Keep `Log.w` and `Log.e` so genuine production failures are still visible to ADB during user-reported issues.
+> `Log.w` and `Log.e` are kept so genuine production failures are still visible to ADB during user-reported issues.
 
 ---
 
@@ -236,7 +240,7 @@ fun verify(pin: String, salt: String, storedHash: String): Boolean {
 |---|------|:------:|
 | 14.1 | Sensitive card fields hidden by default in detail view (Reveal/Hide toggle) | [x] |
 | 14.2 | Sensitive section auto-hides on idle timeout | [x] |
-| 14.3 | App content hidden in recents thumbnail | [ ] **See 8.10** |
+| 14.3 | App content hidden in recents thumbnail | [x] | Covered by `FLAG_SECURE` on `MainActivity` (§8.10) |
 | 14.4 | Privacy notice card shown in onboarding & settings | [x] |
 | 14.5 | Clipboard usage limited to recovery code copy (intentional) — no auto-copy of card numbers | [x] |
 | 14.6 | Accessibility: all card images have `contentDescription` | [x] |
@@ -272,13 +276,20 @@ fun verify(pin: String, salt: String, storedHash: String): Boolean {
 
 ## 17. Pending Action Items (must close before public release)
 
-1. **[7.9]** Use `MessageDigest.isEqual` for constant-time hash comparison in `PinHasher.verify`.
-2. **[8.10]** Add `FLAG_SECURE` to sensitive screens (CardDetail, AddCard review, AppLock, Onboarding) to block screenshots, screen recording, and recents thumbnails.
-3. **[9.4]** Add R8 rule to strip `Log.d` / `Log.v` from release builds.
-4. **[4.5–4.7]** Confirm keystore is securely backed up off-device and Play App Signing is enrolled.
-5. **[6.4]** Manually verify install → uninstall → reinstall → no data restored.
-6. **[15.3]** Run dependency vulnerability scan (`./gradlew dependencyUpdates` + OWASP Dependency-Check).
-7. **[Docs]** `PROJECT_STRUCTURE.md` versions are stale (Compose BOM 2025.09.01, Tink 1.18.0, Kotlin 2.0.0). Updated separately — see commit history.
+> **2026-05-22 audit update:** Items 7.9, 8.10, and 9.4 — previously open in the prior audit — are now **resolved in code**. Remaining items below are environment / process tasks that cannot be auditted from the repo alone.
+
+### Resolved this audit
+1. ✅ **[7.9]** `PinHasher.verify` now uses `MessageDigest.isEqual` (constant-time comparison).
+2. ✅ **[8.10]** `MainActivity.onCreate` sets `FLAG_SECURE` (blocks screenshots, screen recording, and recents thumbnail leak across the entire single-activity app).
+3. ✅ **[9.4]** `proguard-rules.pro` strips `Log.d` / `Log.v` / `Log.i` in release via `-assumenosideeffects`.
+
+### Still open — process / environment tasks
+1. **[4.5–4.7]** Confirm release keystore is securely backed up off-device (encrypted password manager + at least one offline copy) and that **Play App Signing** is enrolled before first upload.
+2. **[6.4]** Manually verify install → uninstall → reinstall → no card data, images, PIN, or keyset restored. Run on at least one device with cloud-backup enabled and one device-transfer scenario.
+3. **[12.4]** Best-effort OCR text scrubbing in memory documented as acceptable trade-off for offline-only app; no further action required for v1.
+4. **[15.3]** Run dependency vulnerability scan before each release: `./gradlew dependencyUpdates` and OWASP Dependency-Check.
+5. **[Privacy Policy]** Host the privacy policy on a stable public URL; embed the URL in `strings.xml` (`settings_privacy_policy_url` or equivalent). **Required by Play Console because the app declares "Financial info" in Data Safety.**
+6. **[Reviewer Access]** Mirror the verbatim reviewer instructions from `DATA_SAFETY_FORM.md` into the Play Console "App access" section.
 
 ---
 
@@ -295,3 +306,35 @@ Run this checklist:
 ---
 
 **Last audit:** 2026-05-22 · **Auditor:** Codebase scan + manual review · **Next audit due:** before next Play Store release.
+
+---
+
+## Appendix A — How to re-run this audit
+
+```bash
+# 1. Permission posture
+rg "uses-permission" app/src/main/AndroidManifest.xml
+
+# 2. Sensitive-data hygiene (should return 0 user-data hits)
+rg -n "Log\.(d|v|i|w|e)\(" app/src/main/java
+rg -n "printStackTrace|TODO\(|FIXME"           app/src/main/java
+rg -n "MODE_WORLD"                              app/src/main/java
+rg -n "android:exported"                        app/src/main
+
+# 3. Constant-time comparison
+rg -n "MessageDigest\.isEqual"                  app/src/main/java/com/technitedminds/wallet/data/local/security
+
+# 4. Screenshot block
+rg -n "FLAG_SECURE"                             app/src/main/java/com/technitedminds/wallet
+
+# 5. R8 log stripping
+rg -n "assumenosideeffects.*android.util.Log"   app/proguard-rules.pro
+
+# 6. Backup exclusions
+cat app/src/main/res/xml/data_extraction_rules.xml
+cat app/src/main/res/xml/backup_rules.xml
+cat app/src/main/res/xml/file_provider_paths.xml
+
+# 7. Dependency posture
+rg "firebase|crashlytics|adjust|appsflyer|facebook" gradle/libs.versions.toml
+```

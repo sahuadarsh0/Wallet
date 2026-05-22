@@ -24,10 +24,16 @@ CardVault is a secure, offline-first Android application that acts as a premium 
 - **✍️ Manual entry** — skip camera entirely and fill fields by hand.
 
 ### 🏠 Home Screen
-- **🔎 Search** — collapsible search bar with **300 ms debounce**; searches across card name, type, extracted data, and custom fields.
-- **🏷️ Filters** — chip bar + modal bottom sheet: filter by category, filter by card type, clear all.
-- **⊞ Layout toggle** — switch between **grid** and **list** views.
+- **🗂️ Folder-based organization** — the home screen opens on a 2-column grid of glassmorphic **folder tiles**: `All Cards`, every category in your library, and a dynamic `Uncategorized` folder that appears only when there are cards without a category. Each tile shows the category icon, a card count badge, and a deterministic gradient backplate with a peeking "folder tab" silhouette.
+- **🌐 Global search** — tap the search icon on the folders root to expand a `PremiumSearchBar` that searches **every card across every folder** in real time (card name, type, extracted data, custom fields). Search results render in a dedicated **Global Search** view with the same grid/list toggle.
+- **🎬 Three-mode UI** — an internal `HomeMode` state machine (`Folders` → `GlobalSearch` → `FolderDetail`) drives smooth horizontal slide + fade `AnimatedContent` transitions between modes; the system back press steps you cleanly back through them.
+- **🪟 In-folder browsing** — opening a folder slides into a focused detail view with the folder name + back button rendered directly in the top app bar (no redundant breadcrumb header). The card-type filter persists; folder tile counts always reflect the active type filter so the grid stays consistent.
+- **🔎 Premium search bar** — `PremiumSearchBar` is a pill-shaped (28dp radius) glass-morphism component with auto-focus, IME `Search` action, and animated trailing clear button; built on `BasicTextField` so it sits naturally below the top app bar.
+- **⏱️ 300ms debounce** — both folder-scoped and global searches debounce input to keep typing buttery on large libraries.
+- **🏷️ Filters** — modal bottom sheet to filter by card type; the active card-type filter is surfaced as a removable chip above the cards list.
+- **⊞ Layout toggle** — switch between **grid** and **list** views (available inside any folder and on global search results).
 - **🔃 Sort** — cards ordered by last-updated descending.
+- **🌟 Stagger-in animations** — folder tiles enter with a `WalletSpring.bouncy()` scale + alpha stagger driven by `WalletTiming.STAGGER_DELAY_MS`.
 - **⏳ Loading state** — full-screen `PremiumLoadingIndicator` during data fetch.
 
 ### 💳 Card Detail
@@ -38,9 +44,12 @@ CardVault is a secure, offline-first Android application that acts as a premium 
 - **📤 Share** — long-press or share button opens `CardSharingDialog`; configure which sides to include, watermark, and whether to include sensitive data.
 
 ### 📤 Card Sharing
-- **🎨 Dual share strategy** — credit/debit cards get a **generated gradient image** with extracted details rendered on-canvas; all other types share the **original captured photos**.
+- **🎨 Dual share strategy** — credit/debit cards get a **freshly-generated gradient image** with extracted details rendered on-canvas (EMV chip, shimmer highlights, soft top highlight & bottom shading); all other types share the **original captured photos**.
+- **⚡ In-memory bitmap pipeline** — `CardImageGenerator.renderCardBitmap()` draws directly to a `Bitmap` at the **ISO/IEC 7810 ID-1 aspect ratio (1.586:1)** with safe-area-aware text layout, skipping intermediate disk I/O for faster, lower-memory shares.
+- **🧱 Modular drawing primitives** — `CardImageDrawing.kt` houses pure `Canvas` helpers (background gradient, shimmer overlay, EMV chip, text masking, etc.) so the service class stays focused on orchestration and lifecycle.
+- **🎚️ Quality slider** — share dialog exposes a continuous quality slider with **Standard / High / Maximum** preset labels (default 85%); higher quality means larger images for crisper recipient-side rendering.
 - **🔗 `FileProvider` intents** — secure file sharing without exposing raw paths.
-- **🖊️ Configurable** watermark and sensitive data inclusion.
+- **🖊️ Configurable** watermark, sensitive-data inclusion, and which sides (front / back / both) to include.
 
 ### 🗂️ Category Management
 - **📂 Default categories** — `General` (fallback), `Personal`, `Business`, `Travel`, `Shopping`, `Health`, `Entertainment`.
@@ -131,7 +140,8 @@ com.technitedminds.wallet/
 │   ├── ocr/                           # 🔍 MLKitTextRecognizer, CardTextParser
 │   ├── mapper/                        # 🔁 CardMapper, CategoryMapper
 │   ├── repository/                    # 🏛️ CardRepositoryImpl, CategoryRepositoryImpl, ImageRepositoryImpl
-│   └── service/                       # ⚙️ OCRServiceImpl, CardImageGeneratorImpl, StorageServiceImpl
+│   └── service/                       # ⚙️ OCRServiceImpl, CardImageGeneratorImpl,
+│                                      #    CardImageDrawing (Canvas primitives), StorageServiceImpl
 ├── domain/
 │   ├── model/                         # 📐 Card, CardType, Category, CardGradient, CardImage,
 │   │                                  #    NfcCardData, OCRResult, StorageModels
@@ -144,7 +154,8 @@ com.technitedminds.wallet/
 │       └── storage/                   # 💾 StorageManagement
 ├── presentation/
 │   ├── screens/
-│   │   ├── home/                      # 🏠 EnhancedHomeScreen, HomeViewModel
+│   │   ├── home/                      # 🏠 EnhancedHomeScreen, HomeViewModel, FolderComponents
+│   │   │                              #    (FolderItem, FoldersGrid, FolderCard, OpenedFolder)
 │   │   ├── addcard/                   # ➕ AddCardScreen (add + edit), AddCardViewModel, NfcCardReaderManager
 │   │   ├── camera/                    # 📷 CameraScreen, CameraViewModel
 │   │   ├── carddetail/                # 🔎 CardDetailScreen, CardDetailViewModel
@@ -153,10 +164,11 @@ com.technitedminds.wallet/
 │   │   ├── onboarding/                # 🎉 OnboardingPinScreen
 │   │   └── security/                  # 🔐 AppLockScreen, AppLockViewModel, BiometricAuthManager
 │   ├── components/
-│   │   ├── common/                    # 🧩 PremiumCard, PremiumTextField, AnimatedSectionHeader,
-│   │   │                              #    EnhancedSlideInItem, StepProgressIndicator, ColorPicker,
-│   │   │                              #    GradientPicker, CustomFieldsEditor, NfcScanningSheet,
-│   │   │                              #    OCRStatusCards, PrivacyNoticeCard, SplashOverlay, etc. (31 files)
+│   │   ├── common/                    # 🧩 PremiumCard, PremiumTextField, PremiumSearchBar,
+│   │   │                              #    AnimatedSectionHeader, EnhancedSlideInItem,
+│   │   │                              #    StepProgressIndicator, ColorPicker, GradientPicker,
+│   │   │                              #    CustomFieldsEditor, NfcScanningSheet, OCRStatusCards,
+│   │   │                              #    PrivacyNoticeCard, SplashOverlay, etc. (32 files)
 │   │   ├── camera/                    # 📷 CameraPreview, CaptureButton, CardOverlay, ImagePreview,
 │   │   │                              #    CameraPermission, CameraManager, CameraError (7 files)
 │   │   ├── animation/                 # 🎬 FlippableCard, CardFront, CardBack, AnimatedList,
