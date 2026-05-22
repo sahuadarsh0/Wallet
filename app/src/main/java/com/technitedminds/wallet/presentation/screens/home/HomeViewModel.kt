@@ -69,12 +69,16 @@ class HomeViewModel @Inject constructor(
             initialValue = emptyList(),
         )
 
-    // Card counts per folder (category id -> count); "__all__" holds total, "__uncategorized__" holds blank-category count
-    val folderCounts: StateFlow<Map<String, Int>> = allCards.map { cards ->
+    // Card counts per folder (category id -> count); "__all__" holds total, "__uncategorized__" holds blank-category count.
+    // When a card-type filter is active, counts reflect only cards of that type so the folders grid stays consistent
+    // with the applied filter (folders with zero matches still appear with count = 0 — empty-state messaging is the
+    // grid's responsibility, not the count map's).
+    val folderCounts: StateFlow<Map<String, Int>> = combine(allCards, selectedCardType) { cards, type ->
+        val visible = if (type != null) cards.filter { it.type == type } else cards
         buildMap {
-            put(FOLDER_ALL_KEY, cards.size)
-            put(FOLDER_UNCATEGORIZED_KEY, cards.count { it.categoryId.isBlank() })
-            cards.groupBy { it.categoryId }
+            put(FOLDER_ALL_KEY, visible.size)
+            put(FOLDER_UNCATEGORIZED_KEY, visible.count { it.categoryId.isBlank() })
+            visible.groupBy { it.categoryId }
                 .filterKeys { it.isNotBlank() }
                 .forEach { (id, list) -> put(id, list.size) }
         }
@@ -114,28 +118,29 @@ class HomeViewModel @Inject constructor(
         )
 
     /**
-     * Cards across the entire app, filtered by [searchQuery] only.
+     * Cards across the entire app, filtered by [searchQuery] and [selectedCardType].
      * Used by the folders root view to provide global search results when
      * the user types a query without opening a folder.
      */
-    val globalFilteredCards: StateFlow<List<Card>> = searchQuery
-        .debounce(300)
-        .flatMapLatest { query ->
-            getCardsUseCase(
-                GetCardsRequest(
-                    categoryId = null,
-                    cardType = null,
-                    searchQuery = query,
-                    sortBy = CardSortBy.UPDATED_AT,
-                    ascending = false,
+    val globalFilteredCards: StateFlow<List<Card>> =
+        combine(searchQuery, selectedCardType) { query, type -> query to type }
+            .debounce(300)
+            .flatMapLatest { (query, type) ->
+                getCardsUseCase(
+                    GetCardsRequest(
+                        categoryId = null,
+                        cardType = type,
+                        searchQuery = query,
+                        sortBy = CardSortBy.UPDATED_AT,
+                        ascending = false,
+                    )
                 )
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList(),
             )
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList(),
-        )
 
     // UI State — uses nested typed combine to avoid unchecked casts
     val uiState = combine(

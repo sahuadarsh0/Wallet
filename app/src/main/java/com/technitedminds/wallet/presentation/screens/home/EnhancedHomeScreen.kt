@@ -37,6 +37,7 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
@@ -44,11 +45,14 @@ import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -66,6 +70,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -122,10 +127,21 @@ fun EnhancedHomeScreen(
     // Reset search-expanded state when entering or leaving a folder.
     LaunchedEffect(isInsideFolder) {
         isSearchExpanded = false
+        if (uiState.searchQuery.isNotBlank()) {
+            viewModel.clearSearch()
+        }
     }
 
-    // Intercept back when inside a folder so we pop back to the folders grid.
-    BackHandler(enabled = isInsideFolder) {
+    // Intercept back when inside a folder.
+    // First collapse the search bar (if open) or clear the query, then on the
+    // next back press pop back to the folders grid.
+    BackHandler(enabled = isInsideFolder && (isSearchExpanded || uiState.searchQuery.isNotBlank())) {
+        if (uiState.searchQuery.isNotBlank()) {
+            viewModel.clearSearch()
+        }
+        isSearchExpanded = false
+    }
+    BackHandler(enabled = isInsideFolder && !isSearchExpanded && uiState.searchQuery.isBlank()) {
         viewModel.closeFolder()
     }
 
@@ -139,8 +155,13 @@ fun EnhancedHomeScreen(
         Scaffold(
             contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
             containerColor = Color.Transparent,
+            // Ensure icons/text inside the scaffold body inherit a theme-aware
+            // content color (otherwise LocalContentColor falls back to black,
+            // which makes back buttons and similar controls invisible in dark mode).
+            contentColor = MaterialTheme.colorScheme.onBackground,
             topBar = {
                 EnhancedHomeTopBar(
+                    folderItem = openedFolderItem.takeIf { isInsideFolder },
                     isSearchExpanded = isSearchExpanded,
                     onToggleSearch = {
                         isSearchExpanded = !isSearchExpanded
@@ -148,10 +169,14 @@ fun EnhancedHomeScreen(
                             viewModel.clearSearch()
                         }
                     },
-                    showSearchAction = !isInsideFolder,
+                    showSearchAction = true,
+                    showFilterAction = true,
+                    hasActiveFilters = uiState.selectedCardType != null,
+                    onOpenFilters = { showFilterSheet = true },
                     isGridLayout = uiState.isGridLayout,
                     onToggleLayout = viewModel::toggleLayout,
                     layoutToggleEnabled = isInsideFolder || hasRootQuery,
+                    onBack = viewModel::closeFolder,
                 )
             },
         ) { paddingValues ->
@@ -160,7 +185,7 @@ fun EnhancedHomeScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                val showSearchField = isInsideFolder || isSearchExpanded
+                val showSearchField = isSearchExpanded
                 AnimatedVisibility(
                     visible = showSearchField,
                     enter = expandVertically() + fadeIn(),
@@ -171,11 +196,9 @@ fun EnhancedHomeScreen(
                         onQueryChange = viewModel::updateSearchQuery,
                         onClear = {
                             viewModel.clearSearch()
-                            if (!isInsideFolder) {
-                                isSearchExpanded = false
-                            }
+                            isSearchExpanded = false
                         },
-                        autoFocus = isSearchExpanded && !isInsideFolder,
+                        autoFocus = isSearchExpanded,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(
@@ -272,18 +295,10 @@ private fun FoldersView(
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(
-            text = "Your Folders",
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontWeight = FontWeight.SemiBold,
-            ),
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-
         FoldersGrid(
             items = items,
             onFolderClick = onFolderClick,
+            modifier = Modifier.padding(top = 8.dp),
         )
     }
 }
@@ -305,17 +320,14 @@ private fun FolderDetailView(
     onCardClick: (Card) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        FolderHeader(
-            item = folderItem,
-            onBack = onBack,
-        )
-
-        FilterTriggerBar(
-            selectedCardType = selectedCardType,
-            onClearCardType = onClearCardType,
-            onOpenFilters = onOpenFilters,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-        )
+        if (selectedCardType != null) {
+            ActiveFilterChipRow(
+                selectedCardType = selectedCardType,
+                onOpenFilters = onOpenFilters,
+                onClearCardType = onClearCardType,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+        }
 
         EnhancedCardsSection(
             cards = cards,
@@ -422,22 +434,77 @@ private fun GlobalSearchEmptyState(modifier: Modifier = Modifier) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EnhancedHomeTopBar(
+    folderItem: FolderItem?,
     isSearchExpanded: Boolean,
     onToggleSearch: () -> Unit,
     showSearchAction: Boolean,
+    showFilterAction: Boolean,
+    hasActiveFilters: Boolean,
+    onOpenFilters: () -> Unit,
     isGridLayout: Boolean,
     onToggleLayout: () -> Unit,
     layoutToggleEnabled: Boolean,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isFolderMode = folderItem != null
     TopAppBar(
         title = {
-            Text(
-                text = AppConstants.UIText.APP_TITLE,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                ),
-            )
+            if (isFolderMode && folderItem != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                brush = Brush.linearGradient(colors = folderItem.gradient),
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = folderItem.icon,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                    Column {
+                        Text(
+                            text = folderItem.title,
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                            ),
+                            maxLines = 1,
+                        )
+                        Text(
+                            text = if (folderItem.count == 1) "1 card" else "${folderItem.count} cards",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = AppConstants.UIText.APP_TITLE,
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                    ),
+                )
+            }
+        },
+        navigationIcon = {
+            if (isFolderMode) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back to folders",
+                    )
+                }
+            }
         },
         actions = {
             if (showSearchAction) {
@@ -453,6 +520,30 @@ private fun EnhancedHomeTopBar(
                 }
             }
 
+            if (showFilterAction) {
+                IconButton(onClick = onOpenFilters) {
+                    BadgedBox(
+                        badge = {
+                            if (hasActiveFilters) {
+                                Badge(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FilterList,
+                            contentDescription = if (hasActiveFilters) "Edit filters" else "Filters",
+                            tint = if (hasActiveFilters) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                LocalContentColor.current
+                            },
+                        )
+                    }
+                }
+            }
+
             if (layoutToggleEnabled) {
                 IconButton(onClick = onToggleLayout) {
                     Icon(
@@ -464,54 +555,47 @@ private fun EnhancedHomeTopBar(
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,
+            // Make sure the title, navigation icon, and actions inherit theme-aware
+            // colors (defaults reference onSurface variants which are correct, but
+            // we make it explicit to guard against future regressions).
+            titleContentColor = MaterialTheme.colorScheme.onBackground,
+            navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+            actionIconContentColor = MaterialTheme.colorScheme.onBackground,
         ),
         modifier = modifier,
     )
 }
 
 @Composable
-private fun FilterTriggerBar(
-    selectedCardType: CardType?,
-    onClearCardType: () -> Unit,
+private fun ActiveFilterChipRow(
+    selectedCardType: CardType,
     onOpenFilters: () -> Unit,
+    onClearCardType: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val hasActiveFilters = selectedCardType != null
-
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(vertical = 4.dp),
     ) {
-        if (selectedCardType != null) {
-            item(key = "type_filter") {
-                InputChip(
-                    selected = true,
-                    onClick = onOpenFilters,
-                    label = { Text(selectedCardType.getDisplayName()) },
-                    trailingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Clear type filter",
-                            modifier = Modifier
-                                .size(18.dp)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                    onClick = onClearCardType,
-                                ),
-                        )
-                    },
-                )
-            }
-        }
-
-        item(key = "open_filters") {
-            PremiumChip(
-                text = if (hasActiveFilters) "Edit Filters" else "Filters",
-                selected = false,
+        item(key = "type_filter") {
+            InputChip(
+                selected = true,
                 onClick = onOpenFilters,
-                icon = Icons.Default.FilterList,
+                label = { Text(selectedCardType.getDisplayName()) },
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Clear type filter",
+                        modifier = Modifier
+                            .size(18.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = onClearCardType,
+                            ),
+                    )
+                },
             )
         }
     }

@@ -281,6 +281,19 @@ String-based routes via `NavigationDestinations` sealed class with `navArgument(
 
 ---
 
+## 📚 Compliance & Release Documentation
+
+Before publishing or auditing the app, work through these companion documents:
+
+| 📄 Document | 📝 Purpose |
+|---|---|
+| [`SECURITY_CHECKLIST.md`](./SECURITY_CHECKLIST.md) | 🛡️ Comprehensive security audit covering manifest hardening, encryption, ProGuard, backup rules, logging hygiene, IPC, and pending action items. Re-run before every release. |
+| [`PLAY_STORE_UPLOAD_CHECKLIST.md`](./PLAY_STORE_UPLOAD_CHECKLIST.md) | 🚀 End-to-end Play Console submission guide: signing, AAB build, store listing, Data Safety form, content rating, policy compliance, staged rollout, post-publish monitoring. |
+| [`DATA_SAFETY_FORM.md`](./DATA_SAFETY_FORM.md) | 📋 Verbatim answers for the Play Console Data Safety section + reviewer access instructions. |
+| [`PROJECT_STRUCTURE.md`](./PROJECT_STRUCTURE.md) | 🗺️ Authoritative package layout, dependency versions, security configuration. |
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE.md) file for details.

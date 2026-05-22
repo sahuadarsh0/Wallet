@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.FolderOpen
@@ -31,7 +30,6 @@ import androidx.compose.material.icons.filled.FolderSpecial
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -320,64 +318,10 @@ private fun CountBadge(count: Int, contentColor: Color) {
 }
 
 /**
- * Breadcrumb-style header shown when a folder is opened.
- * Includes a back button, folder icon pill, title and live card count.
+ * Breadcrumb-style header used previously when a folder was opened. The
+ * folder name + back button are now rendered directly inside the home
+ * screen's top app bar, so this component is intentionally left out.
  */
-@Composable
-fun FolderHeader(
-    item: FolderItem,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val base = item.gradient.first()
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        IconButton(onClick = onBack) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back to folders",
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(
-                    brush = Brush.linearGradient(colors = item.gradient),
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = item.icon,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(20.dp),
-            )
-        }
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = item.title,
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                ),
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-            )
-            Text(
-                text = if (item.count == 1) "1 card" else "${item.count} cards",
-                style = MaterialTheme.typography.bodySmall,
-                color = base.copy(alpha = 0.85f),
-            )
-        }
-    }
-}
 
 @Composable
 private fun EmptyFoldersState(modifier: Modifier = Modifier) {

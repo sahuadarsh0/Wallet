@@ -15,6 +15,24 @@ import com.technitedminds.wallet.domain.model.CardGradient
 interface CardImageGenerator {
     
     /**
+     * Generates an in-memory bitmap for the card's front or back, ready for direct sharing.
+     * The caller is responsible for calling [Bitmap.recycle] when done.
+     *
+     * @param card The card to render
+     * @param isBack Whether to render the back side
+     * @param showAllDetails Whether to include sensitive fields (full PAN, CVV)
+     * @param width Image width in pixels
+     * @param height Image height in pixels
+     */
+    suspend fun renderCardBitmap(
+        card: Card,
+        isBack: Boolean,
+        showAllDetails: Boolean = false,
+        width: Int = DEFAULT_CARD_WIDTH,
+        height: Int = DEFAULT_CARD_HEIGHT,
+    ): android.graphics.Bitmap?
+    
+    /**
      * Generates a shareable card image with gradient design and extracted details.
      * 
      * @param card The card to generate image for
