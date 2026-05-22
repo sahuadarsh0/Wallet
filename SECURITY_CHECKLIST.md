@@ -305,7 +305,39 @@ Run this checklist:
 
 ---
 
-**Last audit:** 2026-05-22 · **Auditor:** Codebase scan + manual review · **Next audit due:** before next Play Store release.
+**Last audit:** 2026-05-23 · **Auditor:** Codebase scan + manual review · **Next audit due:** before next Play Store release.
+
+---
+
+## 19. Manual backup & restore (`.wallet` files)
+
+The app exposes a fully-offline backup feature in **Settings → Backup & Restore**. The
+following guarantees apply to that feature; deviations require updating this section.
+
+| #    | Guarantee                                                                           | Verification                                                                            |
+| ---- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| 19.1 | No network call is made during export or restore.                                   | `rg -n "okhttp\|HttpURLConnection\|Retrofit" app/src/main/java/com/technitedminds/wallet/data/backup` returns nothing. |
+| 19.2 | Cleartext header (`CVAULT01` magic + JSON header) carries **no** user data.         | `BackupHeader` data class — only KDF params + version stamps.                            |
+| 19.3 | Payload is encrypted with **AES-256-GCM** using a per-backup random nonce.          | `BackupCrypto.writeEncryptedEnvelope` uses `AES/GCM/NoPadding` + 12-byte nonce.          |
+| 19.4 | Key is derived from the user's passphrase with **PBKDF2-HMAC-SHA256, 200 000 iters**.| `BackupCrypto.PBKDF2_ITERATIONS` and `Pbkdf2Params` in the file header.                  |
+| 19.5 | Cleartext header is bound to the ciphertext as **AAD**.                             | `cipher.updateAAD(MAGIC_BYTES \|\| headerLen \|\| headerJson)` on both write and read.   |
+| 19.6 | A wrong password surfaces as a friendly "Incorrect password" message, never a stack trace. | `BackupAuthenticationException` → `BackupViewModel.friendlyRestoreError`.       |
+| 19.7 | **Excluded** from the backup: PIN hash, PIN salt, recovery-code hash/salt, biometric flag, `app_lock_enabled`, lockout state, Tink keyset. | `BackupRepositoryImpl.gatherSettings` returns only non-sensitive fields; `applySettingsIfPresent` only writes them. |
+| 19.8 | Tink-encrypted card fields (`extractedData`, `customFields`) are decrypted on export and re-encrypted with the destination device's keyset on restore. | Export reads via `MapConverter` (decrypts on `Map<String,String>` materialization); restore writes via `cardDao.insertCard` which re-encrypts. |
+| 19.9 | The user's passphrase is held in `CharArray`s and zeroed in a `finally` block.      | `BackupRepositoryImpl.export` / `restore` / `preview` and `BackupViewModel.startRestore` wipe arrays on exit. |
+| 19.10| Export uses `MediaStore.Downloads` + `IS_PENDING` so partial writes are removed on error. | `BackupFileWriter` `try/catch` deletes the entry on any throwable.                       |
+| 19.11| Restore uses Storage Access Framework (`ACTION_OPEN_DOCUMENT`); no `READ_EXTERNAL_STORAGE` permission requested. | `BackupAndRestoreSection.openDocumentLauncher`; manifest has no storage perms.   |
+| 19.12| Backup file size is hard-capped at 512 MB before any allocation/decryption.         | `BackupFileReader.MAX_BACKUP_BYTES`.                                                     |
+| 19.13| ZIP unpacking is hardened against zip-slip and writes only into a per-restore subdir of `cacheDir`. | `BackupPackager.unpack` rejects `..` and absolute paths; temp dir is cleaned in `finally`. |
+| 19.14| Restore happens inside a single Room transaction; image copies happen after commit so failed inserts never leave orphan files. | `BackupRepositoryImpl.applyManifest` uses `database.withTransaction { ... }`.    |
+| 19.15| Restore conflict strategy is user-selectable (`KEEP_BOTH`, `SKIP_EXISTING`, `OVERWRITE_EXISTING`) with plain-English copy. | `RestoreConflictStrategy` enum + `RestorePreviewDialog`.                          |
+| 19.16| Failure modes never surface raw stack traces to the user.                           | `BackupViewModel.friendlyExportError` / `friendlyRestoreError` map exceptions.           |
+
+### When to revisit this section
+
+- A new field is added to the backup manifest → re-run 19.7 / 19.8.
+- KDF / cipher parameters change → bump `BackupHeader.SCHEMA_VERSION` and update 19.4 / 19.5.
+- Additional file types are written by the app → confirm export/restore still preserves them.
 
 ---
 

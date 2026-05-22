@@ -126,6 +126,7 @@ fun AddCardScreen(
     capturedFrontImagePath: String? = null,
     capturedBackImagePath: String? = null,
     capturedExtractedData: Map<String, String> = emptyMap(),
+    capturedAspectRatio: Float? = null,
     nfcCardReaderManager: NfcCardReaderManager? = null,
     viewModel: AddCardViewModel = hiltViewModel()
 ) {
@@ -149,7 +150,7 @@ fun AddCardScreen(
         onDispose { activity?.let { nfcCardReaderManager?.stopReading(it) } }
     }
 
-    LaunchedEffect(capturedFrontImagePath, capturedBackImagePath, capturedExtractedData) {
+    LaunchedEffect(capturedFrontImagePath, capturedBackImagePath, capturedExtractedData, capturedAspectRatio) {
         if (capturedFrontImagePath != null) {
             val currentFrontPath = viewModel.uiState.value.frontImagePath
             if (capturedFrontImagePath != currentFrontPath) {
@@ -163,6 +164,9 @@ fun AddCardScreen(
                 if (capturedExtractedData.isNotEmpty()) {
                     viewModel.setExtractedData(capturedExtractedData)
                 }
+            }
+            if (capturedAspectRatio != null && capturedAspectRatio > 0f) {
+                viewModel.setCapturedAspectRatio(capturedAspectRatio)
             }
         }
     }

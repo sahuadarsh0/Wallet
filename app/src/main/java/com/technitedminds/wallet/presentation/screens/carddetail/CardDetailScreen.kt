@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -466,15 +467,33 @@ private fun CardDisplaySection(
     onShowSharingDialog: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    FlippableCard(
-        card = card,
-        onCardClick = null,
-        onCardLongPress = onShowSharingDialog,
+    // Sized per the card's actual aspect ratio. The outer slot caps the height
+    // and provides the available width; FlippableCard's internal
+    // `Modifier.aspectRatio(...)` then derives the missing dimension.
+    //
+    // - Wide cards (OCR 1.586, 16:9 landscape): width = screen width, height
+    //   is derived (≤ 360dp).
+    // - Portrait cards (3:4 = 0.75): width-first overflows the height cap, so
+    //   `aspectRatio` falls back to height-first → height = 360dp, width =
+    //   360dp × ratio (~270dp), centered horizontally.
+    //
+    // Crucially we do NOT pass `fillMaxWidth()` to the FlippableCard itself —
+    // doing so makes the width tight and prevents `aspectRatio` from finding a
+    // size that satisfies both the height cap and the requested ratio,
+    // which is what was overflowing into the section below.
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(240.dp)
-            .liquidDrag(maxOffset = 16.dp),
-    )
+            .heightIn(max = 360.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        FlippableCard(
+            card = card,
+            onCardClick = null,
+            onCardLongPress = onShowSharingDialog,
+            modifier = Modifier.liquidDrag(maxOffset = 16.dp),
+        )
+    }
 }
 
 // ─── View Mode: QuickMetaBar ─────────────────────────────────────────────────

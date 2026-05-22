@@ -19,6 +19,7 @@ fun CardEntity.toDomainModel(): Card {
             expiryDate = expiryDate,
             notes = notes,
             customGradient = customGradient,
+            aspectRatio = aspectRatio,
             createdAt = createdAt,
             updatedAt = updatedAt
     )
@@ -38,6 +39,7 @@ fun Card.toEntity(): CardEntity {
             expiryDate = expiryDate,
             notes = notes,
             customGradient = customGradient,
+            aspectRatio = aspectRatio,
             createdAt = createdAt,
             updatedAt = updatedAt
     )

@@ -44,6 +44,19 @@ data class Card(
         /** Custom gradient colors, null uses default */
         val customGradient: CardGradient? = null,
 
+        /**
+         * Aspect ratio (width / height) of the captured photo for image-only cards.
+         *
+         * For OCR cards (Credit/Debit) this is ignored — they always render at the
+         * standard credit-card ratio. For image-only cards this preserves the exact
+         * shape the user captured (e.g. 0.75 for a 3:4 portrait, 1.333 for 4:3,
+         * 1.778 for 16:9), so the saved card looks identical to its capture preview.
+         *
+         * `null` (legacy rows from before this field existed) falls back to the
+         * credit-card ratio at render time.
+         */
+        val aspectRatio: Float? = null,
+
         /** Timestamp when the card was created */
         val createdAt: Long,
 
@@ -102,6 +115,23 @@ data class Card(
     /** Returns the gradient to use for this card (custom or default) */
     fun getGradient(): CardGradient = customGradient ?: getDefaultGradientForType(type)
 
+    /**
+     * Returns the aspect ratio (w/h) to use when rendering this card.
+     *
+     * - OCR cards always render at the standard credit-card ratio (1.586) regardless
+     *   of any stored value, because OCR cards are always displayed as generated
+     *   gradient cards.
+     * - Image-only cards use the captured aspect ratio when available.
+     * - Legacy rows without a stored ratio fall back to the credit-card ratio so
+     *   they keep rendering exactly as they used to.
+     */
+    fun getDisplayAspectRatio(): Float {
+        if (type.supportsOCR()) return CREDIT_CARD_DISPLAY_RATIO
+        val stored = aspectRatio
+        if (stored == null || stored <= 0f) return CREDIT_CARD_DISPLAY_RATIO
+        return stored
+    }
+
     companion object {
         /** Common extracted data keys for OCR processing */
         const val CARD_NUMBER_KEY = "cardNumber"
@@ -111,6 +141,9 @@ data class Card(
 
         /** Common custom field keys */
         const val NOTES_KEY = "notes"
+
+        /** Standard ISO/IEC 7810 ID-1 ratio used for OCR cards and as a fallback. */
+        const val CREDIT_CARD_DISPLAY_RATIO = 1.586f
 
         /** Returns the default gradient for a given card type */
         fun getDefaultGradientForType(type: CardType): CardGradient = when (type) {

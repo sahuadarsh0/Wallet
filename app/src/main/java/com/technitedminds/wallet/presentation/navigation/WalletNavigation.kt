@@ -81,6 +81,7 @@ fun WalletNavigation(
             val frontImagePath by savedStateHandle.getStateFlow<String?>(NavigationResultKeys.FRONT_IMAGE_PATH, null).collectAsStateWithLifecycle()
             val backImagePath by savedStateHandle.getStateFlow<String?>(NavigationResultKeys.BACK_IMAGE_PATH, null).collectAsStateWithLifecycle()
             val extractedData by savedStateHandle.getStateFlow<Map<String, String>?>(NavigationResultKeys.EXTRACTED_DATA, null).collectAsStateWithLifecycle()
+            val capturedAspectRatio by savedStateHandle.getStateFlow<Float?>(NavigationResultKeys.ASPECT_RATIO, null).collectAsStateWithLifecycle()
             
             AddCardScreen(
                 onNavigateBack = {
@@ -98,6 +99,7 @@ fun WalletNavigation(
                 capturedFrontImagePath = frontImagePath,
                 capturedBackImagePath = backImagePath,
                 capturedExtractedData = extractedData ?: emptyMap(),
+                capturedAspectRatio = capturedAspectRatio,
                 nfcCardReaderManager = nfcCardReaderManager,
             )
         }
@@ -115,12 +117,13 @@ fun WalletNavigation(
                 onNavigateBack = {
                     navController.popBackStack()
                 },
-                onImagesConfirmed = { frontImagePath, backImagePath, extractedData ->
+                onImagesConfirmed = { frontImagePath, backImagePath, extractedData, aspectRatio ->
                     // Navigate back to add card with captured data
                     navController.previousBackStackEntry?.savedStateHandle?.apply {
                         set(NavigationResultKeys.FRONT_IMAGE_PATH, frontImagePath)
                         set(NavigationResultKeys.BACK_IMAGE_PATH, backImagePath)
                         set(NavigationResultKeys.EXTRACTED_DATA, extractedData)
+                        set(NavigationResultKeys.ASPECT_RATIO, aspectRatio)
                     }
                     navController.popBackStack()
                 }

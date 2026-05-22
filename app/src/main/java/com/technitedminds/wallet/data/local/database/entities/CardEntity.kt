@@ -45,6 +45,7 @@ data class CardEntity(
         @ColumnInfo(name = "expiry_date") val expiryDate: String?,
         @ColumnInfo(name = "notes") val notes: String?,
         @ColumnInfo(name = "custom_gradient") val customGradient: com.technitedminds.wallet.domain.model.CardGradient?,
+        @ColumnInfo(name = "aspect_ratio") val aspectRatio: Float? = null,
         @ColumnInfo(name = "created_at") val createdAt: Long,
         @ColumnInfo(name = "updated_at") val updatedAt: Long
 )

@@ -87,6 +87,14 @@ fun CardFront(
     val cardTextColor = remember(gradient) {
         gradientContrastText(gradient.startColor, gradient.endColor)
     }
+    val isImageOnlyCard = !card.type.supportsOCR() && card.frontImagePath.isNotBlank()
+    val trayTint = remember(gradient) {
+        try {
+            Color(gradient.startColor.toColorInt())
+        } catch (e: Exception) {
+            Color(Card.getDefaultGradientForType(card.type).startColor.toColorInt())
+        }
+    }
 
     // Holographic shimmer for OCR (textual) cards
     val shimmerTransition = rememberInfiniteTransition(label = "shimmer")
@@ -100,6 +108,35 @@ fun CardFront(
         label = "shimmer_offset"
     )
 
+    if (isImageOnlyCard) {
+        // Image-only cards: render the captured photo on a neumorphic tray.
+        // The parent already constrains us to the captured aspect ratio (via
+        // FlippableCard), so the photo lands flush with the tray without
+        // letterboxing.
+        Box(modifier = modifier.fillMaxSize()) {
+            NeumorphicPhotoTray(
+                imagePath = card.frontImagePath,
+                tint = trayTint,
+                modifier = Modifier.fillMaxSize(),
+                cornerRadius = if (isCompact) 12.dp else 18.dp,
+                photoInset = if (isCompact) 6.dp else 10.dp,
+                contentDescription = "${card.name} front",
+            )
+
+            if (showShareButton && onShare != null && !isCompact) {
+                ShareButton(
+                    onShare = { onShare(CardSharingOption.FrontOnly) },
+                    contentDescription = AppConstants.ContentDescriptions.SHARE_FRONT,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp)
+                        .size(32.dp)
+                )
+            }
+        }
+        return
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -108,37 +145,6 @@ fun CardFront(
                 shape = RoundedCornerShape(if (isCompact) 8.dp else 12.dp)
             )
     ) {
-        // Background image for non-OCR cards
-        if (!card.type.supportsOCR() && card.frontImagePath.isNotBlank()) {
-            val imageFile = File(card.frontImagePath)
-            if (imageFile.exists()) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(imageFile)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = "Card front image",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(if (isCompact) 8.dp else 12.dp)),
-                    contentScale = ContentScale.Crop
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.3f)
-                                )
-                            )
-                        )
-                )
-            }
-        }
-
         // Holographic shimmer overlay (OCR cards only, non-compact)
         if (card.type.supportsOCR() && !isCompact) {
             Box(
