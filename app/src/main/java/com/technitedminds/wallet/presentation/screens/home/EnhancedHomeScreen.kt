@@ -114,8 +114,9 @@ fun EnhancedHomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showFilterSheet by remember { mutableStateOf(false) }
 
-    val folderItems = remember(uiState.categories, uiState.folderCounts) {
-        buildFolderItems(uiState.categories, uiState.folderCounts)
+    val folderTheme = com.technitedminds.wallet.ui.theme.LocalFolderTheme.current
+    val folderItems = remember(uiState.categories, uiState.folderCounts, folderTheme) {
+        buildFolderItems(uiState.categories, uiState.folderCounts, folderTheme)
     }
     val openedFolderItem = remember(uiState.openedFolder, folderItems) {
         resolveOpenedFolderItem(uiState.openedFolder, folderItems)

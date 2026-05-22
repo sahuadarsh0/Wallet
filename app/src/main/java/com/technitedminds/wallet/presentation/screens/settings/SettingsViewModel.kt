@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.technitedminds.wallet.data.local.files.ImageFileManager
 import com.technitedminds.wallet.data.local.preferences.SimplePreferencesManager
 import com.technitedminds.wallet.data.local.preferences.ThemeMode
+import com.technitedminds.wallet.ui.theme.BackgroundPattern
+import com.technitedminds.wallet.ui.theme.FolderTheme
 import com.technitedminds.wallet.domain.usecase.category.GetCategoriesUseCase
 import com.technitedminds.wallet.domain.usecase.category.ManageCategoryUseCase
 import com.technitedminds.wallet.domain.usecase.card.GetCardsUseCase
@@ -21,6 +23,8 @@ import javax.inject.Inject
  */
 data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val folderTheme: FolderTheme = FolderTheme.VIBRANT,
+    val backgroundPattern: BackgroundPattern = BackgroundPattern.NONE,
     val totalCards: Int = 0,
     val totalCategories: Int = 0,
     val storageUsedMB: Float = 0f,
@@ -56,6 +60,7 @@ class SettingsViewModel @Inject constructor(
     init {
         loadStatistics()
         loadThemePreference()
+        loadAppearancePreferences()
     }
     
     /**
@@ -129,6 +134,50 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     error = e.message ?: "Failed to update theme"
+                )
+            }
+        }
+    }
+
+    /**
+     * Load folder theme + background pattern preferences and stream updates
+     * into UI state. Both values use safe defaults so brand-new installs see
+     * the original Vibrant theme with no decorative pattern.
+     */
+    private fun loadAppearancePreferences() {
+        viewModelScope.launch {
+            preferencesManager.getFolderTheme().collect { stored ->
+                _uiState.value = _uiState.value.copy(folderTheme = FolderTheme.fromName(stored))
+            }
+        }
+        viewModelScope.launch {
+            preferencesManager.getBackgroundPattern().collect { stored ->
+                _uiState.value = _uiState.value.copy(backgroundPattern = BackgroundPattern.fromName(stored))
+            }
+        }
+    }
+
+    fun updateFolderTheme(theme: FolderTheme) {
+        viewModelScope.launch {
+            try {
+                preferencesManager.setFolderTheme(theme.name)
+                _uiState.value = _uiState.value.copy(folderTheme = theme)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = e.message ?: "Failed to update folder theme"
+                )
+            }
+        }
+    }
+
+    fun updateBackgroundPattern(pattern: BackgroundPattern) {
+        viewModelScope.launch {
+            try {
+                preferencesManager.setBackgroundPattern(pattern.name)
+                _uiState.value = _uiState.value.copy(backgroundPattern = pattern)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = e.message ?: "Failed to update background"
                 )
             }
         }

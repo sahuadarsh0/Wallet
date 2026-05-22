@@ -1,6 +1,7 @@
 package com.technitedminds.wallet
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
@@ -87,6 +88,12 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        // Block screenshots, screen recording, and hide app content from the
+        // recents (overview) thumbnail. Cards may contain PAN/CVV/cardholder.
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_SECURE,
+            WindowManager.LayoutParams.FLAG_SECURE,
+        )
         enableEdgeToEdge()
 
         setContent {
@@ -155,6 +162,10 @@ class MainActivity : FragmentActivity() {
             }
 
             WalletTheme(themeMode = uiState.themeMode) {
+                androidx.compose.runtime.CompositionLocalProvider(
+                    com.technitedminds.wallet.ui.theme.LocalFolderTheme provides uiState.folderTheme,
+                    com.technitedminds.wallet.ui.theme.LocalBackgroundPattern provides uiState.backgroundPattern,
+                ) {
                 // Dark base background — prevents ANY white flash during
                 // transitions (splash fade-out, phase changes, etc.)
                 Box(
@@ -205,6 +216,7 @@ class MainActivity : FragmentActivity() {
                             onSplashFinished = { splashAnimDone = true },
                         )
                     }
+                }
                 }
             }
         }

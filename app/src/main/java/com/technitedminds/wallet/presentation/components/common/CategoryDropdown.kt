@@ -8,7 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.technitedminds.wallet.domain.model.Category
-
 /**
  * Dropdown for selecting card category
  */
@@ -23,7 +22,7 @@ fun CategoryDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val selectedCategory = categories.find { it.id == selectedCategoryId }
-    
+
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it },
@@ -47,14 +46,17 @@ fun CategoryDropdown(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            // Default "General" option
-            DropdownMenuItem(
-                text = { Text("General") },
-                onClick = {
-                    onCategorySelected("")
-                    expanded = false
-                }
-            )
+            // Default "General" option — maps to the seeded Category.DEFAULT
+            // row so the cards.category_id foreign key stays satisfied.
+            if (categories.none { it.id == Category.DEFAULT.id }) {
+                DropdownMenuItem(
+                    text = { Text("General") },
+                    onClick = {
+                        onCategorySelected(Category.DEFAULT.id)
+                        expanded = false
+                    }
+                )
+            }
             
             // User categories
             categories.forEach { category ->

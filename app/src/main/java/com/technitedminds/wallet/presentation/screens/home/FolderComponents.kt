@@ -52,6 +52,7 @@ import com.technitedminds.wallet.presentation.components.animation.liquidPress
 import com.technitedminds.wallet.presentation.components.common.PremiumCard
 import com.technitedminds.wallet.presentation.components.common.getIconFromName
 import com.technitedminds.wallet.presentation.components.common.gradientShadow
+import com.technitedminds.wallet.ui.theme.FolderTheme
 import com.technitedminds.wallet.ui.theme.WalletSpring
 import com.technitedminds.wallet.ui.theme.WalletTiming
 import kotlinx.coroutines.delay
@@ -71,10 +72,19 @@ data class FolderItem(
 /**
  * Build the list of folder tiles to display, in a stable order:
  *   All → category folders → Uncategorized (only when there are uncategorized cards).
+ *
+ * [folderTheme] selects the gradient palette used for each tile. The default
+ * [FolderTheme.VIBRANT] reproduces the original CardVault colors exactly so
+ * existing users opting out of the new theme picker keep their familiar look.
+ * Categories that the user has explicitly assigned a color to in
+ * [Category.colorHex] still respect that color when the Vibrant theme is
+ * selected — under the more curated themes we honor the theme's palette
+ * instead so the whole grid feels cohesive.
  */
 fun buildFolderItems(
     categories: List<Category>,
     folderCounts: Map<String, Int>,
+    folderTheme: FolderTheme = FolderTheme.VIBRANT,
 ): List<FolderItem> {
     val all = FolderItem(
         folder = OpenedFolder.All,
@@ -82,12 +92,20 @@ fun buildFolderItems(
         subtitle = "Everything in your wallet",
         icon = Icons.Default.Apps,
         count = folderCounts[HomeViewModel.FOLDER_ALL_KEY] ?: 0,
-        gradient = listOf(Color(0xFF4F46E5), Color(0xFF9333EA)),
+        gradient = folderTheme.allCardsGradient,
     )
 
     val categoryFolders = categories.map { category ->
-        val tint = parseHexColor(category.colorHex)
-        val gradient = listOf(tint, tint.darken(0.25f))
+        // Vibrant preserves the original behavior: lean on the category's own
+        // user-picked color so manually-themed categories stay personal.
+        // Curated themes intentionally override per-category colors so the
+        // whole grid speaks the same visual language.
+        val gradient = if (folderTheme == FolderTheme.VIBRANT) {
+            val tint = parseHexColor(category.colorHex)
+            listOf(tint, tint.darken(0.25f))
+        } else {
+            folderTheme.gradientFor(category.id)
+        }
         FolderItem(
             folder = OpenedFolder.Category(category.id),
             title = category.name,
@@ -106,7 +124,7 @@ fun buildFolderItems(
             subtitle = "Cards without a category",
             icon = Icons.AutoMirrored.Filled.HelpOutline,
             count = uncategorizedCount,
-            gradient = listOf(Color(0xFF64748B), Color(0xFF334155)),
+            gradient = folderTheme.uncategorizedGradient,
         )
     } else null
 

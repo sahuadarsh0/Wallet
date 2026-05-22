@@ -337,7 +337,8 @@ private fun getCategoryColor(category: String): Color {
  */
 private fun getCategoryIcon(category: String): ImageVector {
     return when (category.lowercase()) {
-        "personal", "personal cards" -> Icons.Default.Person
+        "default", "general" -> Icons.Default.Category
+        "government", "govt" -> Icons.Default.AccountBalance
         "business", "work" -> Icons.Default.Business
         "travel" -> Icons.Default.Flight
         "shopping", "retail" -> Icons.Default.ShoppingCart

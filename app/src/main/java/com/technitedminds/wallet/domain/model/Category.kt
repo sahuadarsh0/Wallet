@@ -41,11 +41,11 @@ data class Category(
         /** Predefined categories */
         val PREDEFINED_CATEGORIES = listOf(
             Category(
-                id = "personal",
-                name = "Personal",
-                description = "Personal cards and documents",
+                id = "government",
+                name = "Government",
+                description = "Government-issued IDs and documents",
                 colorHex = "#1976D2",
-                iconName = "Person"
+                iconName = "AccountBalance"
             ),
             Category(
                 id = "business",

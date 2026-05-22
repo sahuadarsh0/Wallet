@@ -53,6 +53,8 @@ class SimplePreferencesManager @Inject constructor(
         private val PREFERRED_CARD_ASPECT_RATIO = stringPreferencesKey("preferred_card_aspect_ratio")
         private val DEFAULT_CARD_CATEGORY = stringPreferencesKey("default_card_category")
         private val LAST_DB_OPTIMIZATION = stringPreferencesKey("last_db_optimization")
+        private val FOLDER_THEME = stringPreferencesKey("folder_theme")
+        private val BACKGROUND_PATTERN = stringPreferencesKey("background_pattern")
     }
     
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = PREFERENCES_NAME)
@@ -379,6 +381,31 @@ class SimplePreferencesManager @Inject constructor(
     fun getLastDbOptimization(): Flow<String?> {
         return context.dataStore.data.map { preferences ->
             preferences[LAST_DB_OPTIMIZATION]
+        }
+    }
+
+    // Folder theme preferences (persisted as enum name; defaults handled by callers)
+    suspend fun setFolderTheme(themeName: String) {
+        context.dataStore.edit { preferences ->
+            preferences[FOLDER_THEME] = themeName
+        }
+    }
+
+    fun getFolderTheme(): Flow<String?> {
+        return context.dataStore.data.map { preferences ->
+            preferences[FOLDER_THEME]
+        }
+    }
+
+    suspend fun setBackgroundPattern(patternName: String) {
+        context.dataStore.edit { preferences ->
+            preferences[BACKGROUND_PATTERN] = patternName
+        }
+    }
+
+    fun getBackgroundPattern(): Flow<String?> {
+        return context.dataStore.data.map { preferences ->
+            preferences[BACKGROUND_PATTERN]
         }
     }
 

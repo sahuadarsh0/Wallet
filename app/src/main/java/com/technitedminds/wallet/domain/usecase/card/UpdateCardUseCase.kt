@@ -170,12 +170,9 @@ constructor(
             }
         }
 
-        // Validate category ID if provided
-        request.categoryId?.let { categoryId ->
-            if (categoryId.isBlank()) {
-                return ValidationResult(false, "Category ID cannot be empty")
-            }
-        }
+        // categoryId is allowed to be blank — it maps the card to the
+        // "General" / Uncategorized bucket. Only non-blank values need to map
+        // to an actual category, but we don't reject blank here.
 
         // Validate image data if provided
         request.frontImageData?.let { imageData ->
