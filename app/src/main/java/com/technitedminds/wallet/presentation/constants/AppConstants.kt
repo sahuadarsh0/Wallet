@@ -715,4 +715,10 @@ For questions, contact: support@technitedminds.com"""
         const val BUILD_CONFIG_CLASS = "com.technitedminds.wallet.BuildConfig"
         const val BUILD_TYPE_FIELD = "BUILD_TYPE"
     }
+
+    // TryClothing Constants
+    object TryClothing {
+        const val REMOTE_CONFIG_ENDPOINT_KEY = "tryon_api_endpoint"
+        const val REMOTE_CONFIG_API_KEY = "tryon_api_key"
+    }
 }

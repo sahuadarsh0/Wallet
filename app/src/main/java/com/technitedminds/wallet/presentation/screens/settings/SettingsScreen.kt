@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CreditCard
@@ -99,6 +100,7 @@ import com.technitedminds.wallet.data.local.preferences.ThemeMode
 import com.technitedminds.wallet.presentation.components.common.ConfirmationDialog
 import com.technitedminds.wallet.presentation.components.common.ScreenGradientBackground
 import com.technitedminds.wallet.presentation.constants.AppConstants
+import com.technitedminds.wallet.presentation.screens.backup.BackupAndRestoreSection
 import com.technitedminds.wallet.presentation.screens.security.AppLockScreen
 import com.technitedminds.wallet.presentation.screens.security.AppLockViewModel
 import com.technitedminds.wallet.presentation.screens.security.PinScreenMode
@@ -132,6 +134,21 @@ fun SettingsScreen(
     var showTimeoutPicker by remember { mutableStateOf(false) }
     var showAppearanceDialog by remember { mutableStateOf(false) }
     
+    // Backup feedback channel — wired through state instead of a direct
+    // call into the snackbar host so we stay inside the composition scope
+    // owned by Scaffold.
+    var backupMessage by remember { mutableStateOf<String?>(null) }
+    backupMessage?.let { msg ->
+        LaunchedEffect(msg) {
+            snackbarHostState.showSnackbar(
+                message = msg,
+                actionLabel = AppConstants.DialogText.OK_BUTTON,
+                duration = SnackbarDuration.Long,
+            )
+            backupMessage = null
+        }
+    }
+
     ScreenGradientBackground(modifier = modifier) {
         Scaffold(
             topBar = {
@@ -357,6 +374,18 @@ fun SettingsScreen(
                 }
             }
             
+            // Backup & Restore Section — fully offline, end-to-end encrypted.
+            // Lives just below Storage Management so users naturally see it
+            // when they're already thinking about device data.
+            SettingsSection(
+                title = "Backup & Restore",
+                icon = Icons.Default.CloudUpload,
+            ) {
+                BackupAndRestoreSection(
+                    onShowMessage = { msg -> backupMessage = msg },
+                )
+            }
+
             // App Information Section
             SettingsSection(
                 title = AppConstants.StatisticsLabels.APP_INFORMATION,

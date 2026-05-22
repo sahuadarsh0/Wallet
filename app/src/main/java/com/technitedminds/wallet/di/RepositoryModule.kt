@@ -1,9 +1,11 @@
 package com.technitedminds.wallet.di
 
+import com.technitedminds.wallet.data.repository.BackupRepositoryImpl
 import com.technitedminds.wallet.data.repository.CardRepositoryImpl
 import com.technitedminds.wallet.data.repository.CategoryRepositoryImpl
 
 import com.technitedminds.wallet.data.repository.ImageRepositoryImpl
+import com.technitedminds.wallet.domain.repository.BackupRepository
 import com.technitedminds.wallet.domain.repository.CardRepository
 import com.technitedminds.wallet.domain.repository.CategoryRepository
 
@@ -38,6 +40,10 @@ abstract class RepositoryModule {
     abstract fun bindImageRepository(
         imageRepositoryImpl: ImageRepositoryImpl
     ): ImageRepository
-    
 
+    @Binds
+    @Singleton
+    abstract fun bindBackupRepository(
+        backupRepositoryImpl: BackupRepositoryImpl
+    ): BackupRepository
 }
