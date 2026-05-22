@@ -117,7 +117,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 fun resolveCategoryName(categoryId: String?): String {
     return when {
         categoryId.isNullOrBlank() -> "General"
-        categoryId == "personal" -> "Personal"
+        categoryId == "default" -> "General"
+        categoryId == "government" -> "Government"
         categoryId == "business" -> "Business"
         categoryId == "travel" -> "Travel"
         categoryId == "shopping" -> "Shopping"

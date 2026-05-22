@@ -3,6 +3,7 @@ package com.technitedminds.wallet.presentation.navigation
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -42,7 +44,6 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.technitedminds.wallet.presentation.constants.AppConstants
 import com.technitedminds.wallet.ui.theme.Glass
-import com.technitedminds.wallet.ui.theme.GlassSurface
 import com.technitedminds.wallet.ui.theme.WalletSpring
 
 /**
@@ -74,6 +75,14 @@ fun WalletBottomNavigation(
     )
     LaunchedEffect(Unit) { appeared = true }
 
+    // Pill background uses an opaque theme-aware surface (instead of the
+    // highly-transparent glass token) so the bottom nav remains clearly
+    // visible against any backdrop in both light and dark mode. We still
+    // keep the iridescent glass border for the premium look.
+    val pillShape = RoundedCornerShape(Glass.PillCornerRadius)
+    val pillContainer = MaterialTheme.colorScheme.surfaceContainerHighest
+    val pillBorder = Glass.colors.border
+
     Box(
         modifier = modifier
             .graphicsLayer {
@@ -84,16 +93,17 @@ fun WalletBottomNavigation(
             .padding(bottom = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
-        GlassSurface(
-            shape = RoundedCornerShape(Glass.PillCornerRadius),
-            useElevated = true,
+        Box(
             modifier = Modifier
                 .shadow(
                     elevation = 12.dp,
-                    shape = RoundedCornerShape(Glass.PillCornerRadius),
+                    shape = pillShape,
                     ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                     spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                ),
+                )
+                .clip(pillShape)
+                .background(pillContainer, pillShape)
+                .border(1.dp, pillBorder, pillShape),
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),

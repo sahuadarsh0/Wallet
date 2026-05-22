@@ -1,6 +1,8 @@
 package com.technitedminds.wallet.presentation.screens.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -8,8 +10,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -29,29 +33,26 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.Analytics
-import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SelectAll
-import androidx.compose.material3.Card
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -65,20 +66,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.technitedminds.wallet.presentation.components.animation.liquidPress
-import com.technitedminds.wallet.ui.theme.WalletSpring
-import com.technitedminds.wallet.ui.theme.WalletTiming
-import com.technitedminds.wallet.ui.theme.gradientContrastText
-import kotlinx.coroutines.delay
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.technitedminds.wallet.domain.model.Card
@@ -86,40 +83,101 @@ import com.technitedminds.wallet.domain.model.CardType
 import com.technitedminds.wallet.domain.model.GradientDirection
 import com.technitedminds.wallet.presentation.components.animation.EnhancedShimmerEffect
 import com.technitedminds.wallet.presentation.components.animation.EnhancedSlideInItem
-import com.technitedminds.wallet.presentation.components.common.AnimatedSectionHeader
+import com.technitedminds.wallet.presentation.components.animation.liquidPress
 import com.technitedminds.wallet.presentation.components.common.PremiumCard
-import com.technitedminds.wallet.presentation.components.common.ScreenGradientBackground
 import com.technitedminds.wallet.presentation.components.common.PremiumChip
 import com.technitedminds.wallet.presentation.components.common.PremiumLoadingIndicator
-import com.technitedminds.wallet.presentation.components.common.PremiumTextField
-import com.technitedminds.wallet.presentation.components.common.gradientShadow
+import com.technitedminds.wallet.presentation.components.common.PremiumSearchBar
+import com.technitedminds.wallet.presentation.components.common.ScreenGradientBackground
 import com.technitedminds.wallet.presentation.components.common.getIcon
+import com.technitedminds.wallet.presentation.components.common.gradientShadow
 import com.technitedminds.wallet.presentation.constants.AppConstants
+import com.technitedminds.wallet.ui.theme.WalletSpring
+import com.technitedminds.wallet.ui.theme.WalletTiming
+import com.technitedminds.wallet.ui.theme.gradientContrastText
+import kotlinx.coroutines.delay
 
 /**
- * Enhanced home screen with premium animations and improved UX
+ * Enhanced home screen with premium animations and improved UX.
+ *
+ * Top-level content is now organized into category-backed **folders**.
+ * Opening a folder reveals the cards it contains; card-type filters and search
+ * continue to work inside the opened folder.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EnhancedHomeScreen(
     onCardClick: (Card) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showFilterSheet by remember { mutableStateOf(false) }
+
+    val folderTheme = com.technitedminds.wallet.ui.theme.LocalFolderTheme.current
+    val folderItems = remember(uiState.categories, uiState.folderCounts, folderTheme) {
+        buildFolderItems(uiState.categories, uiState.folderCounts, folderTheme)
+    }
+    val openedFolderItem = remember(uiState.openedFolder, folderItems) {
+        resolveOpenedFolderItem(uiState.openedFolder, folderItems)
+    }
+    val isInsideFolder = uiState.openedFolder != null
+    val hasRootQuery = !isInsideFolder && uiState.searchQuery.isNotBlank()
+    var isSearchExpanded by rememberSaveable { mutableStateOf(false) }
+
+    // Reset search-expanded state when entering or leaving a folder.
+    LaunchedEffect(isInsideFolder) {
+        isSearchExpanded = false
+        if (uiState.searchQuery.isNotBlank()) {
+            viewModel.clearSearch()
+        }
+    }
+
+    // Intercept back when inside a folder.
+    // First collapse the search bar (if open) or clear the query, then on the
+    // next back press pop back to the folders grid.
+    BackHandler(enabled = isInsideFolder && (isSearchExpanded || uiState.searchQuery.isNotBlank())) {
+        if (uiState.searchQuery.isNotBlank()) {
+            viewModel.clearSearch()
+        }
+        isSearchExpanded = false
+    }
+    BackHandler(enabled = isInsideFolder && !isSearchExpanded && uiState.searchQuery.isBlank()) {
+        viewModel.closeFolder()
+    }
+
+    // Back closes an expanded search field at folders root before exiting the screen.
+    BackHandler(enabled = !isInsideFolder && (isSearchExpanded || hasRootQuery)) {
+        viewModel.clearSearch()
+        isSearchExpanded = false
+    }
 
     ScreenGradientBackground(modifier = modifier) {
         Scaffold(
             contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
             containerColor = Color.Transparent,
+            // Ensure icons/text inside the scaffold body inherit a theme-aware
+            // content color (otherwise LocalContentColor falls back to black,
+            // which makes back buttons and similar controls invisible in dark mode).
+            contentColor = MaterialTheme.colorScheme.onBackground,
             topBar = {
                 EnhancedHomeTopBar(
-                    searchQuery = uiState.searchQuery,
-                    onSearchQueryChange = viewModel::updateSearchQuery,
-                    onClearSearch = viewModel::clearSearch,
+                    folderItem = openedFolderItem.takeIf { isInsideFolder },
+                    isSearchExpanded = isSearchExpanded,
+                    onToggleSearch = {
+                        isSearchExpanded = !isSearchExpanded
+                        if (!isSearchExpanded && uiState.searchQuery.isNotBlank()) {
+                            viewModel.clearSearch()
+                        }
+                    },
+                    showSearchAction = true,
+                    showFilterAction = true,
+                    hasActiveFilters = uiState.selectedCardType != null,
+                    onOpenFilters = { showFilterSheet = true },
                     isGridLayout = uiState.isGridLayout,
                     onToggleLayout = viewModel::toggleLayout,
+                    layoutToggleEnabled = isInsideFolder || hasRootQuery,
+                    onBack = viewModel::closeFolder,
                 )
             },
         ) { paddingValues ->
@@ -128,34 +186,81 @@ fun EnhancedHomeScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-            FilterTriggerBar(
-                selectedCategoryId = uiState.selectedCategoryId,
-                selectedCardType = uiState.selectedCardType,
-                categories = uiState.categories,
-                onClearCategory = { viewModel.selectCategory(null) },
-                onClearCardType = { viewModel.selectCardType(null) },
-                onOpenFilters = { showFilterSheet = true },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            )
-
-            EnhancedCardsSection(
-                cards = uiState.filteredCards,
-                isGridLayout = uiState.isGridLayout,
-                isLoading = uiState.isLoading,
-                onCardClick = onCardClick,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp)
-            )
+                val showSearchField = isSearchExpanded
+                AnimatedVisibility(
+                    visible = showSearchField,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut(),
+                ) {
+                    PremiumSearchBar(
+                        query = uiState.searchQuery,
+                        onQueryChange = viewModel::updateSearchQuery,
+                        onClear = {
+                            viewModel.clearSearch()
+                            isSearchExpanded = false
+                        },
+                        autoFocus = isSearchExpanded,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                horizontal = AppConstants.Dimensions.SPACING_LARGE,
+                                vertical = AppConstants.Dimensions.SPACING_SMALL,
+                            ),
+                    )
+                }
+                val mode = when {
+                    isInsideFolder && openedFolderItem != null -> HomeMode.FolderDetail
+                    hasRootQuery -> HomeMode.GlobalSearch
+                    else -> HomeMode.Folders
+                }
+                AnimatedContent(
+                    targetState = mode,
+                    transitionSpec = {
+                        (slideInHorizontally { it / 6 } + fadeIn(tween(250))) togetherWith
+                            (slideOutHorizontally { -it / 6 } + fadeOut(tween(200)))
+                    },
+                    label = "home_mode",
+                    modifier = Modifier.fillMaxSize(),
+                ) { current ->
+                    when (current) {
+                        HomeMode.FolderDetail -> {
+                            // Safe because mode is only FolderDetail when openedFolderItem != null.
+                            val folderItem = openedFolderItem ?: return@AnimatedContent
+                            FolderDetailView(
+                                folderItem = folderItem,
+                                selectedCardType = uiState.selectedCardType,
+                                cards = uiState.filteredCards,
+                                isGridLayout = uiState.isGridLayout,
+                                isLoading = uiState.isLoading,
+                                onBack = viewModel::closeFolder,
+                                onOpenFilters = { showFilterSheet = true },
+                                onClearCardType = { viewModel.selectCardType(null) },
+                                onCardClick = onCardClick,
+                            )
+                        }
+                        HomeMode.GlobalSearch -> {
+                            GlobalSearchResultsView(
+                                query = uiState.searchQuery,
+                                cards = uiState.globalFilteredCards,
+                                isGridLayout = uiState.isGridLayout,
+                                isLoading = uiState.isLoading,
+                                onCardClick = onCardClick,
+                            )
+                        }
+                        HomeMode.Folders -> {
+                            FoldersView(
+                                items = folderItems,
+                                onFolderClick = viewModel::openFolder,
+                            )
+                        }
+                    }
+                }
+            }
         }
-    }
     }
 
     if (showFilterSheet) {
         FilterBottomSheet(
-            categories = uiState.categories,
-            selectedCategoryId = uiState.selectedCategoryId,
-            onCategorySelected = viewModel::selectCategory,
             selectedCardType = uiState.selectedCardType,
             onCardTypeSelected = viewModel::selectCardType,
             onDismiss = { showFilterSheet = false },
@@ -169,266 +274,329 @@ fun EnhancedHomeScreen(
     if (uiState.isLoading) {
         Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             PremiumLoadingIndicator(text = AppConstants.LoadingMessages.LOADING_CARDS)
         }
     }
 }
 
+/**
+ * Top-level folders grid content. Wraps [FoldersGrid] with the standard
+ * horizontal padding and a small header describing the section.
+ */
+@Composable
+private fun FoldersView(
+    items: List<FolderItem>,
+    onFolderClick: (OpenedFolder) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        FoldersGrid(
+            items = items,
+            onFolderClick = onFolderClick,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+    }
+}
+
+/**
+ * Cards-inside-folder view. Shows a folder header, the card-type filter row,
+ * and the filtered cards list/grid.
+ */
+@Composable
+private fun FolderDetailView(
+    folderItem: FolderItem,
+    selectedCardType: CardType?,
+    cards: List<Card>,
+    isGridLayout: Boolean,
+    isLoading: Boolean,
+    onBack: () -> Unit,
+    onOpenFilters: () -> Unit,
+    onClearCardType: () -> Unit,
+    onCardClick: (Card) -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (selectedCardType != null) {
+            ActiveFilterChipRow(
+                selectedCardType = selectedCardType,
+                onOpenFilters = onOpenFilters,
+                onClearCardType = onClearCardType,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+        }
+
+        EnhancedCardsSection(
+            cards = cards,
+            isGridLayout = isGridLayout,
+            isLoading = isLoading,
+            onCardClick = onCardClick,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+        )
+    }
+}
+
+/**
+ * Top-level rendering modes for the home screen body.
+ */
+private enum class HomeMode { Folders, GlobalSearch, FolderDetail }
+
+/**
+ * Global search results view shown at the folders root when the user has
+ * typed a non-empty query. Lists every card in the app matching the query,
+ * regardless of category, sorted by last-updated descending.
+ */
+@Composable
+private fun GlobalSearchResultsView(
+    query: String,
+    cards: List<Card>,
+    isGridLayout: Boolean,
+    isLoading: Boolean,
+    onCardClick: (Card) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(top = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = AppConstants.UIText.GLOBAL_SEARCH_HEADER,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = "\u201C${query.trim()}\u201D",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+
+        if (!isLoading && cards.isEmpty()) {
+            GlobalSearchEmptyState(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 32.dp),
+            )
+        } else {
+            EnhancedCardsSection(
+                cards = cards,
+                isGridLayout = isGridLayout,
+                isLoading = isLoading,
+                onCardClick = onCardClick,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+    }
+}
+
+/**
+ * Empty state shown when the global search has no matches.
+ */
+@Composable
+private fun GlobalSearchEmptyState(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            modifier = Modifier.size(56.dp),
+        )
+        Text(
+            text = AppConstants.UIText.GLOBAL_SEARCH_EMPTY_TITLE,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = AppConstants.UIText.GLOBAL_SEARCH_EMPTY_SUBTITLE,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EnhancedHomeTopBar(
-    searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
-    onClearSearch: () -> Unit,
+    folderItem: FolderItem?,
+    isSearchExpanded: Boolean,
+    onToggleSearch: () -> Unit,
+    showSearchAction: Boolean,
+    showFilterAction: Boolean,
+    hasActiveFilters: Boolean,
+    onOpenFilters: () -> Unit,
     isGridLayout: Boolean,
     onToggleLayout: () -> Unit,
-    modifier: Modifier = Modifier
+    layoutToggleEnabled: Boolean,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    var isSearchActive by remember { mutableStateOf(false) }
-
+    val isFolderMode = folderItem != null
     TopAppBar(
         title = {
-            AnimatedContent(
-                targetState = isSearchActive,
-                transitionSpec = {
-                    slideInHorizontally() + fadeIn() togetherWith
-                    slideOutHorizontally() + fadeOut()
-                },
-                label = "topbar_content"
-            ) { searchActive ->
-                if (searchActive) {
-                    PremiumTextField(
-                        value = searchQuery,
-                        onValueChange = onSearchQueryChange,
-                        label = AppConstants.UIText.SEARCH_CARDS_PLACEHOLDER,
-                        leadingIcon = Icons.Default.Search,
-                        trailingIcon = {
-                            IconButton(onClick = {
-                                onClearSearch()
-                                isSearchActive = false
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = AppConstants.ContentDescriptions.CLEAR_SEARCH
-                                )
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                } else {
-                    Text(
-                        text = AppConstants.UIText.APP_TITLE,
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Bold
+            if (isFolderMode && folderItem != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                brush = Brush.linearGradient(colors = folderItem.gradient),
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = folderItem.icon,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp),
                         )
+                    }
+                    Column {
+                        Text(
+                            text = folderItem.title,
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                            ),
+                            maxLines = 1,
+                        )
+                        Text(
+                            text = if (folderItem.count == 1) "1 card" else "${folderItem.count} cards",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = AppConstants.UIText.APP_TITLE,
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                    ),
+                )
+            }
+        },
+        navigationIcon = {
+            if (isFolderMode) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back to folders",
                     )
                 }
             }
         },
         actions = {
-            if (!isSearchActive) {
-                IconButton(onClick = { isSearchActive = true }) {
+            if (showSearchAction) {
+                IconButton(onClick = onToggleSearch) {
                     Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search"
+                        imageVector = if (isSearchExpanded) Icons.Default.Close else Icons.Default.Search,
+                        contentDescription = if (isSearchExpanded) {
+                            AppConstants.ContentDescriptions.CLEAR_SEARCH
+                        } else {
+                            "Search"
+                        },
                     )
                 }
+            }
 
+            if (showFilterAction) {
+                IconButton(onClick = onOpenFilters) {
+                    BadgedBox(
+                        badge = {
+                            if (hasActiveFilters) {
+                                Badge(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FilterList,
+                            contentDescription = if (hasActiveFilters) "Edit filters" else "Filters",
+                            tint = if (hasActiveFilters) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                LocalContentColor.current
+                            },
+                        )
+                    }
+                }
+            }
+
+            if (layoutToggleEnabled) {
                 IconButton(onClick = onToggleLayout) {
                     Icon(
                         imageVector = if (isGridLayout) Icons.AutoMirrored.Filled.ViewList else Icons.Default.GridView,
-                        contentDescription = if (isGridLayout) AppConstants.ContentDescriptions.LIST_VIEW else AppConstants.ContentDescriptions.GRID_VIEW
+                        contentDescription = if (isGridLayout) AppConstants.ContentDescriptions.LIST_VIEW else AppConstants.ContentDescriptions.GRID_VIEW,
                     )
                 }
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,
+            // Make sure the title, navigation icon, and actions inherit theme-aware
+            // colors (defaults reference onSurface variants which are correct, but
+            // we make it explicit to guard against future regressions).
+            titleContentColor = MaterialTheme.colorScheme.onBackground,
+            navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+            actionIconContentColor = MaterialTheme.colorScheme.onBackground,
         ),
         modifier = modifier,
     )
 }
 
 @Composable
-private fun EnhancedQuickStatsSection(
-    totalCards: Int,
-    categoryCounts: Map<String, Int>,
-    modifier: Modifier = Modifier
-) {
-    EnhancedSlideInItem(visible = true, index = 0) {
-        Card(
-            modifier = modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                AnimatedSectionHeader(
-                    title = "Quick Stats",
-                    icon = Icons.Default.Analytics,
-                    subtitle = "Your wallet overview"
-                )
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    StatItem(
-                        value = totalCards.toString(),
-                        label = AppConstants.StatisticsLabels.TOTAL_CARDS,
-                        icon = Icons.Default.CreditCard,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    
-                    StatItem(
-                        value = categoryCounts.size.toString(),
-                        label = AppConstants.StatisticsLabels.CATEGORIES,
-                        icon = Icons.Default.Category,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                    
-                    StatItem(
-                        value = categoryCounts.values.maxOrNull()?.toString() ?: "0",
-                        label = "Most Used",
-                        icon = Icons.AutoMirrored.Filled.TrendingUp,
-                        color = MaterialTheme.colorScheme.tertiary
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatItem(
-    value: String,
-    label: String,
-    icon: ImageVector,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .background(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            color.copy(alpha = 0.2f),
-                            color.copy(alpha = 0.1f)
-                        )
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = color,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-        
-        Text(
-            text = value,
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-private fun FilterTriggerBar(
-    selectedCategoryId: String?,
-    selectedCardType: CardType?,
-    categories: List<com.technitedminds.wallet.domain.model.Category>,
-    onClearCategory: () -> Unit,
-    onClearCardType: () -> Unit,
+private fun ActiveFilterChipRow(
+    selectedCardType: CardType,
     onOpenFilters: () -> Unit,
+    onClearCardType: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val hasActiveFilters = selectedCategoryId != null || selectedCardType != null
-    val categoryName = remember(selectedCategoryId, categories) {
-        categories.find { it.id == selectedCategoryId }?.name
-    }
-
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(vertical = 4.dp),
     ) {
-        if (hasActiveFilters) {
-            if (selectedCardType != null) {
-                item(key = "type_filter") {
-                    InputChip(
-                        selected = true,
-                        onClick = onOpenFilters,
-                        label = { Text(selectedCardType.getDisplayName()) },
-                        trailingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Clear type filter",
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null,
-                                        onClick = onClearCardType,
-                                    ),
-                            )
-                        },
-                    )
-                }
-            }
-            if (categoryName != null) {
-                item(key = "category_filter") {
-                    InputChip(
-                        selected = true,
-                        onClick = onOpenFilters,
-                        label = { Text(categoryName) },
-                        trailingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Clear category filter",
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null,
-                                        onClick = onClearCategory,
-                                    ),
-                            )
-                        },
-                    )
-                }
-            }
-        }
-
-        item(key = "open_filters") {
-            PremiumChip(
-                text = if (hasActiveFilters) "Edit Filters" else "Filters",
-                selected = false,
+        item(key = "type_filter") {
+            InputChip(
+                selected = true,
                 onClick = onOpenFilters,
-                icon = Icons.Default.FilterList,
+                label = { Text(selectedCardType.getDisplayName()) },
+                trailingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Clear type filter",
+                        modifier = Modifier
+                            .size(18.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = onClearCardType,
+                            ),
+                    )
+                },
             )
         }
     }
@@ -437,16 +605,13 @@ private fun FilterTriggerBar(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FilterBottomSheet(
-    categories: List<com.technitedminds.wallet.domain.model.Category>,
-    selectedCategoryId: String?,
-    onCategorySelected: (String?) -> Unit,
     selectedCardType: CardType?,
     onCardTypeSelected: (CardType?) -> Unit,
     onDismiss: () -> Unit,
     onClearAll: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val hasActiveFilters = selectedCategoryId != null || selectedCardType != null
+    val hasActiveFilters = selectedCardType != null
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -463,37 +628,6 @@ private fun FilterBottomSheet(
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                 modifier = Modifier.padding(horizontal = 24.dp),
             )
-
-            // Categories section
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "Category",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 24.dp),
-                )
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                ) {
-                    item {
-                        PremiumChip(
-                            text = AppConstants.UIText.ALL,
-                            selected = selectedCategoryId == null,
-                            onClick = { onCategorySelected(null) },
-                            icon = Icons.Default.SelectAll,
-                        )
-                    }
-                    items(categories) { category ->
-                        PremiumChip(
-                            text = category.name,
-                            selected = selectedCategoryId == category.id,
-                            onClick = { onCategorySelected(category.id) },
-                            icon = category.getIcon(),
-                        )
-                    }
-                }
-            }
 
             // Card Type section
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -563,7 +697,7 @@ private fun EnhancedCardsSection(
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
             }
-            
+
             when {
                 isLoading -> {
                     repeat(3) { index ->
@@ -696,7 +830,7 @@ private fun EnhancedCardGridItem(
 private fun EnhancedCardListItem(
     card: Card,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val gradient = card.getGradient()
     val gradientColors = getCardGradientColors(card)
@@ -705,7 +839,7 @@ private fun EnhancedCardListItem(
     } catch (e: Exception) {
         Color(android.graphics.Color.parseColor(Card.getDefaultGradientForType(card.type).startColor))
     }
-    
+
     PremiumCard(
         onClick = onClick,
         modifier = modifier
@@ -725,50 +859,47 @@ private fun EnhancedCardListItem(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Card type icon with background using card's gradient color
             Box(
                 modifier = Modifier
                     .size(48.dp)
                     .background(
                         color = primaryColor.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
                     ),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = card.type.getIcon(),
                     contentDescription = "Card type",
                     tint = primaryColor,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
             }
-            
-            // Card info
+
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
                     text = card.name,
                     style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
                     ),
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
-                
+
                 Text(
                     text = card.type.getDisplayName(),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            
-            // Arrow icon
+
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = "View details",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
         }
     }
@@ -830,22 +961,21 @@ private fun EmptyCardsState(
  */
 private fun getCardGradientBrush(card: Card): Brush {
     val gradient = card.getGradient()
-    
+
     val (startColor, endColor) = getCardGradientColors(card)
-    
-    // Apply gradient direction
+
     return when (gradient.direction) {
-        GradientDirection.TopToBottom -> 
+        GradientDirection.TopToBottom ->
             Brush.verticalGradient(colors = listOf(startColor, endColor))
-        GradientDirection.LeftToRight -> 
+        GradientDirection.LeftToRight ->
             Brush.horizontalGradient(colors = listOf(startColor, endColor))
-        GradientDirection.DiagonalTopLeftToBottomRight -> 
+        GradientDirection.DiagonalTopLeftToBottomRight ->
             Brush.linearGradient(colors = listOf(startColor, endColor))
-        GradientDirection.DiagonalTopRightToBottomLeft -> 
+        GradientDirection.DiagonalTopRightToBottomLeft ->
             Brush.linearGradient(
                 colors = listOf(startColor, endColor),
                 start = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, 0f),
-                end = androidx.compose.ui.geometry.Offset(0f, Float.POSITIVE_INFINITY)
+                end = androidx.compose.ui.geometry.Offset(0f, Float.POSITIVE_INFINITY),
             )
     }
 }

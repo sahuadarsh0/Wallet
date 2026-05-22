@@ -93,10 +93,10 @@ constructor(
             return ValidationResult(false, "Card name cannot exceed 100 characters")
         }
 
-        // Validate category ID
-        if (request.categoryId.isBlank()) {
-            return ValidationResult(false, "Category ID cannot be empty")
-        }
+        // Blank categoryId is allowed — it represents the "General" / Uncategorized
+        // bucket. Cards without a categoryId are surfaced under the
+        // FOLDER_UNCATEGORIZED_KEY folder on Home and rendered as "General" in
+        // CategoryUtils.resolveCategoryName.
 
         // Validate images
         if (request.frontImageData.isEmpty()) {

@@ -79,6 +79,11 @@ class ManageCategoryUseCase @Inject constructor(
     
     suspend fun createDefaultCategories(): Result<Unit> {
         return try {
+            // Always ensure the "default" / "General" bucket exists so cards
+            // saved under General satisfy the cards.category_id FK.
+            if (!categoryRepository.categoryExists(Category.DEFAULT.id)) {
+                categoryRepository.addCategory(Category.DEFAULT)
+            }
             Category.PREDEFINED_CATEGORIES.forEach { category ->
                 if (!categoryRepository.categoryExists(category.id)) {
                     categoryRepository.addCategory(category)
@@ -92,6 +97,12 @@ class ManageCategoryUseCase @Inject constructor(
     
     suspend fun resetDefaultCategories(): Result<Unit> {
         return try {
+            // Always reset/recreate the "default" / "General" bucket too.
+            if (categoryRepository.categoryExists(Category.DEFAULT.id)) {
+                categoryRepository.updateCategory(Category.DEFAULT.withUpdatedTimestamp())
+            } else {
+                categoryRepository.addCategory(Category.DEFAULT)
+            }
             // Reset all predefined categories to their original state
             Category.PREDEFINED_CATEGORIES.forEach { category ->
                 if (categoryRepository.categoryExists(category.id)) {

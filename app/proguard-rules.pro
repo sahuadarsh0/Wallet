@@ -74,3 +74,13 @@
 
 # ── NFC / IsoDep ────────────────────────────────────────────────────────
 -keep class com.technitedminds.wallet.data.nfc.** { *; }
+
+# ── Strip verbose / debug logging in release ───────────────────────────
+# Keeps Log.w and Log.e for genuine production failures, so user-reported
+# crashes can still be diagnosed via ADB. Removes Log.d / Log.v / Log.i,
+# which are wired up only for camera lifecycle tracing during development.
+-assumenosideeffects class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+    public static *** i(...);
+}

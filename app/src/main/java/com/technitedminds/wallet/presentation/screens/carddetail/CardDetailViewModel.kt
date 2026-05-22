@@ -333,6 +333,37 @@ class CardDetailViewModel @Inject constructor(
     fun hideSharingDialog() {
         _showSharingDialog.value = false
     }
+
+    /**
+     * Notify that card details have been securely copied to the clipboard.
+     * Triggers a transient success snackbar via [CardDetailUiState.successMessage].
+     */
+    fun onCardDetailsCopied() {
+        _uiState.value = _uiState.value.copy(
+            successMessage = "Card number, CVV, and expiry copied"
+        )
+    }
+
+    /**
+     * Notify the user that there is nothing to copy (none of the sensitive
+     * fields are populated on this card). Surfaces a transient error snackbar.
+     */
+    fun onNothingToCopy() {
+        _uiState.value = _uiState.value.copy(
+            error = "No card number, CVV, or expiry to copy"
+        )
+    }
+
+    /**
+     * Notify that a single field's value was copied to the clipboard via
+     * the long-press gesture on a field row. Surfaces a transient success
+     * snackbar without leaking the value itself.
+     */
+    fun onValueCopied(label: String) {
+        _uiState.value = _uiState.value.copy(
+            successMessage = "$label copied"
+        )
+    }
     
     /**
      * Quick share with default settings (for button clicks)

@@ -65,7 +65,7 @@ class AddCardViewModel @Inject constructor(
         initialValue = false
     )
     val cardName: StateFlow<String> = uiState.map { it.cardName }.stateIn(viewModelScope, SharingStarted.Eagerly, "")
-    val selectedCategory: StateFlow<String> = uiState.map { it.categoryId }.stateIn(viewModelScope, SharingStarted.Eagerly, "personal")
+    val selectedCategory: StateFlow<String> = uiState.map { it.categoryId }.stateIn(viewModelScope, SharingStarted.Eagerly, "government")
     val customFields: StateFlow<Map<String, String>> =
         uiState.map { it.customFields }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
     val categories: StateFlow<List<com.technitedminds.wallet.domain.model.Category>> =
@@ -237,10 +237,9 @@ class AddCardViewModel @Inject constructor(
             return
         }
 
-        if (currentState.categoryId.isBlank()) {
-            _uiState.value = currentState.copy(error = "Please select a category")
-            return
-        }
+        // Blank categoryId is allowed — it represents the "General" / Uncategorized
+        // bucket (see HomeViewModel.FOLDER_UNCATEGORIZED_KEY and CategoryUtils
+        // resolveCategoryName which renders blank as "General").
 
         // NFC flow for credit/debit generates gradient images — no captured photos needed.
         // Camera flow still requires a front image.
@@ -749,12 +748,9 @@ class AddCardViewModel @Inject constructor(
         if (state.cardName.isBlank() || state.cardName.length < 2) {
             return false
         }
-        
-        // Category is required
-        if (state.categoryId.isBlank()) {
-            return false
-        }
-        
+
+        // Blank categoryId is allowed — represents the "General" bucket.
+
         // For OCR cards (Credit/Debit): card data is required for gradient generation
         if (state.cardType.supportsOCR()) {
             // Card number is required for OCR cards
@@ -920,7 +916,7 @@ data class AddCardUiState(
     val cardId: String? = null,
     val cardName: String = "",
     val cardType: CardType = CardType.Credit,
-    val categoryId: String = "personal",
+    val categoryId: String = "government",
     val notes: String = "",
     val frontImagePath: String? = null,
     val backImagePath: String? = null,

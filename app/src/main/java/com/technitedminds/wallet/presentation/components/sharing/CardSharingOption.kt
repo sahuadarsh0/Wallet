@@ -36,13 +36,13 @@ data class CardSharingConfig(
     val includeSensitiveInfo: Boolean = false,
     
     /** Quality of shared images (0.0 to 1.0) */
-    val imageQuality: Float = 0.8f,
+    val imageQuality: Float = 0.85f,
     
-    /** Maximum width of shared images in pixels */
-    val maxImageWidth: Int = 1200,
+    /** Maximum width of shared images in pixels (ID-1 ratio, ≈1.586:1) */
+    val maxImageWidth: Int = 1600,
     
     /** Maximum height of shared images in pixels */
-    val maxImageHeight: Int = 800,
+    val maxImageHeight: Int = 1010,
     
     /** Whether to add watermark to shared images */
     val addWatermark: Boolean = false,

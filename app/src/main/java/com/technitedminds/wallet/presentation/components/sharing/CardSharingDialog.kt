@@ -66,7 +66,6 @@ import androidx.compose.ui.window.DialogProperties
 import com.technitedminds.wallet.domain.model.Card
 import com.technitedminds.wallet.presentation.components.common.PremiumButton
 import com.technitedminds.wallet.presentation.components.common.PremiumButtonVariant
-import com.technitedminds.wallet.presentation.constants.AppConstants
 import com.technitedminds.wallet.ui.theme.WalletSpring
 
 @Composable
@@ -86,9 +85,17 @@ fun CardSharingDialog(
         mutableStateOf(initialOption ?: CardSharingOption.FrontOnly)
     }
     var includeSensitiveInfo by remember { mutableStateOf(false) }
-    var imageQuality by remember { mutableFloatStateOf(0.8f) }
-    var addWatermark by remember { mutableStateOf(true) }
+    var imageQuality by remember { mutableFloatStateOf(0.85f) }
+    var addWatermark by remember { mutableStateOf(false) }
     var watermarkText by remember { mutableStateOf("CardVault") }
+
+    val qualityLabel = remember(imageQuality) {
+        when {
+            imageQuality < 0.55f -> "Standard"
+            imageQuality < 0.85f -> "High"
+            else -> "Maximum"
+        }
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -189,13 +196,13 @@ fun CardSharingDialog(
                         .padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
-                    // ── What to share section ───────────────────────
                     SectionHeader(
                         icon = Icons.Default.CreditCard,
-                        title = AppConstants.UIText.WHAT_TO_SHARE_LABEL,
+                        title = "What to share",
                         accentColor = accent,
                     )
 
+                    val hasBack = card.backImagePath.isNotBlank() || card.type.supportsOCR()
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -212,7 +219,7 @@ fun CardSharingDialog(
                             modifier = Modifier.weight(1f),
                         )
 
-                        if (card.backImagePath.isNotBlank() || card.type.supportsOCR()) {
+                        if (hasBack) {
                             ShareOptionChip(
                                 icon = Icons.Default.Security,
                                 label = "Back",
@@ -238,10 +245,9 @@ fun CardSharingDialog(
                         }
                     }
 
-                    // ── Share settings section ──────────────────────
                     SectionHeader(
                         icon = Icons.Default.Tune,
-                        title = AppConstants.UIText.SHARING_OPTIONS_LABEL,
+                        title = "Share options",
                         accentColor = accent,
                     )
 
@@ -253,8 +259,8 @@ fun CardSharingDialog(
                         Column(modifier = Modifier.padding(16.dp)) {
                             SettingRow(
                                 icon = if (includeSensitiveInfo) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                title = AppConstants.UIText.INCLUDE_SENSITIVE_INFO_LABEL,
-                                subtitle = AppConstants.UIText.INCLUDE_SENSITIVE_INFO_SUBTITLE,
+                                title = "Reveal sensitive details",
+                                subtitle = "Show full card number and CVV",
                             ) {
                                 Switch(
                                     checked = includeSensitiveInfo,
@@ -269,15 +275,15 @@ fun CardSharingDialog(
 
                             SettingRow(
                                 icon = Icons.Default.HighQuality,
-                                title = AppConstants.UIText.IMAGE_QUALITY_LABEL,
-                                subtitle = "${(imageQuality * 100).toInt()}%",
+                                title = "Image quality",
+                                subtitle = "$qualityLabel • ${(imageQuality * 100).toInt()}%",
                             ) {}
 
                             Slider(
                                 value = imageQuality,
                                 onValueChange = { imageQuality = it },
-                                valueRange = 0.3f..1.0f,
-                                steps = 6,
+                                valueRange = 0.4f..1.0f,
+                                steps = 5,
                                 modifier = Modifier.padding(top = 4.dp),
                                 colors = SliderDefaults.colors(
                                     thumbColor = accent,
@@ -292,8 +298,8 @@ fun CardSharingDialog(
 
                             SettingRow(
                                 icon = Icons.Default.WaterDrop,
-                                title = AppConstants.UIText.ADD_WATERMARK_LABEL,
-                                subtitle = AppConstants.UIText.PROTECT_SHARED_IMAGES_SUBTITLE,
+                                title = "Add watermark",
+                                subtitle = "Mark images as shared from CardVault",
                             ) {
                                 Switch(
                                     checked = addWatermark,
@@ -309,7 +315,7 @@ fun CardSharingDialog(
                                 OutlinedTextField(
                                     value = watermarkText,
                                     onValueChange = { watermarkText = it },
-                                    label = { Text(AppConstants.UIText.WATERMARK_TEXT_LABEL) },
+                                    label = { Text("Watermark text") },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(top = 12.dp),
@@ -343,8 +349,8 @@ fun CardSharingDialog(
                             val config = CardSharingConfig(
                                 includeSensitiveInfo = includeSensitiveInfo,
                                 imageQuality = imageQuality,
-                                maxImageWidth = 1200,
-                                maxImageHeight = 800,
+                                maxImageWidth = 1600,
+                                maxImageHeight = 1010,
                                 addWatermark = addWatermark,
                                 watermarkText = watermarkText,
                             )

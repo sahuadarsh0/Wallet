@@ -14,6 +14,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
@@ -73,6 +75,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -96,6 +102,7 @@ import com.technitedminds.wallet.presentation.components.common.LoadingOverlay
 import com.technitedminds.wallet.presentation.components.common.PremiumDivider
 import com.technitedminds.wallet.presentation.components.common.PremiumTextField
 import com.technitedminds.wallet.presentation.components.common.ScreenGradientBackground
+import com.technitedminds.wallet.presentation.components.common.SecureAuthDialog
 import com.technitedminds.wallet.presentation.components.common.getIcon
 import com.technitedminds.wallet.presentation.components.common.gradientShadow
 import com.technitedminds.wallet.presentation.components.common.resolveCategoryName
@@ -124,6 +131,17 @@ fun CardDetailScreen(
     val categories by viewModel.categories.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val clipboardManager = LocalClipboardManager.current
+
+    // Re-auth dialog for copying decrypted card details.
+    // Once the user authenticates, [unlockedForCopy] stays true for the rest
+    // of the auto-lock timer so subsequent copies don't re-prompt.
+    var showCopyAuthDialog by remember { mutableStateOf(false) }
+    var unlockedForCopy by remember { mutableStateOf(false) }
+    // When non-null, [SecureAuthDialog]'s success path copies just this single
+    // (label, value) pair rather than the full sensitive payload. Used for
+    // the long-press-to-copy gesture on individual sensitive rows.
+    var pendingCopy by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     // Security auto-exit timer (pauses during edit mode)
     var remainingSeconds by remember { mutableIntStateOf(180) }
@@ -131,6 +149,8 @@ fun CardDetailScreen(
     LaunchedEffect(isEditing) {
         if (!isEditing) {
             remainingSeconds = 180
+            // Reset copy unlock whenever the auto-lock timer restarts
+            unlockedForCopy = false
             while (remainingSeconds > 0) {
                 delay(1000)
                 remainingSeconds--
@@ -247,7 +267,32 @@ fun CardDetailScreen(
                         // Sensitive data section (OCR cards)
                         if (card!!.extractedData.isNotEmpty()) {
                             EnhancedSlideInItem(visible = true, index = 2) {
-                                SensitiveDataSection(card = card!!)
+                                SensitiveDataSection(
+                                    card = card!!,
+                                    onCopyClick = {
+                                        if (unlockedForCopy) {
+                                            val payload = buildSensitiveCopyText(card!!)
+                                            if (payload.isNotBlank()) {
+                                                clipboardManager.setText(AnnotatedString(payload))
+                                                viewModel.onCardDetailsCopied()
+                                            } else {
+                                                viewModel.onNothingToCopy()
+                                            }
+                                        } else {
+                                            pendingCopy = null
+                                            showCopyAuthDialog = true
+                                        }
+                                    },
+                                    onLongPressCopy = { label, value ->
+                                        if (unlockedForCopy) {
+                                            clipboardManager.setText(AnnotatedString(value))
+                                            viewModel.onValueCopied(label)
+                                        } else {
+                                            pendingCopy = label to value
+                                            showCopyAuthDialog = true
+                                        }
+                                    },
+                                )
                             }
                         }
 
@@ -257,7 +302,13 @@ fun CardDetailScreen(
                         }
                         if (visibleFields.isNotEmpty()) {
                             EnhancedSlideInItem(visible = true, index = 3) {
-                                DetailsSection(customFields = visibleFields)
+                                DetailsSection(
+                                    customFields = visibleFields,
+                                    onLongPressCopy = { label, value ->
+                                        clipboardManager.setText(AnnotatedString(value))
+                                        viewModel.onValueCopied(label)
+                                    },
+                                )
                             }
                         }
 
@@ -319,6 +370,38 @@ fun CardDetailScreen(
             onDismiss = viewModel::hideGradientPicker
         )
     }
+
+    SecureAuthDialog(
+        isVisible = showCopyAuthDialog,
+        title = "Verify it's you",
+        message = if (pendingCopy != null) {
+            "Authenticate with your fingerprint or PIN to copy ${pendingCopy!!.first} to the clipboard."
+        } else {
+            "Authenticate with your fingerprint or PIN to copy the card number, CVV, and expiry to the clipboard."
+        },
+        onDismiss = {
+            showCopyAuthDialog = false
+            pendingCopy = null
+        },
+        onAuthenticated = {
+            showCopyAuthDialog = false
+            unlockedForCopy = true
+            val pending = pendingCopy
+            pendingCopy = null
+            if (pending != null) {
+                clipboardManager.setText(AnnotatedString(pending.second))
+                viewModel.onValueCopied(pending.first)
+            } else {
+                val payload = buildSensitiveCopyText(card!!)
+                if (payload.isNotBlank()) {
+                    clipboardManager.setText(AnnotatedString(payload))
+                    viewModel.onCardDetailsCopied()
+                } else {
+                    viewModel.onNothingToCopy()
+                }
+            }
+        },
+    )
 }
 
 // ─── Top Bar ─────────────────────────────────────────────────────────────────
@@ -503,15 +586,32 @@ private fun RevealableFieldRow(
     value: String,
     icon: ImageVector,
     isSensitive: Boolean = false,
+    onLongPress: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var isRevealed by remember { mutableStateOf(!isSensitive) }
     val displayValue = if (isRevealed) value else maskSensitiveData(value)
+    val hapticFeedback = LocalHapticFeedback.current
+
+    val rowModifier = if (onLongPress != null) {
+        modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = {},
+                onLongClick = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongPress()
+                },
+            )
+            .padding(vertical = 6.dp)
+    } else {
+        modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+    }
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
+        modifier = rowModifier,
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -561,6 +661,8 @@ private fun RevealableFieldRow(
 @Composable
 private fun SensitiveDataSection(
     card: Card,
+    onCopyClick: () -> Unit,
+    onLongPressCopy: (label: String, value: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val sensitiveKeys = listOf("cardNumber", "cvv")
@@ -572,19 +674,43 @@ private fun SensitiveDataSection(
             AnimatedSectionHeader(
                 title = AppConstants.UIText.CARD_DETAILS_TITLE,
                 icon = Icons.Default.Shield,
+                action = {
+                    IconButton(
+                        onClick = onCopyClick,
+                        modifier = Modifier.size(40.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = "Copy sensitive details",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                },
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Tip: long-press a field to copy just its value",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
 
             card.extractedData.entries.forEachIndexed { index, (key, value) ->
                 if (index > 0) {
                     PremiumDivider(modifier = Modifier.padding(vertical = 2.dp))
                 }
+                val label = formatFieldName(key)
                 RevealableFieldRow(
-                    label = formatFieldName(key),
+                    label = label,
                     value = value,
                     icon = getFieldIcon(key),
                     isSensitive = key in sensitiveKeys,
+                    onLongPress = if (value.isNotBlank()) {
+                        { onLongPressCopy(label, value) }
+                    } else null,
                 )
             }
         }
@@ -596,6 +722,7 @@ private fun SensitiveDataSection(
 @Composable
 private fun DetailsSection(
     customFields: Map<String, String>,
+    onLongPressCopy: (label: String, value: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val sensitiveKeys = listOf(AppConstants.UIText.PIN_FIELD, AppConstants.UIText.PASSWORD_FIELD)
@@ -609,17 +736,28 @@ private fun DetailsSection(
                 icon = Icons.Default.Description,
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Tip: long-press a field to copy just its value",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
 
             customFields.entries.forEachIndexed { index, (key, value) ->
                 if (index > 0) {
                     PremiumDivider(modifier = Modifier.padding(vertical = 2.dp))
                 }
+                val label = formatFieldName(key)
                 RevealableFieldRow(
-                    label = formatFieldName(key),
+                    label = label,
                     value = value,
                     icon = getFieldIcon(key),
                     isSensitive = key in sensitiveKeys,
+                    onLongPress = if (value.isNotBlank()) {
+                        { onLongPressCopy(label, value) }
+                    } else null,
                 )
             }
         }
@@ -958,4 +1096,22 @@ private fun getFieldIcon(key: String): ImageVector {
         "pin", "password" -> Icons.Default.Lock
         else -> Icons.Default.Description
     }
+}
+
+/**
+ * Build a clipboard payload containing ONLY the three sensitive fields
+ * (card number, CVV, expiry date) — never the full card record.
+ *
+ * Called only after the user has passed biometric / PIN re-auth via
+ * [SecureAuthDialog], so values are emitted unmasked. Blank fields are
+ * omitted; if no relevant fields exist, an empty string is returned and
+ * the caller surfaces a "nothing to copy" message instead.
+ */
+private fun buildSensitiveCopyText(card: Card): String {
+    val keys = listOf("cardNumber", "cvv", "expiryDate")
+    val lines = keys.mapNotNull { key ->
+        val value = card.extractedData[key]?.trim().orEmpty()
+        if (value.isBlank()) null else "${formatFieldName(key)}: $value"
+    }
+    return lines.joinToString(separator = "\n")
 }

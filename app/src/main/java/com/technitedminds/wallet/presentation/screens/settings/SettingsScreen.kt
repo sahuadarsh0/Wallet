@@ -2,6 +2,7 @@ package com.technitedminds.wallet.presentation.screens.settings
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -74,8 +77,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -96,6 +102,8 @@ import com.technitedminds.wallet.presentation.constants.AppConstants
 import com.technitedminds.wallet.presentation.screens.security.AppLockScreen
 import com.technitedminds.wallet.presentation.screens.security.AppLockViewModel
 import com.technitedminds.wallet.presentation.screens.security.PinScreenMode
+import com.technitedminds.wallet.ui.theme.BackgroundPattern
+import com.technitedminds.wallet.ui.theme.FolderTheme
 import com.technitedminds.wallet.ui.theme.WalletTheme
 
 /**
@@ -122,6 +130,7 @@ fun SettingsScreen(
     var showPinSetup by remember { mutableStateOf(false) }
     var showRecoveryCodeDisplay by remember { mutableStateOf<String?>(null) }
     var showTimeoutPicker by remember { mutableStateOf(false) }
+    var showAppearanceDialog by remember { mutableStateOf(false) }
     
     ScreenGradientBackground(modifier = modifier) {
         Scaffold(
@@ -191,14 +200,19 @@ fun SettingsScreen(
                 }
             }
             
-            // Theme Section
+            // Theme Section — single summary row that opens a confirmation
+            // dialog. Nothing is committed until the user taps Apply, which
+            // matches the user's expectation that this should feel "enclosed"
+            // rather than three loose pickers stacked together.
             SettingsSection(
                 title = AppConstants.StatisticsLabels.APPEARANCE,
                 icon = Icons.Default.Palette
             ) {
-                ThemeSelector(
-                    selectedTheme = uiState.themeMode,
-                    onThemeSelected = viewModel::updateThemeMode
+                AppearanceSummaryRow(
+                    themeMode = uiState.themeMode,
+                    folderTheme = uiState.folderTheme,
+                    backgroundPattern = uiState.backgroundPattern,
+                    onClick = { showAppearanceDialog = true },
                 )
             }
             
@@ -504,6 +518,24 @@ fun SettingsScreen(
             onDismiss = { showTimeoutPicker = false }
         )
     }
+
+    // Appearance customization dialog — selections are local until the user
+    // taps Apply, giving them a confirmation step instead of mutating the
+    // whole app the moment they touch a swatch.
+    if (showAppearanceDialog) {
+        AppearanceDialog(
+            initialThemeMode = uiState.themeMode,
+            initialFolderTheme = uiState.folderTheme,
+            initialBackgroundPattern = uiState.backgroundPattern,
+            onApply = { themeMode, folderTheme, pattern ->
+                if (themeMode != uiState.themeMode) viewModel.updateThemeMode(themeMode)
+                if (folderTheme != uiState.folderTheme) viewModel.updateFolderTheme(folderTheme)
+                if (pattern != uiState.backgroundPattern) viewModel.updateBackgroundPattern(pattern)
+                showAppearanceDialog = false
+            },
+            onDismiss = { showAppearanceDialog = false },
+        )
+    }
 }
 
 /**
@@ -736,6 +768,405 @@ private fun ThemeSelector(
                 }
             }
         }
+    }
+}
+
+/**
+ * Single-row summary that lives inside the Appearance section card. Shows a
+ * tiny stack of mini-swatches representing the current selections plus a
+ * chevron, and opens the [AppearanceDialog] when tapped. This keeps the
+ * settings screen quiet — three controls are tucked behind one row instead
+ * of stacked open in the layout.
+ */
+@Composable
+private fun AppearanceSummaryRow(
+    themeMode: ThemeMode,
+    folderTheme: FolderTheme,
+    backgroundPattern: BackgroundPattern,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val themeLabel = when (themeMode) {
+        ThemeMode.LIGHT -> "Light"
+        ThemeMode.DARK -> "Dark"
+        ThemeMode.SYSTEM -> "System"
+    }
+    val summary = "$themeLabel · ${folderTheme.displayName} · ${backgroundPattern.displayName}"
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        // Stacked mini-swatches preview the active folder theme palette so
+        // users see what's currently active at a glance.
+        Row(horizontalArrangement = Arrangement.spacedBy((-6).dp)) {
+            folderTheme.palette.take(3).forEach { gradient ->
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(Brush.linearGradient(gradient))
+                        .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                )
+            }
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Customize appearance",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = summary,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * Modal bottom sheet that hosts all three appearance controls (theme mode,
+ * folder theme and background pattern) with explicit Cancel / Apply actions.
+ * Selections are kept in dialog-local state until the user confirms, so they
+ * can audition combinations without committing.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AppearanceDialog(
+    initialThemeMode: ThemeMode,
+    initialFolderTheme: FolderTheme,
+    initialBackgroundPattern: BackgroundPattern,
+    onApply: (ThemeMode, FolderTheme, BackgroundPattern) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var draftThemeMode by remember { mutableStateOf(initialThemeMode) }
+    var draftFolderTheme by remember { mutableStateOf(initialFolderTheme) }
+    var draftPattern by remember { mutableStateOf(initialBackgroundPattern) }
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+    )
+
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                text = "Appearance",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = "Preview a combo, then tap Apply when you're happy.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            AppearanceSubsectionLabel(text = "App theme")
+            ThemeSelector(
+                selectedTheme = draftThemeMode,
+                onThemeSelected = { draftThemeMode = it },
+            )
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+            AppearanceSubsectionLabel(text = "Folder theme")
+            FolderThemePicker(
+                selected = draftFolderTheme,
+                onSelect = { draftFolderTheme = it },
+            )
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+            AppearanceSubsectionLabel(text = "Background pattern")
+            BackgroundPatternPicker(
+                selected = draftPattern,
+                onSelect = { draftPattern = it },
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("Cancel")
+                }
+                Button(
+                    onClick = {
+                        onApply(draftThemeMode, draftFolderTheme, draftPattern)
+                    },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("Apply")
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Compact label used as a sub-header inside the Appearance card. Keeps the
+ * three picker rows visually grouped without giving each one the heavy
+ * weight of a full settings section header.
+ */
+@Composable
+private fun AppearanceSubsectionLabel(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = modifier.padding(bottom = 4.dp),
+    )
+}
+
+/**
+ * Horizontal preview row of folder theme palettes. Each chip renders a
+ * miniature gradient swatch + label so users can pick visually instead of
+ * reading enum names. The currently selected option is outlined with the
+ * primary tint and pulled forward via a subtle shadow tone.
+ */
+@Composable
+private fun FolderThemePicker(
+    selected: FolderTheme,
+    onSelect: (FolderTheme) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            items(FolderTheme.entries.toList()) { theme ->
+                FolderThemeSwatch(
+                    theme = theme,
+                    isSelected = theme == selected,
+                    onClick = { onSelect(theme) },
+                )
+            }
+        }
+        Text(
+            text = selected.description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun FolderThemeSwatch(
+    theme: FolderTheme,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    val borderColor = if (isSelected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+    }
+    val borderWidth = if (isSelected) 2.dp else 1.dp
+
+    // Use the first three palette gradients to show the theme's range.
+    val previewStops = remember(theme) {
+        theme.palette.take(3).flatten().ifEmpty { theme.allCardsGradient }
+    }
+
+    Column(
+        modifier = Modifier
+            .width(88.dp)
+            .clickable(onClick = onClick),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(Brush.linearGradient(previewStops))
+                .border(borderWidth, borderColor, RoundedCornerShape(14.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            // Three-dot palette indicator using the theme's palette pairs to
+            // hint at how categories will be colored.
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                theme.palette.take(3).forEach { pair ->
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(pair.first())
+                            .border(0.5.dp, Color.White.copy(alpha = 0.4f), CircleShape),
+                    )
+                }
+            }
+        }
+        Text(
+            text = theme.displayName,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+        )
+    }
+}
+
+/**
+ * Background pattern selector. Renders four pill options inline with a tiny
+ * preview canvas so users can see what each option does without enabling it
+ * first.
+ */
+@Composable
+private fun BackgroundPatternPicker(
+    selected: BackgroundPattern,
+    onSelect: (BackgroundPattern) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            BackgroundPattern.entries.forEach { pattern ->
+                BackgroundPatternChip(
+                    pattern = pattern,
+                    isSelected = pattern == selected,
+                    onClick = { onSelect(pattern) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+        Text(
+            text = selected.description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun BackgroundPatternChip(
+    pattern: BackgroundPattern,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val borderColor = if (isSelected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+    }
+    val borderWidth = if (isSelected) 2.dp else 1.dp
+    val previewBg = MaterialTheme.colorScheme.surfaceContainerHighest
+    val previewInk = MaterialTheme.colorScheme.onSurfaceVariant
+
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .border(borderWidth, borderColor, RoundedCornerShape(14.dp))
+            .padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        // Live miniature of the actual pattern so users see a real preview
+        // instead of an emoji approximation. The preview canvas matches the
+        // logic used at runtime in ScreenGradientBackground.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(previewBg),
+        ) {
+            androidx.compose.foundation.Canvas(
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                val ink = previewInk.copy(alpha = 0.45f)
+                when (pattern) {
+                    BackgroundPattern.NONE -> Unit
+                    BackgroundPattern.DOTS -> {
+                        val s = 10f
+                        var row = 0
+                        var y = s / 2f
+                        while (y < size.height) {
+                            val xo = if (row % 2 == 0) 0f else s / 2f
+                            var x = s / 2f + xo
+                            while (x < size.width) {
+                                drawCircle(ink, radius = 1.4f, center = Offset(x, y))
+                                x += s
+                            }
+                            y += s; row += 1
+                        }
+                    }
+                    BackgroundPattern.GRID -> {
+                        val s = 9f
+                        var x = 0f
+                        while (x < size.width) {
+                            drawLine(ink, Offset(x, 0f), Offset(x, size.height), strokeWidth = 0.8f)
+                            x += s
+                        }
+                        var y = 0f
+                        while (y < size.height) {
+                            drawLine(ink, Offset(0f, y), Offset(size.width, y), strokeWidth = 0.8f)
+                            y += s
+                        }
+                    }
+                    BackgroundPattern.TOPO -> {
+                        val cx = size.width * 0.3f
+                        val cy = size.height * 0.6f
+                        var r = 6f
+                        while (r < maxOf(size.width, size.height)) {
+                            drawCircle(
+                                color = ink,
+                                radius = r,
+                                center = Offset(cx, cy),
+                                style = Stroke(width = 0.9f),
+                            )
+                            r += 8f
+                        }
+                    }
+                }
+            }
+        }
+        Text(
+            text = pattern.displayName,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+        )
     }
 }
 

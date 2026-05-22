@@ -1,0 +1,57 @@
+---
+description: Always verify code changes by building and installing the app on a connected Android device after every task
+alwaysApply: true
+---
+
+# Verify Every Change On A Connected Device
+
+After completing ANY code change in this project (feature work, bug fixes, refactors, UI tweaks, dependency updates, etc.), you MUST verify the change by building and installing the app on a connected Android device or emulator before declaring the task done.
+
+## Mandatory Post-Work Verification Loop
+
+Run these steps in order. Do NOT skip any step. Do NOT report success until `installDebug` succeeds.
+
+1. **Check for a connected device**
+
+```bash
+adb devices
+```
+
+   If no device is listed (only `List of devices attached` with nothing below), STOP and ask the user to connect a device or start an emulator. Do not attempt to install.
+
+2. **Build and install the debug APK on the connected device**
+
+```bash
+./gradlew installDebug
+```
+
+3. **If the build fails**: read the error, fix the code, and re-run `./gradlew installDebug`. Repeat until it succeeds. Never finish a turn with a broken build.
+
+4. **If install succeeds**: optionally launch the app to confirm it starts, then check Logcat for crashes related to your change:
+
+```bash
+adb shell am start -n com.technitedminds.wallet/.MainActivity
+adb logcat -d -t 200 *:E | grep -i "wallet\|AndroidRuntime" || true
+```
+
+5. **Report the verification result** to the user in your final message, e.g. "Built and installed on `<device-id>` successfully" or the specific failure and what was done to fix it.
+
+## Rules
+
+- ✅ ALWAYS run `./gradlew installDebug` after editing any `.kt`, `.kts`, `.xml`, `libs.versions.toml`, or resource file.
+- ✅ ALWAYS fix build/install failures before ending the turn.
+- ✅ If multiple changes are batched, run the install ONCE at the end (not after every micro-edit).
+- ❌ NEVER claim work is complete without a successful `installDebug` on this turn.
+- ❌ NEVER use `assembleDebug` as a substitute — it does not catch device-install issues (signing, min-sdk, manifest merge on device).
+- ❌ NEVER skip verification because "the change is small" or "it's just a comment/docs".
+  - Exception: pure Markdown / non-code documentation edits (`*.md`, `docs/**`) do not require an install.
+
+## Example
+
+User asks: "Rename the Settings screen title."
+
+Correct flow:
+1. Edit `SettingsScreen.kt`.
+2. Run `adb devices` → device found.
+3. Run `./gradlew installDebug` → success.
+4. Reply: "Updated the title and verified by installing on `emulator-5554`."

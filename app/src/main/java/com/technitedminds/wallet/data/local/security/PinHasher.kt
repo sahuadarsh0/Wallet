@@ -1,5 +1,6 @@
 package com.technitedminds.wallet.data.local.security
 
+import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
@@ -46,6 +47,7 @@ class PinHasher @Inject constructor() {
 
     /**
      * Verify a PIN against a stored hash and salt.
+     * Uses constant-time comparison to mitigate timing side-channel attacks.
      * @param pin The PIN to verify
      * @param salt Base64-encoded salt
      * @param storedHash Base64-encoded stored hash
@@ -53,6 +55,9 @@ class PinHasher @Inject constructor() {
      */
     fun verify(pin: String, salt: String, storedHash: String): Boolean {
         val computedHash = hash(pin, salt)
-        return computedHash == storedHash
+        return MessageDigest.isEqual(
+            computedHash.toByteArray(Charsets.UTF_8),
+            storedHash.toByteArray(Charsets.UTF_8),
+        )
     }
 }
