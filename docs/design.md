@@ -409,44 +409,50 @@ enum class ShareOption {
 ### UI Components
 
 #### FlippableCard Component
+
+The card detail hero. Combines magnetic-drag flip physics with a sensor-driven gyroscopic tilt and a parallax laminate body to sell real 3D depth.
+
 ```kotlin
 @Composable
 fun FlippableCard(
     card: Card,
-    isFlipped: Boolean,
-    onFlip: () -> Unit,
-    onShare: (ShareOption) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val rotation by animateFloatAsState(
-        targetValue = if (isFlipped) 180f else 0f,
-        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
-    )
-    
-    Box(
-        modifier = modifier
-            .graphicsLayer {
-                rotationY = rotation
-                cameraDistance = 12f * density
-            }
-    ) {
-        if (rotation <= 90f) {
-            CardFront(
-                card = card,
-                onFlip = onFlip,
-                onShare = { onShare(ShareOption.FrontOnly) }
-            )
-        } else {
-            CardBack(
-                card = card,
-                onFlip = onFlip,
-                onShare = { onShare(ShareOption.BackOnly) },
-                modifier = Modifier.graphicsLayer { rotationY = 180f }
-            )
-        }
-    }
-}
+    modifier: Modifier = Modifier,
+    isCompact: Boolean = false,
+    onCardClick: (() -> Unit)? = null,
+    onCardLongPress: (() -> Unit)? = null,
+    /**
+     * (rollDeg, pitchDeg) from a sensor source. Pass (0, 0) to disable tilt.
+     * Recommended source range: ±14° (clamp at the source).
+     */
+    tiltDeg: Pair<Float, Float> = 0f to 0f,
+)
+```
 
+**Rotation pipeline (single `graphicsLayer`):**
+```kotlin
+.graphicsLayer {
+    val deg = rotation.value                               // flip angle (drag-driven)
+    val faceness = abs(cos(Math.toRadians(deg.toDouble())).toFloat())
+    rotationY = deg + rollDeg * 0.7f * faceness            // tilt fades at edge-on
+    rotationX = -pitchDeg * 0.7f * faceness                // so tilt never fights flip
+    scaleX = scale; scaleY = scale
+    cameraDistance = 14f * density
+}
+```
+
+**Layered composition inside each face's `Card { … }` clip:**
+1. **Laminate body slab** — dark `Box.matchParentSize()` translated *opposite* to the tilt by up to ±10dp. At neutral it's hidden under the front; at tilt its receding edge peeks out — this is the actual side-face thickness the eye reads as depth.
+2. **Front (or back) face** — `CardFront` / `CardBack` rendered above the slab.
+3. **Tilt sheen overlay** — drawn via `drawWithContent` on the face Box:
+   - **Radial specular hot-spot** that tracks the tilt; radius capped at 55% of the shortest side so it never reaches the corner.
+   - **Dark/lit edge bands** along both axes — the receding edge gets a soft Black gradient (the side-wall shadow), the leading edge gets a thin warm `0xFFFFF6D8` highlight (the lit laminate).
+   - All bands fade within ≤18% of card width/height — strictly inside the parent `RoundedCornerShape` clip.
+
+**Sensor source:** [`rememberDeviceTilt`](../app/src/main/java/com/technitedminds/wallet/presentation/screens/carddetail/rememberDeviceTilt.kt) wraps `SensorManager.TYPE_ROTATION_VECTOR`, baselines off the user's hold pose on first sample (no entry swing), `remapCoordinateSystem` for display rotation, one-pole low-pass at α = 0.20, and clamps to ±14°.
+
+**Containment guarantee:** every depth/sheen layer is rendered inside the parent Material `Card`'s shape clip. Nothing — no shadow, no glow, no slab edge — can extend past the card silhouette. (The previous halo-leak bug came from drawing a static penumbra Box outside the rotation layer; that pattern is explicitly avoided.)
+
+```kotlin
 @Composable
 fun CardFront(
     card: Card,

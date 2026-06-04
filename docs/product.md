@@ -18,7 +18,7 @@ CardVault is an **offline-first Android application** that serves as a digital r
   - Image-only cards (Gym/Voucher/Gift) for visual storage
 - **Camera Integration**: CameraX with card overlay and automatic capture
 - **NFC EMV Reading**: Tap-to-read PAN, expiry, cardholder, scheme from contactless credit/debit cards
-- **3D Card Animations**: Realistic flip animations with smooth transitions
+- **3D Card Animations**: Magnetic-drag perspective flip plus gyroscopic tilt parallax — the card body parallaxes against a laminate slab to sell real side-face depth, with sensor-driven specular highlights tracking the tilt
 - **Folder-Based Home Screen**: Cards organized into glassmorphic folder tiles (`All`, per-category, dynamic `Uncategorized`) with stagger-in animations
 - **Global & In-Folder Search**: Premium pill-shaped search bar with 300ms debounce; searches across name, type, extracted data, and custom fields — globally from the folders root or scoped inside an opened folder
 - **Premium Card Sharing**: ISO/IEC 7810-ratio in-memory bitmap rendering with configurable quality (Standard/High/Maximum); generated gradient art for credit/debit, original photos for image-only types

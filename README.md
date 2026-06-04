@@ -37,7 +37,8 @@ CardVault is a secure, offline-first Android application that acts as a premium 
 - **⏳ Loading state** — full-screen `PremiumLoadingIndicator` during data fetch.
 
 ### 💳 Card Detail
-- **🔄 3D flip animation** — `FlippableCard` renders front/back with 300 ms perspective flip.
+- **🔄 3D flip animation** — `FlippableCard` renders front/back with a magnetic-drag perspective flip (horizontal drag to rotate, velocity-based snap, tap-to-flip fallback).
+- **📐 Gyroscopic tilt with parallax depth** — the card responds to `TYPE_ROTATION_VECTOR` in real time. `rememberDeviceTilt` baselines off the user's hold pose so there's no entry swing, low-passes the signal, and clamps at ±14°. The tilt is folded into the card's existing `graphicsLayer` (gated by `|cos(flipAngle)|` so it never fights the flip), and a dark **laminate body slab** parallaxes opposite the front face — the receding edge reveals the slab, selling true 2dp side-face thickness. A radial specular hot-spot and a thin warm rim track the tilt for the lit-edge highlight. **Everything renders inside the card's `RoundedCornerShape` clip — no halo, no overflow.**
 - **🙈 Sensitive data section** — extracted OCR fields shown separately; hidden from ambient view.
 - **✏️ In-place edit mode** — name, category, type, OCR fields, custom fields, gradient, all editable inline with smooth mode transition.
 - **🌈 Ambient background** — subtle gradient derived from the card's own colors.

@@ -88,28 +88,35 @@ class HomeViewModel @Inject constructor(
         initialValue = emptyMap(),
     )
 
-    // Cards inside the currently-opened folder (filtered by search + card type)
+    // Cards inside the currently-opened folder (filtered by search + card type).
+    //
+    // IMPORTANT: only the search query is debounced. Folder and card-type
+    // changes must propagate immediately, otherwise opening a folder briefly
+    // shows the previously-emitted card list (all-cards) before the new
+    // category-scoped query lands — that's the "ghost flash" bug. Likewise
+    // the Uncategorized filter is folded into flatMapLatest so we never
+    // re-combine stale upstream emissions with a fresh folder value.
     val filteredCards = combine(
-        searchQuery,
+        searchQuery.debounce(300),
         openedFolder,
         selectedCardType,
     ) { query, folder, cardType ->
-        GetCardsRequest(
-            categoryId = (folder as? OpenedFolder.Category)?.id,
-            cardType = cardType,
-            searchQuery = query,
-            sortBy = CardSortBy.UPDATED_AT,
-            ascending = false
-        )
-    }.debounce(300)
-        .flatMapLatest { request ->
-            getCardsUseCase(request)
-        }
-        .combine(openedFolder) { cards, folder ->
-            // "Uncategorized" folder: keep only cards with blank categoryId
-            if (folder is OpenedFolder.Uncategorized) {
-                cards.filter { it.categoryId.isBlank() }
-            } else cards
+        Triple(query, folder, cardType)
+    }
+        .flatMapLatest { (query, folder, cardType) ->
+            getCardsUseCase(
+                GetCardsRequest(
+                    categoryId = (folder as? OpenedFolder.Category)?.id,
+                    cardType = cardType,
+                    searchQuery = query,
+                    sortBy = CardSortBy.UPDATED_AT,
+                    ascending = false,
+                )
+            ).map { cards ->
+                if (folder is OpenedFolder.Uncategorized) {
+                    cards.filter { it.categoryId.isBlank() }
+                } else cards
+            }
         }
         .stateIn(
             scope = viewModelScope,
