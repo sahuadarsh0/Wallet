@@ -37,6 +37,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -71,7 +75,16 @@ fun FlippableCard(
     isCompact: Boolean = false,
     onCardClick: (() -> Unit)? = null,
     onCardLongPress: (() -> Unit)? = null,
+    /**
+     * Tilt in degrees from a sensor (or any source). `first` = rollDeg (right-positive),
+     * `second` = pitchDeg (toward-user-positive). Pass (0,0) to disable.
+     * Recommended source range: ±14°. Drives 3D parallax on the card itself —
+     * NOTHING is rendered outside the card's clipped bounds.
+     */
+    tiltDeg: Pair<Float, Float> = 0f to 0f,
 ) {
+    val rollDeg = tiltDeg.first
+    val pitchDeg = tiltDeg.second
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current.density
     val hapticFeedback = LocalHapticFeedback.current
@@ -109,7 +122,13 @@ fun FlippableCard(
         modifier = modifier
             .aspectRatio(card.getDisplayAspectRatio())
             .graphicsLayer {
-                rotationY = rotation.value
+                // Faceness: 1 when fully front-facing, 0 at edge-on (90°).
+                // We only add tilt rotation while a face is mostly visible so the
+                // flip animation isn't disrupted, and we never over-rotate.
+                val deg = rotation.value
+                val faceness = kotlin.math.abs(kotlin.math.cos(Math.toRadians(deg.toDouble())).toFloat())
+                rotationY = deg + rollDeg * 0.7f * faceness
+                rotationX = -pitchDeg * 0.7f * faceness
                 scaleX = scale
                 scaleY = scale
                 cameraDistance = 14f * density
@@ -223,13 +242,58 @@ fun FlippableCard(
                 shape = RoundedCornerShape(cornerRadius),
                 elevation = CardDefaults.cardElevation(defaultElevation = elevation),
             ) {
-                CardFront(
-                    card = card,
-                    isCompact = isCompact,
-                    showShareButton = false,
-                    onShare = null,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                Box(modifier = Modifier.fillMaxSize()) {
+                    // ── Laminate body slab (the "side face" of the card) ──
+                    // Sits behind the front face and translates opposite to the
+                    // tilt so its receding edge peeks out — exactly like the
+                    // edge thickness you see on a real plastic card.
+                    // Clipped by the parent Card's RoundedCornerShape, so it
+                    // can never leak past the card's silhouette.
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .graphicsLayer {
+                                translationX = -rollDeg / 14f * 10.dp.toPx()
+                                translationY = pitchDeg / 14f * 10.dp.toPx()
+                            }
+                            .drawWithContent {
+                                // Dark slab body
+                                drawRect(
+                                    color = Color.Black.copy(alpha = 0.85f),
+                                    size = size,
+                                )
+                                // Subtle inner top-edge highlight on the slab
+                                // so the visible band looks like a lit laminate
+                                // strip, not just a black bar.
+                                drawRect(
+                                    brush = Brush.verticalGradient(
+                                        colorStops = arrayOf(
+                                            0.0f to Color.White.copy(alpha = 0.10f),
+                                            0.06f to Color.Transparent,
+                                        ),
+                                    ),
+                                    size = size,
+                                )
+                            },
+                    )
+                    // ── Front face (the printed surface of the card) ──
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .drawWithContent {
+                                drawContent()
+                                drawTiltSheen(size, rollDeg, pitchDeg)
+                            },
+                    ) {
+                        CardFront(
+                            card = card,
+                            isCompact = isCompact,
+                            showShareButton = false,
+                            onShare = null,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
             }
         } else {
             Card(
@@ -244,13 +308,49 @@ fun FlippableCard(
                 shape = RoundedCornerShape(cornerRadius),
                 elevation = CardDefaults.cardElevation(defaultElevation = elevation),
             ) {
-                CardBack(
-                    card = card,
-                    isCompact = isCompact,
-                    showShareButton = false,
-                    onShare = null,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                Box(modifier = Modifier.fillMaxSize()) {
+                    // Laminate body slab (mirrored for back face)
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .graphicsLayer {
+                                // Back face is rotated 180°, so mirror X.
+                                translationX = rollDeg / 14f * 10.dp.toPx()
+                                translationY = pitchDeg / 14f * 10.dp.toPx()
+                            }
+                            .drawWithContent {
+                                drawRect(
+                                    color = Color.Black.copy(alpha = 0.85f),
+                                    size = size,
+                                )
+                                drawRect(
+                                    brush = Brush.verticalGradient(
+                                        colorStops = arrayOf(
+                                            0.0f to Color.White.copy(alpha = 0.10f),
+                                            0.06f to Color.Transparent,
+                                        ),
+                                    ),
+                                    size = size,
+                                )
+                            },
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .drawWithContent {
+                                drawContent()
+                                drawTiltSheen(size, -rollDeg, pitchDeg)
+                            },
+                    ) {
+                        CardBack(
+                            card = card,
+                            isCompact = isCompact,
+                            showShareButton = false,
+                            onShare = null,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
             }
         }
 
@@ -275,6 +375,104 @@ fun FlippableCard(
             )
         }
 
+    }
+}
+
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawTiltSheen(
+    size: Size,
+    rollDeg: Float,
+    pitchDeg: Float,
+) {
+    val maxDeg = 14f
+    val rollNorm = (rollDeg / maxDeg).coerceIn(-1f, 1f)
+    val pitchNorm = (pitchDeg / maxDeg).coerceIn(-1f, 1f)
+    val magnitude = kotlin.math.min(1f, kotlin.math.max(kotlin.math.abs(rollNorm), kotlin.math.abs(pitchNorm)))
+
+    // Specular hot-spot: white core fading to fully transparent before reaching
+    // the card's edge. radius < shortest side / 2 keeps it strictly inside.
+    val cx = size.width / 2f + rollNorm * size.width * 0.30f
+    val cy = size.height / 2f - pitchNorm * size.height * 0.30f
+    val radius = kotlin.math.min(size.width, size.height) * 0.55f
+    val core = (0.18f + 0.18f * magnitude).coerceIn(0f, 0.42f)
+    val hot = Brush.radialGradient(
+        colorStops = arrayOf(
+            0.0f to Color.White.copy(alpha = core),
+            0.45f to Color.White.copy(alpha = core * 0.35f),
+            1.0f to Color.Transparent,
+        ),
+        center = Offset(cx, cy),
+        radius = radius,
+    )
+    drawRect(brush = hot, size = size)
+
+    // ── 3D depth edge (the "2dp side face" of the card) ─────────────────────
+    // When the card tilts, the receding edge reveals the dark side wall and
+    // the leading edge catches a brighter lit highlight. Both bands are drawn
+    // strictly INSIDE the card's clip, so nothing can leak into the bg.
+    //
+    // Visible edge width: a 2dp card seen at ~10° projects only ~0.35dp — too
+    // small to read. We exaggerate: base 2dp scaled by (3 + 8*magnitude) for
+    // legibility while keeping the "thin laminate" feel.
+    val baseEdgePx = 2.dp.toPx()
+    val edgeWidthPx = baseEdgePx * (3f + 8f * magnitude)
+    val widthFraction = (edgeWidthPx / size.width).coerceIn(0f, 0.18f)
+    val heightFraction = (edgeWidthPx / size.height).coerceIn(0f, 0.18f)
+
+    // Horizontal axis: roll
+    if (kotlin.math.abs(rollNorm) > 0.02f) {
+        val tiltingRight = rollNorm > 0f
+        val darkAlpha = (0.32f * kotlin.math.abs(rollNorm)).coerceIn(0f, 0.32f)
+        val liteAlpha = (0.22f * kotlin.math.abs(rollNorm)).coerceIn(0f, 0.22f)
+
+        // Receding edge gets the dark side-wall (shadow side of the laminate).
+        // Right tilt → left edge recedes → dark band on LEFT.
+        val recedingDark = Brush.horizontalGradient(
+            colorStops = arrayOf(
+                0.0f to Color.Black.copy(alpha = darkAlpha),
+                widthFraction to Color.Transparent,
+            ),
+            startX = if (tiltingRight) 0f else size.width,
+            endX = if (tiltingRight) size.width else 0f,
+        )
+        drawRect(brush = recedingDark, size = size)
+
+        // Leading edge gets a thin lit highlight (lit side of the laminate).
+        val leadingLit = Brush.horizontalGradient(
+            colorStops = arrayOf(
+                0.0f to Color(0xFFFFF6D8).copy(alpha = liteAlpha),
+                widthFraction to Color.Transparent,
+            ),
+            startX = if (tiltingRight) size.width else 0f,
+            endX = if (tiltingRight) 0f else size.width,
+        )
+        drawRect(brush = leadingLit, size = size)
+    }
+
+    // Vertical axis: pitch
+    if (kotlin.math.abs(pitchNorm) > 0.02f) {
+        val tippingForward = pitchNorm > 0f
+        val darkAlpha = (0.30f * kotlin.math.abs(pitchNorm)).coerceIn(0f, 0.30f)
+        val liteAlpha = (0.18f * kotlin.math.abs(pitchNorm)).coerceIn(0f, 0.18f)
+
+        val recedingDark = Brush.verticalGradient(
+            colorStops = arrayOf(
+                0.0f to Color.Black.copy(alpha = darkAlpha),
+                heightFraction to Color.Transparent,
+            ),
+            startY = if (tippingForward) size.height else 0f,
+            endY = if (tippingForward) 0f else size.height,
+        )
+        drawRect(brush = recedingDark, size = size)
+
+        val leadingLit = Brush.verticalGradient(
+            colorStops = arrayOf(
+                0.0f to Color(0xFFFFF6D8).copy(alpha = liteAlpha),
+                heightFraction to Color.Transparent,
+            ),
+            startY = if (tippingForward) 0f else size.height,
+            endY = if (tippingForward) size.height else 0f,
+        )
+        drawRect(brush = leadingLit, size = size)
     }
 }
 

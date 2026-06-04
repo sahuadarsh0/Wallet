@@ -53,6 +53,8 @@ import com.technitedminds.wallet.presentation.components.common.PremiumCard
 import com.technitedminds.wallet.presentation.components.common.getIconFromName
 import com.technitedminds.wallet.presentation.components.common.gradientShadow
 import com.technitedminds.wallet.ui.theme.FolderTheme
+import com.technitedminds.wallet.ui.theme.FolderStyle
+import com.technitedminds.wallet.ui.theme.LocalFolderStyle
 import com.technitedminds.wallet.ui.theme.WalletSpring
 import com.technitedminds.wallet.ui.theme.WalletTiming
 import kotlinx.coroutines.delay
@@ -184,7 +186,18 @@ fun FolderCard(
     modifier: Modifier = Modifier,
 ) {
     val gradientColors = item.gradient
-    val base = gradientColors.first()
+    val style = LocalFolderStyle.current
+    // Highlight = top-left of the gradient list, shadow = end. We sandwich the
+    // tile between a deep base and a soft radial specular so it reads like a
+    // physically lit surface rather than a flat diagonal sticker.
+    val highlight = gradientColors.first()
+    val shadow = gradientColors.last()
+    // For FLAT style, the tile is a single solid color — pick the deeper end
+    // so the result reads as confident editorial color rather than a pastel
+    // wash. For GRADIENT, both ends are used.
+    val flatFill = shadow
+    val tabHighlight = if (style == FolderStyle.GRADIENT) highlight.lighten(0.08f) else flatFill.lighten(0.06f)
+    val tabShadow = if (style == FolderStyle.GRADIENT) highlight.darken(0.18f) else flatFill.darken(0.10f)
     val contentColor = Color.White
 
     Box(
@@ -192,7 +205,8 @@ fun FolderCard(
             .fillMaxWidth()
             .aspectRatio(0.95f),
     ) {
-        // Folder "tab" silhouette that peeks above the card body.
+        // Folder "tab" silhouette — same gradient family as the body so the
+        // tile reads as one carved object instead of two stacked rectangles.
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -201,11 +215,8 @@ fun FolderCard(
                 .height(14.dp)
                 .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
                 .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            base.copy(alpha = 0.95f),
-                            base.copy(alpha = 0.75f),
-                        ),
+                    brush = Brush.linearGradient(
+                        colors = listOf(tabHighlight, tabShadow),
                     ),
                 ),
         )
@@ -227,35 +238,78 @@ fun FolderCard(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(22.dp))
-                    .background(
-                        brush = Brush.linearGradient(colors = gradientColors),
+                    .then(
+                        if (style == FolderStyle.GRADIENT) {
+                            Modifier
+                                // Layer 1 — deep base anchors the tile's weight so the
+                                // bottom never looks washed out by the linear falloff.
+                                .background(shadow.darken(0.10f))
+                                // Layer 2 — directional gradient runs corner to corner.
+                                .background(
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(
+                                            highlight,
+                                            shadow.darken(0.05f),
+                                        ),
+                                        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                                        end = androidx.compose.ui.geometry.Offset(
+                                            Float.POSITIVE_INFINITY,
+                                            Float.POSITIVE_INFINITY,
+                                        ),
+                                    ),
+                                )
+                                // Layer 3 — radial specular offset to the upper-left.
+                                .background(
+                                    brush = Brush.radialGradient(
+                                        colorStops = arrayOf(
+                                            0f to Color.White.copy(alpha = 0.18f),
+                                            0.35f to Color.White.copy(alpha = 0.06f),
+                                            1f to Color.Transparent,
+                                        ),
+                                        center = androidx.compose.ui.geometry.Offset(0.25f, 0.18f),
+                                        radius = Float.POSITIVE_INFINITY,
+                                    ),
+                                )
+                                // Layer 4 — bottom-right vignette grounds the shape.
+                                .background(
+                                    brush = Brush.radialGradient(
+                                        colorStops = arrayOf(
+                                            0f to Color.Black.copy(alpha = 0.18f),
+                                            0.55f to Color.Black.copy(alpha = 0.06f),
+                                            1f to Color.Transparent,
+                                        ),
+                                        center = androidx.compose.ui.geometry.Offset(0.95f, 0.95f),
+                                        radius = Float.POSITIVE_INFINITY,
+                                    ),
+                                )
+                        } else {
+                            // FLAT — single solid fill, no falloff, no gloss. The
+                            // border below provides just enough definition that
+                            // adjacent tiles still read as separate cards.
+                            Modifier.background(flatFill)
+                        }
                     )
+                    // Brushed edge — softer than the old 35%-white stroke so
+                    // the tile stops looking like a sticker. For FLAT, drop
+                    // even further so there's no artificial sheen.
                     .border(
                         width = 1.dp,
                         brush = Brush.linearGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.35f),
-                                Color.White.copy(alpha = 0.05f),
-                            ),
+                            colors = if (style == FolderStyle.GRADIENT) {
+                                listOf(
+                                    Color.White.copy(alpha = 0.22f),
+                                    Color.White.copy(alpha = 0.02f),
+                                )
+                            } else {
+                                listOf(
+                                    Color.White.copy(alpha = 0.10f),
+                                    Color.White.copy(alpha = 0.02f),
+                                )
+                            },
                         ),
                         shape = RoundedCornerShape(22.dp),
                     ),
             ) {
-                // Soft highlight to sell the glass look.
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp)
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.White.copy(alpha = 0.22f),
-                                    Color.Transparent,
-                                ),
-                            ),
-                        ),
-                )
-
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -420,6 +474,16 @@ private fun Color.darken(amount: Float): Color {
         red = (red * (1f - clamp)).coerceIn(0f, 1f),
         green = (green * (1f - clamp)).coerceIn(0f, 1f),
         blue = (blue * (1f - clamp)).coerceIn(0f, 1f),
+        alpha = alpha,
+    )
+}
+
+private fun Color.lighten(amount: Float): Color {
+    val clamp = amount.coerceIn(0f, 1f)
+    return Color(
+        red = (red + (1f - red) * clamp).coerceIn(0f, 1f),
+        green = (green + (1f - green) * clamp).coerceIn(0f, 1f),
+        blue = (blue + (1f - blue) * clamp).coerceIn(0f, 1f),
         alpha = alpha,
     )
 }
