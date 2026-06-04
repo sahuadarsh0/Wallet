@@ -105,6 +105,7 @@ import com.technitedminds.wallet.presentation.screens.security.AppLockScreen
 import com.technitedminds.wallet.presentation.screens.security.AppLockViewModel
 import com.technitedminds.wallet.presentation.screens.security.PinScreenMode
 import com.technitedminds.wallet.ui.theme.BackgroundPattern
+import com.technitedminds.wallet.ui.theme.FolderStyle
 import com.technitedminds.wallet.ui.theme.FolderTheme
 import com.technitedminds.wallet.ui.theme.WalletTheme
 
@@ -555,11 +556,15 @@ fun SettingsScreen(
         AppearanceDialog(
             initialThemeMode = uiState.themeMode,
             initialFolderTheme = uiState.folderTheme,
+            initialFolderStyle = uiState.folderStyle,
             initialBackgroundPattern = uiState.backgroundPattern,
-            onApply = { themeMode, folderTheme, pattern ->
+            initialLiveCardTiltEnabled = uiState.liveCardTiltEnabled,
+            onApply = { themeMode, folderTheme, folderStyle, pattern, liveTilt ->
                 if (themeMode != uiState.themeMode) viewModel.updateThemeMode(themeMode)
                 if (folderTheme != uiState.folderTheme) viewModel.updateFolderTheme(folderTheme)
+                if (folderStyle != uiState.folderStyle) viewModel.updateFolderStyle(folderStyle)
                 if (pattern != uiState.backgroundPattern) viewModel.updateBackgroundPattern(pattern)
+                if (liveTilt != uiState.liveCardTiltEnabled) viewModel.updateLiveCardTiltEnabled(liveTilt)
                 showAppearanceDialog = false
             },
             onDismiss = { showAppearanceDialog = false },
@@ -734,8 +739,67 @@ private fun AppInfoItem(
 }
 
 /**
- * Theme selector component
+ * Compact 3-pill theme selector for the Appearance bottom sheet. Trades the
+ * roomy radio-row layout (icon + title + description) for an inline segmented
+ * control so the sheet doesn't push everything below it off-screen.
  */
+@Composable
+private fun CompactThemeSelector(
+    selectedTheme: ThemeMode,
+    onThemeSelected: (ThemeMode) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        ThemeMode.entries.forEach { theme ->
+            val isSelected = theme == selectedTheme
+            val borderColor = if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+            }
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onThemeSelected(theme) }
+                    .border(
+                        width = if (isSelected) 2.dp else 1.dp,
+                        color = borderColor,
+                        shape = RoundedCornerShape(10.dp),
+                    )
+                    .padding(vertical = 10.dp, horizontal = 8.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = when (theme) {
+                        ThemeMode.LIGHT -> Icons.Default.LightMode
+                        ThemeMode.DARK -> Icons.Default.DarkMode
+                        ThemeMode.SYSTEM -> Icons.Default.SettingsBrightness
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = when (theme) {
+                        ThemeMode.LIGHT -> "Light"
+                        ThemeMode.DARK -> "Dark"
+                        ThemeMode.SYSTEM -> "System"
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+    }
+}
+
+@Suppress("unused")
 @Composable
 private fun ThemeSelector(
     selectedTheme: ThemeMode,
@@ -876,13 +940,17 @@ private fun AppearanceSummaryRow(
 private fun AppearanceDialog(
     initialThemeMode: ThemeMode,
     initialFolderTheme: FolderTheme,
+    initialFolderStyle: FolderStyle,
     initialBackgroundPattern: BackgroundPattern,
-    onApply: (ThemeMode, FolderTheme, BackgroundPattern) -> Unit,
+    initialLiveCardTiltEnabled: Boolean,
+    onApply: (ThemeMode, FolderTheme, FolderStyle, BackgroundPattern, Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var draftThemeMode by remember { mutableStateOf(initialThemeMode) }
     var draftFolderTheme by remember { mutableStateOf(initialFolderTheme) }
+    var draftFolderStyle by remember { mutableStateOf(initialFolderStyle) }
     var draftPattern by remember { mutableStateOf(initialBackgroundPattern) }
+    var draftLiveTilt by remember { mutableStateOf(initialLiveCardTiltEnabled) }
     val sheetState = androidx.compose.material3.rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
     )
@@ -892,51 +960,81 @@ private fun AppearanceDialog(
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text(
-                text = "Appearance",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = "Preview a combo, then tap Apply when you're happy.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Scrollable content — header + all pickers. Bottom action bar
+            // is rendered OUTSIDE this scroll so Apply is always visible
+            // regardless of how far the user has scrolled.
+            Column(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp)
+                    .padding(top = 4.dp, bottom = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Text(
+                    text = "Appearance",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
 
-            AppearanceSubsectionLabel(text = "App theme")
-            ThemeSelector(
-                selectedTheme = draftThemeMode,
-                onThemeSelected = { draftThemeMode = it },
-            )
+                AppearanceSubsectionLabel(text = "App theme")
+                CompactThemeSelector(
+                    selectedTheme = draftThemeMode,
+                    onThemeSelected = { draftThemeMode = it },
+                )
 
+                AppearanceSubsectionLabel(text = "Folder theme")
+                FolderThemePicker(
+                    selected = draftFolderTheme,
+                    onSelect = { draftFolderTheme = it },
+                )
+
+                AppearanceSubsectionLabel(text = "Folder style")
+                FolderStylePicker(
+                    selected = draftFolderStyle,
+                    onSelect = { draftFolderStyle = it },
+                    previewTheme = draftFolderTheme,
+                )
+
+                AppearanceSubsectionLabel(text = "Background pattern")
+                BackgroundPatternPicker(
+                    selected = draftPattern,
+                    onSelect = { draftPattern = it },
+                )
+
+                AppearanceSubsectionLabel(text = "Motion")
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Live card tilt",
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Text(
+                            text = "Card responds to device motion",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = draftLiveTilt,
+                        onCheckedChange = { draftLiveTilt = it },
+                    )
+                }
+            }
+
+            // Sticky action bar — sits below the scroll, always on screen.
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-            AppearanceSubsectionLabel(text = "Folder theme")
-            FolderThemePicker(
-                selected = draftFolderTheme,
-                onSelect = { draftFolderTheme = it },
-            )
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-            AppearanceSubsectionLabel(text = "Background pattern")
-            BackgroundPatternPicker(
-                selected = draftPattern,
-                onSelect = { draftPattern = it },
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 OutlinedButton(
@@ -947,7 +1045,7 @@ private fun AppearanceDialog(
                 }
                 Button(
                     onClick = {
-                        onApply(draftThemeMode, draftFolderTheme, draftPattern)
+                        onApply(draftThemeMode, draftFolderTheme, draftFolderStyle, draftPattern, draftLiveTilt)
                     },
                     modifier = Modifier.weight(1f),
                 ) {
@@ -1064,6 +1162,94 @@ private fun FolderThemeSwatch(
             color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             maxLines = 1,
+        )
+    }
+}
+
+/**
+ * Two-pill row that lets the user toggle between the lit Gradient render and
+ * the editorial Flat render. Each pill shows a tiny preview tile in the
+ * currently-selected theme so the user sees the actual outcome before
+ * committing.
+ */
+@Composable
+private fun FolderStylePicker(
+    selected: FolderStyle,
+    onSelect: (FolderStyle) -> Unit,
+    previewTheme: FolderTheme,
+    modifier: Modifier = Modifier,
+) {
+    val previewColors = previewTheme.palette.firstOrNull() ?: previewTheme.allCardsGradient
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            FolderStyle.entries.forEach { style ->
+                FolderStyleChip(
+                    style = style,
+                    isSelected = style == selected,
+                    onClick = { onSelect(style) },
+                    previewColors = previewColors,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+        Text(
+            text = selected.description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun FolderStyleChip(
+    style: FolderStyle,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    previewColors: List<Color>,
+    modifier: Modifier = Modifier,
+) {
+    val borderColor = if (isSelected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+    }
+    val borderWidth = if (isSelected) 2.dp else 1.dp
+    val highlight = previewColors.first()
+    val shadow = previewColors.last()
+
+    Column(
+        modifier = modifier
+            .clickable(onClick = onClick)
+            .border(borderWidth, borderColor, RoundedCornerShape(12.dp))
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(28.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .then(
+                    when (style) {
+                        FolderStyle.GRADIENT -> Modifier.background(
+                            Brush.linearGradient(listOf(highlight, shadow))
+                        )
+                        FolderStyle.FLAT -> Modifier.background(shadow)
+                    }
+                ),
+        )
+        Text(
+            text = style.displayName,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
         )
     }
 }

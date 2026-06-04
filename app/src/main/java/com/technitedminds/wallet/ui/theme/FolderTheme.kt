@@ -52,41 +52,44 @@ enum class FolderTheme(
     ),
 
     /**
-     * Boardroom palette. Each gradient runs from a bright brand mid-tone at
-     * the top-left down to a deep saturated shadow at the bottom-right —
-     * the same tonal range you see on Stripe / Revolut / Linear marketing
-     * tiles, which is what makes those tiles feel premium instead of flat.
+     * Boardroom palette — Stripe / Linear / Mercury blues. Refined: dropped
+     * the pale "ice" highlights for deeper royal/sapphire mid-tones so every
+     * tile reads like a trading-desk chip rather than a sky.
      */
     EXECUTIVE(
         displayName = "Executive",
-        description = "Cobalt, indigo & graphite",
-        accent = Color(0xFF3B82F6),
-        allCardsGradient = listOf(Color(0xFF60A5FA), Color(0xFF1E3A8A)),
-        uncategorizedGradient = listOf(Color(0xFF94A3B8), Color(0xFF1E293B)),
+        description = "Sapphire, indigo & graphite",
+        accent = Color(0xFF2563EB),
+        allCardsGradient = listOf(Color(0xFF3B82F6), Color(0xFF1E3A8A)),
+        uncategorizedGradient = listOf(Color(0xFF64748B), Color(0xFF0F172A)),
         palette = listOf(
-            listOf(Color(0xFF60A5FA), Color(0xFF1E3A8A)), // cobalt
-            listOf(Color(0xFF818CF8), Color(0xFF312E81)), // indigo
-            listOf(Color(0xFF38BDF8), Color(0xFF075985)), // azure
-            listOf(Color(0xFF94A3B8), Color(0xFF1E293B)), // slate
-            listOf(Color(0xFF67E8F9), Color(0xFF155E75)), // ice → teal-ink
-            listOf(Color(0xFF64748B), Color(0xFF0F172A)), // graphite
+            listOf(Color(0xFF3B82F6), Color(0xFF1E3A8A)), // royal
+            listOf(Color(0xFF6366F1), Color(0xFF312E81)), // indigo ink
+            listOf(Color(0xFF0EA5E9), Color(0xFF075985)), // deep azure
+            listOf(Color(0xFF475569), Color(0xFF0F172A)), // slate ink
+            listOf(Color(0xFF0891B2), Color(0xFF164E63)), // steel teal
+            listOf(Color(0xFF1E40AF), Color(0xFF1E1B4B)), // sapphire deep
         ),
     ),
 
-    /** Electric blue + violet — modern fintech dashboard at night. */
+    /**
+     * Aubergine / heliotrope nightfall. Pulled away from the prior neon
+     * lavender highlights toward saturated jewel-tone violets that bottom
+     * out in true purple ink — feels like luxury watch packaging at night.
+     */
     MIDNIGHT(
         displayName = "Midnight",
-        description = "Electric blue & violet",
-        accent = Color(0xFF6366F1),
-        allCardsGradient = listOf(Color(0xFF818CF8), Color(0xFF1E1B4B)),
-        uncategorizedGradient = listOf(Color(0xFF94A3B8), Color(0xFF0F172A)),
+        description = "Violet, indigo & aubergine",
+        accent = Color(0xFF6D28D9),
+        allCardsGradient = listOf(Color(0xFF7C3AED), Color(0xFF2E1065)),
+        uncategorizedGradient = listOf(Color(0xFF64748B), Color(0xFF0F172A)),
         palette = listOf(
-            listOf(Color(0xFF818CF8), Color(0xFF1E1B4B)),
-            listOf(Color(0xFFA78BFA), Color(0xFF4C1D95)),
-            listOf(Color(0xFF60A5FA), Color(0xFF1E3A8A)),
-            listOf(Color(0xFFC4B5FD), Color(0xFF5B21B6)),
-            listOf(Color(0xFF38BDF8), Color(0xFF1E40AF)),
-            listOf(Color(0xFF818CF8), Color(0xFF312E81)),
+            listOf(Color(0xFF7C3AED), Color(0xFF2E1065)), // violet
+            listOf(Color(0xFF6366F1), Color(0xFF1E1B4B)), // indigo
+            listOf(Color(0xFF8B5CF6), Color(0xFF4C1D95)), // heliotrope
+            listOf(Color(0xFF4F46E5), Color(0xFF1E1B4B)), // deep indigo
+            listOf(Color(0xFFA855F7), Color(0xFF581C87)), // orchid
+            listOf(Color(0xFF5B21B6), Color(0xFF1E1B4B)), // royal purple ink
         ),
     ),
 
@@ -98,7 +101,7 @@ enum class FolderTheme(
     MONOCHROME(
         displayName = "Monochrome",
         description = "Warm slate & ink",
-        accent = Color(0xFF94A3B8),
+        accent = Color(0xFF78716C),
         allCardsGradient = listOf(Color(0xFF94A3B8), Color(0xFF1E293B)),
         uncategorizedGradient = listOf(Color(0xFF9CA3AF), Color(0xFF111827)),
         palette = listOf(
@@ -107,87 +110,152 @@ enum class FolderTheme(
             listOf(Color(0xFF9CA3AF), Color(0xFF111827)), // gray
             listOf(Color(0xFFA8A29E), Color(0xFF1C1917)), // stone
             listOf(Color(0xFF6B7280), Color(0xFF030712)), // ink
-            listOf(Color(0xFFCBD5E1), Color(0xFF334155)), // pearl
+            listOf(Color(0xFF78716C), Color(0xFF292524)), // taupe
         ),
     ),
 
     /**
-     * Warm earth — terracotta, saffron, olive, copper. Tops are bright and
-     * sun-warmed, shadows go deep so the tiles actually have falloff.
+     * Warm earth — refined to dusty/sun-baked tones. Replaced bright lemon
+     * yellows and lime greens with burnt amber, rust, bronze and olive that
+     * land in true coffee/charcoal shadows. Editorial, not crayon.
      */
     EARTH(
         displayName = "Earth",
-        description = "Terracotta, saffron & clay",
-        accent = Color(0xFFEA580C),
-        allCardsGradient = listOf(Color(0xFFFB923C), Color(0xFF7C2D12)),
-        uncategorizedGradient = listOf(Color(0xFFA8A29E), Color(0xFF1C1917)),
+        description = "Walnut, clay & espresso",
+        accent = Color(0xFF78350F),
+        allCardsGradient = listOf(Color(0xFFB45309), Color(0xFF451A03)),
+        uncategorizedGradient = listOf(Color(0xFF78716C), Color(0xFF1C1917)),
         palette = listOf(
-            listOf(Color(0xFFFB923C), Color(0xFF7C2D12)), // terracotta
-            listOf(Color(0xFFFBBF24), Color(0xFF92400E)), // amber → coffee
-            listOf(Color(0xFFFACC15), Color(0xFF854D0E)), // saffron → toffee
-            listOf(Color(0xFFA3E635), Color(0xFF3F6212)), // olive
-            listOf(Color(0xFFF97316), Color(0xFF7C2D12)), // copper
-            listOf(Color(0xFFD6D3D1), Color(0xFF44403C)), // bone → stone
+            listOf(Color(0xFF92400E), Color(0xFF451A03)), // walnut
+            listOf(Color(0xFFB45309), Color(0xFF7C2D12)), // clay
+            listOf(Color(0xFF78350F), Color(0xFF292524)), // espresso
+            listOf(Color(0xFF9A3412), Color(0xFF431407)), // sienna ink
+            listOf(Color(0xFF854D0E), Color(0xFF422006)), // tobacco
+            listOf(Color(0xFF44403C), Color(0xFF1C1917)), // charcoal stone
         ),
     ),
 
     /**
-     * Aqua → deep ocean. Bright cyan / sky tops descend into saturated
-     * indigo and teal-ink shadows. Reads like premium banking marketing.
+     * Deep ocean — pulled the highlights from pop-cyan and mint toward
+     * cyan/teal/sapphire mid-tones that bottom out in trench-blue. The
+     * tiles feel like they were dipped, not painted.
      */
     OCEAN(
         displayName = "Ocean",
-        description = "Aqua, teal & deep blue",
-        accent = Color(0xFF06B6D4),
-        allCardsGradient = listOf(Color(0xFF22D3EE), Color(0xFF0C4A6E)),
-        uncategorizedGradient = listOf(Color(0xFF94A3B8), Color(0xFF1E293B)),
+        description = "Cyan, teal & sapphire",
+        accent = Color(0xFF0891B2),
+        allCardsGradient = listOf(Color(0xFF06B6D4), Color(0xFF164E63)),
+        uncategorizedGradient = listOf(Color(0xFF64748B), Color(0xFF0F172A)),
         palette = listOf(
-            listOf(Color(0xFF22D3EE), Color(0xFF0C4A6E)), // aqua
-            listOf(Color(0xFF2DD4BF), Color(0xFF115E59)), // teal
-            listOf(Color(0xFF38BDF8), Color(0xFF075985)), // sky
-            listOf(Color(0xFF60A5FA), Color(0xFF1E3A8A)), // azure → sapphire
-            listOf(Color(0xFF5EEAD4), Color(0xFF134E4A)), // mint → deep teal
-            listOf(Color(0xFF67E8F9), Color(0xFF155E75)), // ice → ocean ink
+            listOf(Color(0xFF06B6D4), Color(0xFF164E63)), // cyan → deep teal
+            listOf(Color(0xFF0D9488), Color(0xFF134E4A)), // teal
+            listOf(Color(0xFF0EA5E9), Color(0xFF075985)), // sky → deep azure
+            listOf(Color(0xFF1E40AF), Color(0xFF1E1B4B)), // sapphire
+            listOf(Color(0xFF14B8A6), Color(0xFF115E59)), // jade-teal
+            listOf(Color(0xFF0E7490), Color(0xFF083344)), // ocean ink
         ),
     ),
 
     /**
-     * Emerald + lime tops landing on pine / spruce shadows. Each tile reads
-     * like its own forest layer instead of a uniform dark green.
+     * Pine forest — dropped the spring-lime / mint highlights for sage,
+     * moss and pine mid-tones that resolve into spruce / forest-floor
+     * shadows. National-park guidebook, not lawn fertilizer.
      */
     FOREST(
         displayName = "Forest",
-        description = "Emerald, lime & pine",
-        accent = Color(0xFF10B981),
-        allCardsGradient = listOf(Color(0xFF34D399), Color(0xFF064E3B)),
+        description = "Pine, sage & moss",
+        accent = Color(0xFF15803D),
+        allCardsGradient = listOf(Color(0xFF16A34A), Color(0xFF064E3B)),
         uncategorizedGradient = listOf(Color(0xFF78716C), Color(0xFF1C1917)),
         palette = listOf(
-            listOf(Color(0xFF34D399), Color(0xFF065F46)), // emerald
-            listOf(Color(0xFF4ADE80), Color(0xFF166534)), // grass
-            listOf(Color(0xFF2DD4BF), Color(0xFF115E59)), // teal-pine
-            listOf(Color(0xFFA3E635), Color(0xFF3F6212)), // lime → moss
-            listOf(Color(0xFF6EE7B7), Color(0xFF064E3B)), // jade
-            listOf(Color(0xFF14B8A6), Color(0xFF134E4A)), // spruce
+            listOf(Color(0xFF16A34A), Color(0xFF064E3B)), // emerald
+            listOf(Color(0xFF15803D), Color(0xFF14532D)), // forest
+            listOf(Color(0xFF65A30D), Color(0xFF365314)), // moss
+            listOf(Color(0xFF0D9488), Color(0xFF134E4A)), // pine teal
+            listOf(Color(0xFF4D7C0F), Color(0xFF1A2E05)), // deep moss
+            listOf(Color(0xFF166534), Color(0xFF052E16)), // spruce
         ),
     ),
 
     /**
-     * Heritage / editorial — bright rose, raspberry, mauve, plum tops over
-     * deep wine and burgundy shadows. Warm without ever being childish.
+     * Heritage / editorial — pulled from blush-pink and lilac highlights
+     * toward claret, burgundy, mulberry and oxblood. Reads like vintage
+     * leather binding rather than birthday card.
      */
     ROSEWOOD(
         displayName = "Rosewood",
-        description = "Rose, claret & plum",
-        accent = Color(0xFFE11D48),
-        allCardsGradient = listOf(Color(0xFFFB7185), Color(0xFF881337)),
-        uncategorizedGradient = listOf(Color(0xFFA8A29E), Color(0xFF1C1917)),
+        description = "Bordeaux, oxblood & port",
+        accent = Color(0xFF7F1D1D),
+        allCardsGradient = listOf(Color(0xFF9F1239), Color(0xFF450A0A)),
+        uncategorizedGradient = listOf(Color(0xFF78716C), Color(0xFF1C1917)),
         palette = listOf(
-            listOf(Color(0xFFFB7185), Color(0xFF881337)), // rose
-            listOf(Color(0xFFF472B6), Color(0xFF9D174D)), // raspberry
-            listOf(Color(0xFFC084FC), Color(0xFF6B21A8)), // mauve
-            listOf(Color(0xFFFDA4AF), Color(0xFF9F1239)), // blush
-            listOf(Color(0xFFD8B4FE), Color(0xFF581C87)), // lilac → plum
-            listOf(Color(0xFFFCA5A5), Color(0xFF7F1D1D)), // coral → mahogany
+            listOf(Color(0xFF9F1239), Color(0xFF450A0A)), // bordeaux
+            listOf(Color(0xFF881337), Color(0xFF4C0519)), // oxblood
+            listOf(Color(0xFF7F1D1D), Color(0xFF450A0A)), // port
+            listOf(Color(0xFFB91C1C), Color(0xFF7F1D1D)), // ruby leather
+            listOf(Color(0xFF991B1B), Color(0xFF450A0A)), // claret deep
+            listOf(Color(0xFF6B1D1D), Color(0xFF1C0303)), // mahogany ink
+        ),
+    ),
+
+    /**
+     * Pure neutral graphite — ink-on-ink without slate cools or stone warms.
+     * Reads like printed editorial typography on premium card stock.
+     */
+    GRAPHITE(
+        displayName = "Graphite",
+        description = "Onyx, graphite & ink",
+        accent = Color(0xFF3F3F46),
+        allCardsGradient = listOf(Color(0xFF52525B), Color(0xFF09090B)),
+        uncategorizedGradient = listOf(Color(0xFF71717A), Color(0xFF18181B)),
+        palette = listOf(
+            listOf(Color(0xFF52525B), Color(0xFF09090B)), // onyx
+            listOf(Color(0xFF3F3F46), Color(0xFF18181B)), // graphite
+            listOf(Color(0xFF27272A), Color(0xFF000000)), // pure ink
+            listOf(Color(0xFF44403C), Color(0xFF0C0A09)), // basalt
+            listOf(Color(0xFF374151), Color(0xFF030712)), // gunmetal
+            listOf(Color(0xFF1F2937), Color(0xFF030712)), // tar
+        ),
+    ),
+
+    /**
+     * Cognac/champagne — refined warm metallics. Antique gold, brass, brandy.
+     * Reads like vintage spirits packaging or hardcover gilt edges.
+     */
+    CHAMPAGNE(
+        displayName = "Champagne",
+        description = "Cognac, brass & antique gold",
+        accent = Color(0xFF92400E),
+        allCardsGradient = listOf(Color(0xFFA16207), Color(0xFF422006)),
+        uncategorizedGradient = listOf(Color(0xFF78716C), Color(0xFF1C1917)),
+        palette = listOf(
+            listOf(Color(0xFFA16207), Color(0xFF422006)), // antique gold
+            listOf(Color(0xFF854D0E), Color(0xFF422006)), // brass
+            listOf(Color(0xFF92400E), Color(0xFF451A03)), // cognac
+            listOf(Color(0xFF713F12), Color(0xFF1C1917)), // bronze ink
+            listOf(Color(0xFFB45309), Color(0xFF7C2D12)), // brandy
+            listOf(Color(0xFF78350F), Color(0xFF292524)), // dark amber
+        ),
+    ),
+
+    /**
+     * Twilight — premium teal/navy crossover that lives between Ocean and
+     * Executive. Petrol blue, deep teal, midnight navy. Aman / Aesop / Apple
+     * Watch dial vibe.
+     */
+    TWILIGHT(
+        displayName = "Twilight",
+        description = "Petrol, teal & midnight navy",
+        accent = Color(0xFF0F4C5C),
+        allCardsGradient = listOf(Color(0xFF155E75), Color(0xFF0C2E3D)),
+        uncategorizedGradient = listOf(Color(0xFF475569), Color(0xFF0F172A)),
+        palette = listOf(
+            listOf(Color(0xFF155E75), Color(0xFF0C2E3D)), // petrol
+            listOf(Color(0xFF134E4A), Color(0xFF042F2E)), // deep teal
+            listOf(Color(0xFF1E3A8A), Color(0xFF0F172A)), // midnight navy
+            listOf(Color(0xFF164E63), Color(0xFF083344)), // peacock ink
+            listOf(Color(0xFF115E59), Color(0xFF052E26)), // verdigris
+            listOf(Color(0xFF1E40AF), Color(0xFF1E1B4B)), // sapphire night
         ),
     );
 
@@ -228,8 +296,27 @@ enum class BackgroundPattern(val displayName: String, val description: String) {
     }
 }
 
+/**
+ * How the folder tile is rendered. [GRADIENT] is the lit-corner-to-corner
+ * default with radial specular and vignette. [FLAT] paints a single solid
+ * fill (the gradient's deep tone) for an editorial / Aesop / Mercury card
+ * feel — no gloss, no falloff, just the color.
+ */
+enum class FolderStyle(val displayName: String, val description: String) {
+    GRADIENT("Gradient", "Lit corner-to-corner with soft specular"),
+    FLAT("Flat", "Single solid color, no gloss");
+
+    companion object {
+        fun fromName(name: String?): FolderStyle =
+            entries.firstOrNull { it.name == name } ?: GRADIENT
+    }
+}
+
 /** Selected folder theme — defaults to VIBRANT to preserve existing behavior. */
 val LocalFolderTheme = compositionLocalOf { FolderTheme.VIBRANT }
 
 /** Selected background pattern — defaults to NONE to preserve existing behavior. */
 val LocalBackgroundPattern = staticCompositionLocalOf { BackgroundPattern.NONE }
+
+/** Selected folder style — defaults to GRADIENT to preserve existing behavior. */
+val LocalFolderStyle = staticCompositionLocalOf { FolderStyle.GRADIENT }

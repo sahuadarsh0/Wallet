@@ -6,6 +6,7 @@ import com.technitedminds.wallet.data.local.files.ImageFileManager
 import com.technitedminds.wallet.data.local.preferences.SimplePreferencesManager
 import com.technitedminds.wallet.data.local.preferences.ThemeMode
 import com.technitedminds.wallet.ui.theme.BackgroundPattern
+import com.technitedminds.wallet.ui.theme.FolderStyle
 import com.technitedminds.wallet.ui.theme.FolderTheme
 import com.technitedminds.wallet.domain.usecase.category.GetCategoriesUseCase
 import com.technitedminds.wallet.domain.usecase.category.ManageCategoryUseCase
@@ -24,7 +25,9 @@ import javax.inject.Inject
 data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val folderTheme: FolderTheme = FolderTheme.VIBRANT,
+    val folderStyle: FolderStyle = FolderStyle.GRADIENT,
     val backgroundPattern: BackgroundPattern = BackgroundPattern.NONE,
+    val liveCardTiltEnabled: Boolean = true,
     val totalCards: Int = 0,
     val totalCategories: Int = 0,
     val storageUsedMB: Float = 0f,
@@ -155,6 +158,29 @@ class SettingsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(backgroundPattern = BackgroundPattern.fromName(stored))
             }
         }
+        viewModelScope.launch {
+            preferencesManager.getFolderStyle().collect { stored ->
+                _uiState.value = _uiState.value.copy(folderStyle = FolderStyle.fromName(stored))
+            }
+        }
+        viewModelScope.launch {
+            preferencesManager.isLiveCardTiltEnabled().collect { enabled ->
+                _uiState.value = _uiState.value.copy(liveCardTiltEnabled = enabled)
+            }
+        }
+    }
+
+    fun updateLiveCardTiltEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            try {
+                preferencesManager.setLiveCardTiltEnabled(enabled)
+                _uiState.value = _uiState.value.copy(liveCardTiltEnabled = enabled)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = e.message ?: "Failed to update tilt setting"
+                )
+            }
+        }
     }
 
     fun updateFolderTheme(theme: FolderTheme) {
@@ -178,6 +204,19 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     error = e.message ?: "Failed to update background"
+                )
+            }
+        }
+    }
+
+    fun updateFolderStyle(style: FolderStyle) {
+        viewModelScope.launch {
+            try {
+                preferencesManager.setFolderStyle(style.name)
+                _uiState.value = _uiState.value.copy(folderStyle = style)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = e.message ?: "Failed to update folder style"
                 )
             }
         }

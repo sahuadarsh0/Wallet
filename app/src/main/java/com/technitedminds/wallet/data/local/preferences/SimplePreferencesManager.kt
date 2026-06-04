@@ -55,6 +55,8 @@ class SimplePreferencesManager @Inject constructor(
         private val LAST_DB_OPTIMIZATION = stringPreferencesKey("last_db_optimization")
         private val FOLDER_THEME = stringPreferencesKey("folder_theme")
         private val BACKGROUND_PATTERN = stringPreferencesKey("background_pattern")
+        private val FOLDER_STYLE = stringPreferencesKey("folder_style")
+        private val LIVE_CARD_TILT_ENABLED = booleanPreferencesKey("live_card_tilt_enabled")
     }
     
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = PREFERENCES_NAME)
@@ -406,6 +408,31 @@ class SimplePreferencesManager @Inject constructor(
     fun getBackgroundPattern(): Flow<String?> {
         return context.dataStore.data.map { preferences ->
             preferences[BACKGROUND_PATTERN]
+        }
+    }
+
+    suspend fun setFolderStyle(styleName: String) {
+        context.dataStore.edit { preferences ->
+            preferences[FOLDER_STYLE] = styleName
+        }
+    }
+
+    fun getFolderStyle(): Flow<String?> {
+        return context.dataStore.data.map { preferences ->
+            preferences[FOLDER_STYLE]
+        }
+    }
+
+    // Live card tilt (gyroscopic 3D effect on card detail hero). Default ON.
+    suspend fun setLiveCardTiltEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[LIVE_CARD_TILT_ENABLED] = enabled
+        }
+    }
+
+    fun isLiveCardTiltEnabled(): Flow<Boolean> {
+        return context.dataStore.data.map { preferences ->
+            preferences[LIVE_CARD_TILT_ENABLED] ?: true
         }
     }
 

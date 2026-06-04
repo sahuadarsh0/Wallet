@@ -487,10 +487,12 @@ private fun CardDisplaySection(
             .heightIn(max = 360.dp),
         contentAlignment = Alignment.Center,
     ) {
+        val tilt by rememberDeviceTilt(maxDeg = 14f)
         FlippableCard(
             card = card,
             onCardClick = null,
             onCardLongPress = onShowSharingDialog,
+            tiltDeg = tilt,
             modifier = Modifier.liquidDrag(maxOffset = 16.dp),
         )
     }

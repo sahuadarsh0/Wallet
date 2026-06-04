@@ -165,6 +165,7 @@ class MainActivity : FragmentActivity() {
                 androidx.compose.runtime.CompositionLocalProvider(
                     com.technitedminds.wallet.ui.theme.LocalFolderTheme provides uiState.folderTheme,
                     com.technitedminds.wallet.ui.theme.LocalBackgroundPattern provides uiState.backgroundPattern,
+                    com.technitedminds.wallet.ui.theme.LocalFolderStyle provides uiState.folderStyle,
                 ) {
                 // Dark base background — prevents ANY white flash during
                 // transitions (splash fade-out, phase changes, etc.)
